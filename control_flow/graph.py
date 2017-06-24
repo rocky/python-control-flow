@@ -10,17 +10,19 @@
 BB_ENTRY = 0
 BB_RETURN = 1
 BB_LOOP = 2
-BB_BLOCK = 3
-BB_EXCEPT = 4
-BB_JUMP_UNCONDITIONAL = 5
-BB_FOR = 6
-BB_FINALLY = 7
+BB_BREAK = 3
+BB_BLOCK = 4
+BB_EXCEPT = 5
+BB_JUMP_UNCONDITIONAL = 6
+BB_FOR = 7
+BB_FINALLY = 8
 
 
 FLAG2NAME = {
   BB_ENTRY: 'entry',
   BB_RETURN: 'return',
   BB_LOOP: 'loop',
+  BB_BREAK: 'break',
   BB_BLOCK:'block',
   BB_EXCEPT: 'except',
   BB_JUMP_UNCONDITIONAL: 'unconditional',
@@ -29,7 +31,7 @@ FLAG2NAME = {
 }
 
 
-jump_flags = set([BB_RETURN, BB_JUMP_UNCONDITIONAL])
+jump_flags = set([BB_RETURN, BB_JUMP_UNCONDITIONAL, BB_BREAK])
 
 def format_flags(flags):
   return ', '.join([FLAG2NAME[flag] for flag in range(len(FLAG2NAME))

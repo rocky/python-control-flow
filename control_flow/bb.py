@@ -1,17 +1,16 @@
 #!/usr/bin/env python
-from __future__ import print_function
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from graph import (BB_BLOCK, BB_EXCEPT, BB_ENTRY,
-                   BB_FINALLY, BB_FOR,
+                   BB_FINALLY, BB_FOR, BB_BREAK,
                    BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_RETURN)
 
 # The byte code versions we support
 PYTHON_VERSIONS = (# 1.5,
                    # 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
-                   2.7,
-                   # 3.0, 3.1, 3.2, 3.3, 3.4, 3.5,
-                   3.6)
+                   2.6, 2.7,
+                   # 3.0, 3.1, 3.2, 3.3, 3.4
+                   3.5, 3.6)
 
 class BasicBlock(object):
   """Represents a basic block from the bytecode. It's a bit more than
@@ -81,8 +80,11 @@ class BBMgr(object):
     # Pick up appropriate version
     if version in PYTHON_VERSIONS:
       if PYTHON3:
-        if PYTHON_VERSION == 3.6:
-          import xdis.opcodes.opcode_36 as opcode
+        if PYTHON_VERSION in (3.5, 3.6):
+          if PYTHON_VERSION == 3.5:
+            import xdis.opcodes.opcode_35 as opcode
+          else:
+            import xdis.opcodes.opcode_36 as opcode
           self.opcode = opcode
           # We classify intructions into various categories (even though
           # many of the below contain just one instruction). This can
@@ -100,12 +102,16 @@ class BBMgr(object):
           self.LOOP_INSTRUCTIONS    = set([opcode.opmap['SETUP_LOOP'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
+          self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
           self.RETURN_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
       else:
-        if PYTHON_VERSION == 2.7:
-          import xdis.opcodes.opcode_27 as opcode
+        if PYTHON_VERSION in (2.6, 2.7):
+          if PYTHON_VERSION == 2.7:
+            import xdis.opcodes.opcode_27 as opcode
+          else:
+            import xdis.opcodes.opcode_26 as opcode
           self.opcode = opcode
           # We classify intructions into various categories (even though
           # many of the below contain just one instruction). This can
@@ -123,6 +129,7 @@ class BBMgr(object):
           self.LOOP_INSTRUCTIONS    = set([opcode.opmap['SETUP_LOOP'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
+          self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
           self.RETURN_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
@@ -160,13 +167,13 @@ def basic_blocks(version, is_pypy, co):
                 jump_offset = follow_offset + inst.arg
             jump_targets.add(jump_offset)
             pass
-        pass
 
     start_offset = 0
     end_offset = -1
     bb_list = []
     jump_offsets = set()
     prev_offset = -1
+    endloop_offsets = [-1]
     flags = set([BB_ENTRY])
 
     for inst in get_instructions(co):
@@ -174,10 +181,24 @@ def basic_blocks(version, is_pypy, co):
         end_offset = inst.offset
         op = inst.opcode
         offset = inst.offset
-        follow_offset = offset + 2 # Custom for 3.6
+        follow_offset = next_offset(op, BB.opcode, offset)
+
+        if op == BB.opcode.SETUP_LOOP:
+          jump_offset = follow_offset + inst.arg
+          endloop_offsets.append(jump_offset)
+        elif offset == endloop_offsets[-1]:
+          endloop_offsets.pop()
+        pass
 
         if op in BB.LOOP_INSTRUCTIONS:
             flags.add(BB_LOOP)
+        elif op in BB.BREAK_INSTRUCTIONS:
+            flags.add(BB_BREAK)
+            jump_offsets.add(endloop_offsets[-1])
+            flags, jump_offsets = BB.add_bb(start_offset,
+                                            end_offset, follow_offset,
+                                            flags, jump_offsets)
+            start_offset = follow_offset
 
         if offset in jump_targets:
             # Fallthrough path and jump target path.
@@ -219,7 +240,7 @@ def basic_blocks(version, is_pypy, co):
                                                 end_offset, follow_offset,
                                                 flags, jump_offsets)
                 start_offset = follow_offset
-            else:
+            elif op != BB.opcode.SETUP_LOOP:
                 flags, jump_offsets = BB.add_bb(start_offset,
                                                end_offset, follow_offset,
                                                flags, jump_offsets)

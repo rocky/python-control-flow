@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from xdis import PYTHON_VERSION, IS_PYPY
 from bb import basic_blocks
 from cfg import ControlFlowGraph
