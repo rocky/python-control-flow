@@ -9,4 +9,4 @@ Specifically:
 
 
 I've used some routines from Romain Gaucher's equip as a starting point.
-equip is (c) 2014 by Romain Gaucher
+shequip is (c) 2014 by Romain Gaucher

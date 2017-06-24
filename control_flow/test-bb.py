@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from xdis import PYTHON_VERSION, IS_PYPY
 from bb import basic_blocks
 from cfg import ControlFlowGraph
 from dominators import DominatorTree
@@ -83,7 +84,8 @@ def doit(fn):
     name = fn.__name__
     print(name)
 
-    bb_list = basic_blocks(fn)
+
+    bb_list = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)
     for bb in bb_list:
       print("\t", bb)
     dis.dis(fn)
