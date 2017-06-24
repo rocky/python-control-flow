@@ -32,8 +32,8 @@ class DotConverter(object):
     self.buffer += DOT_STYLE
 
     if isinstance(self.g, DiGraph):
-      for node in sorted(self.g.nodes, key=lambda n: n.id):
-        self.node_ids[node] = 'node_%d' % node.id
+      for node in sorted(self.g.nodes, key=lambda n: n.number):
+        self.node_ids[node] = 'node_%d' % node.number
         self.add_node(node)
 
       for edge in self.g.edges:
@@ -92,5 +92,5 @@ class DotConverter(object):
       style = '[shape = "oval"]'
     elif not node.bb.predecessors:
       style = '[style = "dashed"]'
-    label = '[label="Basic Block %d\l%s\l"]' % (node.id, self.node_repr(node.bb))
-    self.buffer += 'node_%d %s%s;\n' % (node.id, style, label)
+    label = '[label="Basic Block %d\l%s\l"]' % (node.number, self.node_repr(node.bb))
+    self.buffer += 'node_%d %s%s;\n' % (node.number, style, label)

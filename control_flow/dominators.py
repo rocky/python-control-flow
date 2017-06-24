@@ -50,7 +50,12 @@ class DominatorTree(object):
       finger1 = b1
       finger2 = b2
       po_finger1 = post_order_number[finger1]
-      po_finger2 = post_order_number[finger2]
+
+      if finger2 in post_order_number.keys():
+        po_finger2 = post_order_number[finger2]
+      else:
+        po_finger2 = None
+
       while po_finger1 != po_finger2:
         no_solution = False
         while po_finger1 < po_finger2:
@@ -122,7 +127,7 @@ class DominatorTree(object):
       parent = doms.get(node, None)
       if parent is not None and parent != node:
         if parent not in g_nodes:
-          parent_node = g.make_add_node(parent.flags, parent)
+          parent_node = g.make_add_node(parent)
           g_nodes[parent] = parent_node
         parent_node = g_nodes[parent]
         g.make_add_edge(parent_node, cur_node, 'fall-through')

@@ -7,6 +7,7 @@ from dominators import DominatorTree
 
 import dis
 import os
+import sys
 
 def five():
     return 5
@@ -106,6 +107,9 @@ def doit(fn):
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
         print('=' * 30)
     except:
+        import traceback
+        traceback.print_exc()
+        print("Unexpected error:", sys.exc_info()[0])
         print("%s had an error" % name)
 
 doit(five)

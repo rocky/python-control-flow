@@ -57,6 +57,7 @@ class BasicBlock(object):
 
     # Set true if this is dead code, or unureachable
     self.unreachable = False
+    self.number = None
 
 
   # A nice print routine for a Basic block

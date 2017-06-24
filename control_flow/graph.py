@@ -42,9 +42,13 @@ class Node(object):
 
   def __init__(self, bb):
     Node.GLOBAL_COUNTER += 1
-    self.id = Node.GLOBAL_COUNTER
+    if bb.number is None:
+      self.number = Node.GLOBAL_COUNTER
+    else:
+      self.number = bb.number
     self.flags = bb.flags
     self.bb = bb
+    bb.number = Node.GLOBAL_COUNTER
 
   @classmethod
   def reset(self):
@@ -54,13 +58,13 @@ class Node(object):
     return not self == obj
 
   def __eq__(self, obj):
-    return isinstance(obj, Node) and obj.id == self.id
+    return isinstance(obj, Node) and obj.number == self.number
 
   def __hash__(self):
-    return hash('node-' + str(self.id))
+    return hash('node-' + str(self.number))
 
   def __repr__(self):
-    return 'Node%d(flags=%s, bb=%s)' % (self.id, repr(self.flags), repr(self.bb))
+    return 'Node%d(flags=%s, bb=%s)' % (self.number, repr(self.flags), repr(self.bb))
 
 
 class Edge(object):
