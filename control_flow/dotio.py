@@ -50,7 +50,7 @@ class DotConverter(object):
 
     style = ''
     edge_port = ''
-    if edge.kind in ('fallthrough', 'follow'):
+    if edge.kind in ('fallthrough', 'follow', 'dom-edge'):
       if edge.kind == 'follow':
         style = '[style="invis"]'
       weight = 10
@@ -80,9 +80,15 @@ class DotConverter(object):
         flag_text = "\lflags=%s" % format_flags(node.flags)
       else:
         flag_text = ""
-      return ('offsets: %d..%d%s%s'
-              % (node.start_offset, node.end_offset,
-                 flag_text, jump_text))
+
+      if hasattr(node, 'reach_offset'):
+        reach_offset_text = "\lreach_offset=%d" % node.reach_offset
+      else:
+        reach_offset_text = ""
+
+      return ('offsets: %d..%d%s%s%s'
+            % (node.start_offset, node.end_offset,
+               flag_text, jump_text, reach_offset_text))
 
 
   def add_node(self, node):

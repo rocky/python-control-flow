@@ -3,7 +3,7 @@ from __future__ import print_function
 from xdis import PYTHON_VERSION, IS_PYPY
 from bb import basic_blocks
 from cfg import ControlFlowGraph
-from dominators import DominatorTree
+from dominators import DominatorTree, build_df
 
 import dis
 import os
@@ -100,6 +100,7 @@ def doit(fn):
     os.system("dot -Tpng %s > %s" % (dot_path, png_path))
     try:
         dom_tree = DominatorTree(cfg).tree()
+        build_df(dom_tree)
         dot_path = '/tmp/flow-dom-%s.dot' % name
         png_path = '/tmp/flow-dom-%s.png' % name
         open(dot_path, 'w').write(dom_tree.to_dot())
@@ -112,14 +113,14 @@ def doit(fn):
         print("Unexpected error:", sys.exc_info()[0])
         print("%s had an error" % name)
 
-doit(five)
-doit(foo)
-doit(foo1)
-doit(bar)
-doit(baz)
-doit(for_break)
-doit(try_finally)
-doit(try_no_finally)
-doit(while_else)
-doit(if_vs_and)
+# doit(five)
+# doit(foo)
+# doit(foo1)
+# doit(bar)
+# doit(baz)
+# doit(for_break)
+# doit(try_finally)
+# doit(try_no_finally)
+# doit(while_else)
+# doit(if_vs_and)
 doit(DominatorTree.tree)
