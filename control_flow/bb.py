@@ -3,7 +3,7 @@ from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from graph import (BB_BLOCK, BB_EXCEPT, BB_ENTRY,
                    BB_FINALLY, BB_FOR, BB_BREAK,
-                   BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_RETURN)
+                   BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
 # The byte code versions we support
 PYTHON_VERSIONS = (# 1.5,
@@ -13,13 +13,13 @@ PYTHON_VERSIONS = (# 1.5,
                    3.5, 3.6)
 
 class BasicBlock(object):
-  """Represents a basic block from the bytecode. It's a bit more than
-    just the a continuous range of the bytecode offsets. It also
-    contains
-      * jump-targets offsets,
-      * flags that classify flow information in the block
-      * graph node predcessor and successor sets, filled in a later phase
-      * some layout information for dot graphing
+  """Represents a basic block (or rather extended basic block) from the
+    bytecode. It's a bit more than just the a continuous range of the
+    bytecode offsets. It also contains * jump-targets offsets, * flags
+    that classify flow information in the block * graph node
+    predecessor and successor sets, filled in a later phase * some
+    layout information for dot graphing
+
   """
 
   def __init__(self, start_offset, end_offset, follow_offset,
@@ -104,9 +104,8 @@ class BBMgr(object):
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
           self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
-          self.RETURN_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
-                                           opcode.opmap['YIELD_VALUE'],
-                                           opcode.opmap['RAISE_VARARGS']])
+          self.NOFOLLOW_INSTRUCTIONS  = opcode.NOFOLLOW
+
       else:
         if PYTHON_VERSION in (2.6, 2.7):
           if PYTHON_VERSION == 2.7:
@@ -131,7 +130,7 @@ class BBMgr(object):
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
           self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
-          self.RETURN_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
+          self.NOFOLLOW_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
     else:
@@ -149,7 +148,7 @@ class BBMgr(object):
       return flags, jump_offsets
 
 
-def basic_blocks(version, is_pypy, co):
+def basic_blocks(version, is_pypy, fn):
     """Create a list of basic blocks found in a code object
     """
 
@@ -157,7 +156,7 @@ def basic_blocks(version, is_pypy, co):
 
     # Get jump targets
     jump_targets = set()
-    for inst in get_instructions(co):
+    for inst in get_instructions(fn):
         op = inst.opcode
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
@@ -177,7 +176,7 @@ def basic_blocks(version, is_pypy, co):
     endloop_offsets = [-1]
     flags = set([BB_ENTRY])
 
-    for inst in get_instructions(co):
+    for inst in get_instructions(fn):
         prev_offset = end_offset
         end_offset = inst.offset
         op = inst.opcode
@@ -248,8 +247,8 @@ def basic_blocks(version, is_pypy, co):
                 start_offset = follow_offset
 
                 pass
-        elif op in BB.RETURN_INSTRUCTIONS:
-            flags.add(BB_RETURN)
+        elif op in BB.NOFOLLOW_INSTRUCTIONS:
+            flags.add(BB_NOFOLLOW)
             flags, jump_offsets = BB.add_bb(start_offset,
                                             end_offset, follow_offset,
                                             flags, jump_offsets)

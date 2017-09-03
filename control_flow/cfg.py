@@ -1,6 +1,6 @@
 from dominators import DominatorTree
 from operator import attrgetter
-from graph import DiGraph, jump_flags, BB_LOOP
+from graph import DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW
 
 class ControlFlowGraph(object):
   """
@@ -58,7 +58,9 @@ class ControlFlowGraph(object):
         successor_block = self.block_offsets[jump_offset]
         successor_block.predecessors.add(block)
         block.successors.add(successor_block)
-      if block.follow_offset and not (jump_flags & block.flags):
+      if ( block.follow_offset
+           and (not (jump_flags & block.flags or
+                     (BB_NOFOLLOW in block.flags))) ):
         assert block.follow_offset in self.block_offsets
         successor_block = self.block_offsets[block.follow_offset]
         successor_block.predecessors.add(block)
@@ -76,10 +78,11 @@ class ControlFlowGraph(object):
         block.unreachable = True
 
       block = sorted_blocks[i]
-      # FIXME: distinguish fallthrough from follow
       if block.follow_offset:
           if jump_flags & block.flags:
-            kind = 'follow'
+            kind = 'jump'
+          elif BB_NOFOLLOW in block.flags:
+            kind = 'no fallthrough'
           else:
             kind = 'fallthrough'
           g.make_add_edge(

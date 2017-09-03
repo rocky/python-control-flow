@@ -8,7 +8,7 @@
 
 # Does this need to be a set?
 BB_ENTRY = 0
-BB_RETURN = 1
+BB_NOFOLLOW = 1
 BB_LOOP = 2
 BB_BREAK = 3
 BB_BLOCK = 4
@@ -20,7 +20,7 @@ BB_FINALLY = 8
 
 FLAG2NAME = {
   BB_ENTRY: 'entry',
-  BB_RETURN: 'return',
+  BB_NOFOLLOW: 'no fallthrough',
   BB_LOOP: 'loop',
   BB_BREAK: 'break',
   BB_BLOCK:'block',
@@ -31,7 +31,8 @@ FLAG2NAME = {
 }
 
 
-jump_flags = set([BB_RETURN, BB_JUMP_UNCONDITIONAL, BB_BREAK])
+jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
+nofollow_flags = set([BB_NOFOLLOW])
 
 def format_flags(flags):
     return ', '.join([FLAG2NAME[flag] for flag in range(len(FLAG2NAME))
@@ -93,7 +94,7 @@ class Edge(object):
         return hash('edge-' + str(self.id))
 
     def __repr__(self):
-        return 'Edge%d(src=%s, dst=%s, kind=%s, data=%s)' \
+        return 'Edge%d(source=%s, dest=%s, kind=%s, data=%s)' \
                % (self.id, self.source, self.dest, repr(self.kind), repr(self.data))
 
 

@@ -4,6 +4,7 @@ from xdis import PYTHON_VERSION, IS_PYPY
 from bb import basic_blocks
 from cfg import ControlFlowGraph
 from dominators import DominatorTree, build_df
+from structure import print_structured_flow
 
 import dis
 import os
@@ -23,6 +24,11 @@ def foo1(a):
         a += 1
     else:
         a += 2
+    return a
+
+def foo2(a):
+    if a:
+        a = 10
     return a
 
 def bar(a):
@@ -106,6 +112,8 @@ def doit(fn):
         open(dot_path, 'w').write(dom_tree.to_dot())
         print("%s written" % dot_path)
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
+        print_structured_flow(fn, dom_tree, bb_list)
+
         print('=' * 30)
     except:
         import traceback
@@ -116,11 +124,12 @@ def doit(fn):
 # doit(five)
 # doit(foo)
 # doit(foo1)
-# doit(bar)
+# doit(foo2)
+doit(bar)
 # doit(baz)
 # doit(for_break)
 # doit(try_finally)
 # doit(try_no_finally)
 # doit(while_else)
 # doit(if_vs_and)
-doit(DominatorTree.tree)
+# doit(DominatorTree.tree)

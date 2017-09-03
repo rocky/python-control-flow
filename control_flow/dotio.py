@@ -5,7 +5,7 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from graph import DiGraph, BB_ENTRY, format_flags
+from graph import DiGraph, BB_ENTRY, BB_NOFOLLOW, format_flags
 
 DOT_STYLE = """
 rankdir=TD; ordering=out;
@@ -60,6 +60,10 @@ class DotConverter(object):
       if edge.kind == 'self-loop':
         edge_port = '[headport=ne] [tailport=se]';
       weight = 1
+
+    if BB_NOFOLLOW in edge.source.flags:
+      style = '[style="dashed"] [arrowhead="none"]'
+      weight = 10
 
     if style == '' and edge.source.bb.unreachable:
       style = '[style="dashed"] [arrowhead="empty"]'

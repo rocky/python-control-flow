@@ -95,6 +95,7 @@ class DominatorTree(object):
         return
 
     def tree(self):
+        """Makes a the dominator tree"""
         t_nodes = {}
         doms = self.doms
         t = TreeGraph()
@@ -118,13 +119,16 @@ class DominatorTree(object):
 
 # Note: this has to be done after calling tree
 def build_df(t):
+    """
+    Builds data flow graph using Depth-First search.
+    """
 
     def dfs(seen, node):
         if node in seen:
             return
         seen.add(node)
         node.bb.doms = node.doms = set([node])
-        node.bb.reach_offset = node.reach_offset = node.bb.start_offset
+        node.bb.reach_offset = node.reach_offset = node.bb.end_offset
         for n in node.children:
             dfs(seen, n)
             node.doms |= node.doms
