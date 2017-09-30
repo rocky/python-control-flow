@@ -170,7 +170,6 @@ def basic_blocks(version, is_pypy, fn):
 
     start_offset = 0
     end_offset = -1
-    bb_list = []
     jump_offsets = set()
     prev_offset = -1
     endloop_offsets = [-1]

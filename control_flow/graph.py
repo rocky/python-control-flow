@@ -35,8 +35,7 @@ jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
 nofollow_flags = set([BB_NOFOLLOW])
 
 def format_flags(flags):
-    return ', '.join([FLAG2NAME[flag] for flag in range(len(FLAG2NAME))
-                    if flag in flags])
+    return ', '.join([FLAG2NAME[flag] for flag in FLAG2NAME if flag in flags])
 
 class Node(object):
     GLOBAL_COUNTER = 0
