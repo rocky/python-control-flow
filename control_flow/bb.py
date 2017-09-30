@@ -256,9 +256,12 @@ def basic_blocks(version, is_pypy, fn):
             pass
         pass
 
-    BB.bb_list[-1].follow_offset = None
+    if len(BB.bb_list):
+      BB.bb_list[-1].follow_offset = None
+
+    # Add remaining instructions?
     if start_offset <= end_offset:
-        bb_list.append(BasicBlock(start_offset, end_offset, None,
-                                  flags=flags, jump_offsets=jump_offsets))
+        BB.bb_list.append(BasicBlock(start_offset, end_offset, None,
+                                     flags=flags, jump_offsets=jump_offsets))
 
     return BB.bb_list

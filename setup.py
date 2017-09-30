@@ -38,7 +38,7 @@ from setuptools import setup, find_packages
 setup(
        classifiers        = classifiers,
        description        = short_desc,
-       install_requires   = ['click', 'xdis >= 3.4.0'],
+       install_requires   = ['click', 'xdis >= 3.6.0'],
        license            = license,
        long_description   = long_description,
        maintainer         = maintainer,
