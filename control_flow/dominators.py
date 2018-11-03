@@ -64,7 +64,7 @@ class DominatorTree(object):
                         no_solution = True
                         break
                     po_finger1 = post_order_number[finger1]
-                while po_finger2 is not None and po_finger1 < po_finger1:
+                while po_finger1 is not None:
                     finger2 = doms.get(finger2, None)
                     if finger2 is None:
                        no_solution = True

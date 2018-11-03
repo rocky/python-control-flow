@@ -10,7 +10,7 @@ PYTHON_VERSIONS = (# 1.5,
                    # 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
                    2.6, 2.7,
                    # 3.0, 3.1, 3.2, 3.3, 3.4
-                   3.5, 3.6)
+                   3.5, 3.6, 3.7)
 
 class BasicBlock(object):
   """Represents a basic block (or rather extended basic block) from the
@@ -81,11 +81,13 @@ class BBMgr(object):
     # Pick up appropriate version
     if version in PYTHON_VERSIONS:
       if PYTHON3:
-        if PYTHON_VERSION in (3.5, 3.6):
+        if PYTHON_VERSION in (3.5, 3.6, 3.7):
           if PYTHON_VERSION == 3.5:
             import xdis.opcodes.opcode_35 as opcode
-          else:
+          elif PYTHON_VERSION == 3.6:
             import xdis.opcodes.opcode_36 as opcode
+          else:
+            import xdis.opcodes.opcode_37 as opcode
           self.opcode = opcode
           # We classify intructions into various categories (even though
           # many of the below contain just one instruction). This can
