@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 from control_flow.main import doit
 
-import dis
-import os
-import sys
-
 def five():
     return 5
 
@@ -94,4 +90,3 @@ doit(bar)
 # doit(try_no_finally)
 # doit(while_else)
 # doit(if_vs_and)
-# doit(DominatorTree.tree)

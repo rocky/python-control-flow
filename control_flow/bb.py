@@ -12,6 +12,8 @@ PYTHON_VERSIONS = (# 1.5,
                    # 3.0, 3.1, 3.2, 3.3, 3.4
                    3.5, 3.6, 3.7)
 
+end_bb = 0
+
 class BasicBlock(object):
   """Represents a basic block (or rather extended basic block) from the
     bytecode. It's a bit more than just the a continuous range of the
@@ -25,6 +27,8 @@ class BasicBlock(object):
   def __init__(self, start_offset, end_offset, follow_offset,
                flags = set(),
                jump_offsets=set([])):
+
+    global end_bb
 
     # The offset of the first and last instructions of the basic block.
     self.start_offset = start_offset
@@ -57,7 +61,8 @@ class BasicBlock(object):
 
     # Set true if this is dead code, or unureachable
     self.unreachable = False
-    self.number = None
+    self.number = end_bb
+    end_bb += 1
 
 
   # A nice print routine for a Basic block
@@ -70,8 +75,9 @@ class BasicBlock(object):
         flag_text = ", flags=%s" % sorted(self.flags)
       else:
         flag_text = ""
-      return ('BasicBlock(range: %s%s, follow_offset=%s%s)'
-              % (self.index, flag_text, self.follow_offset, jump_text))
+      return ('BasicBlock(#%d range: %s%s, follow_offset=%s%s)'
+              % (self.number, self.index, flag_text, self.follow_offset,
+                 jump_text))
 
 
 class BBMgr(object):

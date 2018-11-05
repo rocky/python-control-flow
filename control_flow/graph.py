@@ -48,7 +48,6 @@ class Node(object):
           self.number = bb.number
         self.flags = bb.flags
         self.bb = bb
-        bb.number = Node.GLOBAL_COUNTER
 
     @classmethod
     def reset(self):
