@@ -50,28 +50,26 @@ class DominatorTree(object):
             finger1 = b1
             finger2 = b2
             po_finger1 = post_order_number[finger1]
+            if po_finger1 is None:
+                return None
 
             if finger2 in post_order_number.keys():
                 po_finger2 = post_order_number[finger2]
             else:
-                po_finger2 = None
+                return None
 
             while po_finger1 != po_finger2:
-                no_solution = False
-                while po_finger2 is not None and po_finger1 < po_finger2:
+                while po_finger1 < po_finger2:
                     finger1 = doms.get(finger1, None)
-                    if finger1 is None:
-                        no_solution = True
-                        break
+                    if finger1 is None: return None
                     po_finger1 = post_order_number[finger1]
-                while po_finger1 is not None:
+                    pass
+                while po_finger2 < po_finger1:
                     finger2 = doms.get(finger2, None)
-                    if finger2 is None:
-                       no_solution = True
-                       break
+                    if finger2 is None: return None
                     po_finger2 = post_order_number[finger2]
-                if no_solution:
-                    break
+                    pass
+                pass
             return finger1
 
         changed = True
