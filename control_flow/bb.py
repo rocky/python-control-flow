@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
-from graph import (BB_BLOCK, BB_EXCEPT, BB_ENTRY,
-                   BB_FINALLY, BB_FOR, BB_BREAK,
-                   BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
+from control_flow.graph import (BB_BLOCK, BB_EXCEPT, BB_ENTRY, BB_STARTS_POP_BLOCK,
+                                BB_FINALLY, BB_FOR, BB_BREAK,
+                                BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
 # The byte code versions we support
 PYTHON_VERSIONS = (# 1.5,
@@ -230,6 +230,8 @@ def basic_blocks(version, is_pypy, fn):
         # Add block flags for certain classes of instructions
         if op in BB.BLOCK_INSTRUCTIONS:
             flags.add(BB_BLOCK)
+            if start_offset == offset:
+                flags.add(BB_STARTS_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
             flags.add(BB_EXCEPT)
         elif op in BB.FINALLY_INSTRUCTIONS:

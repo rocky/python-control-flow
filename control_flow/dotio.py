@@ -2,10 +2,11 @@
 """
   Converts graph to dot format
 
+  :copyright: (c) 2018 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from graph import DiGraph, BB_ENTRY, BB_NOFOLLOW, format_flags
+from control_flow.graph import DiGraph, BB_ENTRY, BB_NOFOLLOW, format_flags
 
 DOT_STYLE = """
 rankdir=TD; ordering=out;

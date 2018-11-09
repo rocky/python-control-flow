@@ -16,7 +16,7 @@ maintainer         = "Rocky Bernstein"
 maintainer_email   = "rb@dustyfeet.com"
 modname            = 'control_flow'
 name               = 'control_flow'
-py_modules         = None
+py_modules         = 'control_flow'
 short_desc         = 'Control Flow Toolkit'
 web                = 'https://github.com/rocky/python-control_flow/'
 

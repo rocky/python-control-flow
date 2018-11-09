@@ -6,8 +6,8 @@
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from graph import TreeGraph
-from traversals import dfs_postorder_nodes
+from control_flow.graph import TreeGraph
+from control_flow.traversals import dfs_postorder_nodes
 
 
 class DominatorTree(object):

@@ -1,5 +1,6 @@
-from graph import (BB_EXCEPT, BB_FINALLY, BB_FOR, BB_LOOP, BB_NOFOLLOW)
 from xdis.std import get_instructions
+from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
+                                BB_LOOP, BB_NOFOLLOW, BB_STARTS_POP_BLOCK)
 
 seen_blocks = set()
 
@@ -37,6 +38,10 @@ class ElseControlStructure(ControlStructure):
   def __init__(self, block, else_children):
       super(ElseControlStructure, self).__init__(block, 'else', else_children)
 
+class PopBlockStructure(ControlStructure):
+  def __init__(self, block):
+      super(PopBlockStructure, self).__init__(block, 'pop block', [])
+
 class IfElseControlStructure(ControlStructure):
   def __init__(self, block, then_children, else_children):
       super(IfElseControlStructure, self).__init__(block, 'ifelse',
@@ -67,6 +72,9 @@ def control_structure_short(cfg, current, parent_kind='sequence'):
         elif parent_kind == 'if':
             kind = 'then'
         elif parent_kind == 'else':
+            kind = 'sequence'
+        elif (parent_kind == 'sequence' and
+              BB_STARTS_POP_BLOCK in block.flags):
             kind = 'sequence'
         # FIXME: the min(list) is funky because jump_offsets is a set
         elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
@@ -106,16 +114,20 @@ def control_structure_short(cfg, current, parent_kind='sequence'):
             if kind == 'if':
                 # Is this else  or not?
                 if len(jump_block.predecessors) == 1:
-                    jump_kind = 'else'
-                    else_children = control_structure_short(cfg, jump_block, jump_kind)
-                    result[0].children.append(
-                    ElseControlStructure(jump_block, else_children))
+                    if BB_STARTS_POP_BLOCK in jump_block.flags:
+                        assert jump_block.index[0] == jump_block.index[1]
+                        result[0].children.append(PopBlockStructure(jump_block))
+                    else:
+                        jump_kind = 'else'
+                        else_children = control_structure_short(cfg, jump_block, jump_kind)
+                        result[0].children.append(
+                            ElseControlStructure(jump_block, else_children))
                 else:
                     assert len(jump_block.predecessors) != 0  # this would be dead code
                     jump_kind = 'sequence'
-                    else_children = control_structure_short(cfg, jump_block, jump_kind)
+                    children = control_structure_short(cfg, jump_block, jump_kind)
                     result[0].children.append(
-                        SequenceControlStructure(jump_block, else_children))
+                        SequenceControlStructure(jump_block, children))
             elif kind == 'continue':
                 # Do nothing
                 pass
@@ -123,7 +135,12 @@ def control_structure_short(cfg, current, parent_kind='sequence'):
                 # This is not quite right
                 jump_kind = 'sequence'
                 children = control_structure_short(cfg, jump_block, jump_kind)
-                result.append(SequenceControlStructure(jump_block, children))
+                if len(children) == 1:
+                    result.append(children[0])
+                elif len(children) == 0:
+                    pass
+                else:
+                    result.append(SequenceControlStructure(jump_block, children))
             pass
         pass
     return result
@@ -142,7 +159,7 @@ def print_cs_tree(cs_list, indent=''):
             else:
                 print_cs_tree(child, indent)
             pass
-        if cs.kind != 'continue':
+        if cs.kind not in ('continue', 'pop block'):
           print("%send %s" % (indent, cs.kind))
     return
 

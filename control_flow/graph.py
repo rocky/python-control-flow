@@ -12,10 +12,11 @@ BB_NOFOLLOW = 1
 BB_LOOP = 2
 BB_BREAK = 3
 BB_BLOCK = 4
-BB_EXCEPT = 5
-BB_JUMP_UNCONDITIONAL = 6
-BB_FOR = 7
-BB_FINALLY = 8
+BB_STARTS_POP_BLOCK = 5
+BB_EXCEPT = 6
+BB_JUMP_UNCONDITIONAL = 7
+BB_FOR = 8
+BB_FINALLY = 9
 
 
 FLAG2NAME = {
@@ -24,6 +25,7 @@ FLAG2NAME = {
   BB_LOOP: 'loop',
   BB_BREAK: 'break',
   BB_BLOCK:'block',
+  BB_STARTS_POP_BLOCK: 'starts with pop block',
   BB_EXCEPT: 'except',
   BB_JUMP_UNCONDITIONAL: 'unconditional',
   BB_FOR: 'for',
@@ -120,7 +122,7 @@ class DiGraph(object):
         self.nodes.add(node)
 
     def to_dot(self):
-        from dotio import DotConverter
+        from control_flow.dotio import DotConverter
         return DotConverter.process(self)
 
     @staticmethod

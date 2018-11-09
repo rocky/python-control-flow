@@ -1,6 +1,6 @@
-from dominators import DominatorTree
 from operator import attrgetter
-from graph import DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW
+from control_flow.dominators import DominatorTree
+from control_flow.graph import DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW
 
 class ControlFlowGraph(object):
   """

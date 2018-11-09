@@ -9,7 +9,7 @@
   :license: Apache 2, see LICENSE for more details.
 """
 
-from graph import Edge
+from control_flow.graph import Edge
 
 
 class EdgeVisitor(object):

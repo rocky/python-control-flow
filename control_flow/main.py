@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from xdis import PYTHON_VERSION, IS_PYPY
-from bb import basic_blocks
-from cfg import ControlFlowGraph
-from dominators import DominatorTree, build_df, build_dom_set
-from structure import print_structured_flow, control_structure_short, print_cs_tree
+from control_flow.bb import basic_blocks
+from control_flow.cfg import ControlFlowGraph
+from control_flow.dominators import DominatorTree, build_df, build_dom_set
+from control_flow.structure import print_structured_flow, control_structure_short, print_cs_tree
 
 import dis
 import os
