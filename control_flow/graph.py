@@ -146,6 +146,14 @@ class TreeGraph(DiGraph):
     """
       A simple tree structure for basic blocks.
     """
+
+    def __init__(self):
+        Node.reset()
+        Edge.reset()
+        self.nodes = []
+        self.edges = set()
+
+
     def add_edge(self, edge):
         if edge in self.edges:
             raise Exception('Edge already present')
@@ -161,4 +169,18 @@ class TreeGraph(DiGraph):
         if not node.bb in [n.bb for n in self.nodes]:
             node.children = set([])
             node.parent = None
-            self.nodes.add(node)
+            self.nodes.append(node)
+
+    def postorder_traverse(self):
+        """Traverse the tree in preorder"""
+        if self.nodes:
+            return self.postorder_traverse1(self.nodes[0])
+
+
+    def postorder_traverse1(self, node):
+        """Traverse the tree in preorder"""
+
+        for child in node.children:
+            self.postorder_traverse1(child)
+            yield child
+        yield node

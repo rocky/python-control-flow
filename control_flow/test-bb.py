@@ -4,11 +4,20 @@ from control_flow.main import doit
 def five():
     return 5
 
-def foo(a):
+def if_else(a):
     if a:
         return 5
     else:
         return 6
+
+def if_then1(a):
+    if a:
+        a += 1
+    return a
+
+def if_then2(a):
+    if a:
+        return 5
 
 def foo1(a):
     if a:
@@ -22,9 +31,17 @@ def foo2(a):
         a = 10
     return a
 
-def bar(a):
+def while_if_continue(a):
+    a += 1
+    while a > 5:
+        if a:
+            a += 1
+            continue
+        a -= 1
+
+def while_true_if_else(a):
     while True:
-        if bar:
+        if a:
             return 5
         else:
             return 6
@@ -68,7 +85,8 @@ def while_else(a):
     while a:
         a += 2
     else:
-        return 6
+        a = 5
+    return a
 
 def if_vs_and(a, b):
     if a \
@@ -79,11 +97,17 @@ def if_vs_and(a, b):
             c = 2
     return c
 
+
 # doit(five)
+# doit(if_then1)
+# doit(if_then2)
+# doit(if_else)
 # doit(foo)
 # doit(foo1)
 # doit(foo2)
-doit(bar)
+# doit(while_true_if_else)
+doit(while_if_continue)
+# doit(while_else)
 # doit(baz)
 # doit(for_break)
 # doit(try_finally)

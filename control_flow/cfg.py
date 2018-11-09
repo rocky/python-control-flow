@@ -12,12 +12,11 @@ class ControlFlowGraph(object):
 
   def __init__(self, blocks):
     self.blocks = blocks
-    self.block_offset_map = {}
+    self.offset2block = {}
     self.block_nodes = {}
     self.graph = None
     self.entry_node = None
     self.dom = None
-    self.cdg = None
     self.analyze(blocks)
 
   def dominators(self, blocks):
@@ -50,6 +49,7 @@ class ControlFlowGraph(object):
       self.block_offsets[block.start_offset] = block
       block_node = g.make_add_node(block)
       self.block_nodes[block] = block_node
+      self.offset2block[block.index[0]] = block_node
 
     # Compute a block's immediate predecessors and successors
     for block in self.blocks:

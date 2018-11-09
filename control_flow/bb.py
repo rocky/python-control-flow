@@ -15,13 +15,16 @@ PYTHON_VERSIONS = (# 1.5,
 end_bb = 0
 
 class BasicBlock(object):
-  """Represents a basic block (or rather extended basic block) from the
-    bytecode. It's a bit more than just the a continuous range of the
-    bytecode offsets. It also contains * jump-targets offsets, * flags
-    that classify flow information in the block * graph node
-    predecessor and successor sets, filled in a later phase * some
-    layout information for dot graphing
+  """Extended basic block from the bytecode.
 
+     It's a bit more than just the a continuous range of the bytecode offsets.
+
+     It also contains:
+       * jump-targets offsets,
+       * flags that classify flow information in the block,
+       * a graph node,
+       * predecessor and successor sets, filled in a later phase
+       * some layout information for dot graphing
   """
 
   def __init__(self, start_offset, end_offset, follow_offset,
@@ -56,12 +59,19 @@ class BasicBlock(object):
 
     # Lists of predecessor and successor bacic blocks
     # This is computed in cfg.
-    self.predecessors = set([])
-    self.successors = set([])
+    self.predecessors = set()
+    self.successors = set()
 
-    # Set true if this is dead code, or unureachable
+    # List of blocks we dominiate is empty
+    self.doms = set()
+
+    # Set true if this is dead code, or unreachable
     self.unreachable = False
     self.number = end_bb
+    self.edge_count = len(jump_offsets)
+    if (follow_offset is not None and not
+        BB_NOFOLLOW in self.flags):
+      self.edge_count += 1
     end_bb += 1
 
 
@@ -75,9 +85,9 @@ class BasicBlock(object):
         flag_text = ", flags=%s" % sorted(self.flags)
       else:
         flag_text = ""
-      return ('BasicBlock(#%d range: %s%s, follow_offset=%s%s)'
+      return ('BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s)'
               % (self.number, self.index, flag_text, self.follow_offset,
-                 jump_text))
+                 self.edge_count, jump_text))
 
 
 class BBMgr(object):

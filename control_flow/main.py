@@ -3,8 +3,8 @@ from __future__ import print_function
 from xdis import PYTHON_VERSION, IS_PYPY
 from bb import basic_blocks
 from cfg import ControlFlowGraph
-from dominators import DominatorTree, build_df
-from structure import print_structured_flow
+from dominators import DominatorTree, build_df, build_dom_set
+from structure import print_structured_flow, control_structure_short, print_cs_tree
 
 import dis
 import os
@@ -27,16 +27,20 @@ def doit(fn):
 
     os.system("dot -Tpng %s > %s" % (dot_path, png_path))
     try:
-        dom_tree = DominatorTree(cfg).tree()
-        build_df(dom_tree)
+        cfg.dom_tree = DominatorTree(cfg).tree()
+
+        build_df(cfg.dom_tree)
+        build_dom_set(cfg.dom_tree)
         dot_path = '/tmp/flow-dom-%s.dot' % name
         png_path = '/tmp/flow-dom-%s.png' % name
-        open(dot_path, 'w').write(dom_tree.to_dot())
+        open(dot_path, 'w').write(cfg.dom_tree.to_dot())
         print("%s written" % dot_path)
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
-        print_structured_flow(fn, dom_tree, bb_list)
-
         print('=' * 30)
+        cs = control_structure_short(cfg, cfg.entry_node)
+        print_cs_tree(cs)
+        print('=' * 30)
+        print_structured_flow(fn, cfg, cfg.entry_node)
     except:
         import traceback
         traceback.print_exc()
