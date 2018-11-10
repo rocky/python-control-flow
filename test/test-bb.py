@@ -10,6 +10,16 @@ def if_else(a):
     else:
         return 6
 
+def if_vs_and(a, b):
+    if a \
+       and b:
+        c = 1
+    if a:
+        if b:
+            c = 2
+    return c
+
+
 def if_then1(a):
     if a:
         a += 1
@@ -59,6 +69,13 @@ def while_true_if_else(a):
         else:
             return 6
 
+def while_else(a):
+    while a:
+        a += 2
+    else:
+        a = 5
+    return a
+
 def baz(a):
     b = 0
     while a > 0:
@@ -94,38 +111,20 @@ def try_no_finally():
         x = 3
     return x
 
-def while_else(a):
-    while a:
-        a += 2
-    else:
-        a = 5
-    return a
-
-def if_vs_and(a, b):
-    if a \
-       and b:
-        c = 1
-    if a:
-        if b:
-            c = 2
-    return c
-
-
 # doit(five)
+# doit(if_else)
+# doit(if_vs_and)
 # doit(if_then1)
 # doit(if_then2)
 # doit(if_then3)
 # doit(if_then4)
-# doit(if_else)
 # doit(foo)
 # doit(foo1)
 # doit(foo2)
-doit(while_true_if_else)
-# doit(while_if_continue)
+doit(while_if_continue)
+# doit(while_true_if_else)
 # doit(while_else)
 # doit(baz)
 # doit(for_break)
 # doit(try_finally)
 # doit(try_no_finally)
-# doit(while_else)
-# doit(if_vs_and)

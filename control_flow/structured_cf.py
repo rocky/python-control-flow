@@ -67,11 +67,14 @@ class Elif(ControlStructure):
       super(LoopControlStructure, self).__init__(block, 'elif', [elif_children])
 
 def build_control_structure(cfg, current):
+    global seen_blocks
+    seen_blocks = set()
     cs, follow  = control_structure_iter(cfg, cfg.entry_node)
     # FIXME: assert that seen_blocks in control_stucture_short should
     # be all of blocks (except dead code)
     if follow:
         cs.append(follow)
+    # assert not set(cfg.blocks) - seen_blocks, "Some blocks not accounted for in structured cfg"
     return cs
 
 def control_structure_iter(cfg, current, parent_kind='sequence'):
@@ -110,6 +113,8 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
 
         if kind == 'loop':
             assert block.edge_count == 2
+            if follow:
+                children.append(follow)
             result.append(LoopControlStructure(block, children))
         elif kind == 'if':
             result.append(IfControlStructure(block, children))
