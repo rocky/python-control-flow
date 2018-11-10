@@ -4,7 +4,7 @@ from xdis import PYTHON_VERSION, IS_PYPY
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, build_df, build_dom_set
-from control_flow.structure import print_structured_flow, control_structure_short, print_cs_tree
+from control_flow.structured_cf import print_structured_flow, build_control_structure, print_cs_tree
 
 import dis
 import os
@@ -37,7 +37,7 @@ def doit(fn):
         print("%s written" % dot_path)
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
         print('=' * 30)
-        cs = control_structure_short(cfg, cfg.entry_node)
+        cs  = build_control_structure(cfg, cfg.entry_node)
         print_cs_tree(cs)
         print('=' * 30)
         print_structured_flow(fn, cfg, cfg.entry_node)

@@ -1,3 +1,9 @@
+"""
+From Basic Block control flow graph, create a
+structured control flow graph.
+
+This code is ugly.
+"""
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
                                 BB_LOOP, BB_NOFOLLOW, BB_STARTS_POP_BLOCK)
@@ -42,6 +48,10 @@ class PopBlockStructure(ControlStructure):
   def __init__(self, block):
       super(PopBlockStructure, self).__init__(block, 'pop block', [])
 
+class NoFollowControlStructure(ControlStructure):
+  def __init__(self, block):
+      super(NoFollowControlStructure, self).__init__(block, 'no follow', [])
+
 class IfElseControlStructure(ControlStructure):
   def __init__(self, block, then_children, else_children):
       super(IfElseControlStructure, self).__init__(block, 'ifelse',
@@ -56,9 +66,18 @@ class Elif(ControlStructure):
   def __init__(self, block, elif_children):
       super(LoopControlStructure, self).__init__(block, 'elif', [elif_children])
 
-def control_structure_short(cfg, current, parent_kind='sequence'):
+def build_control_structure(cfg, current):
+    cs, follow  = control_structure_iter(cfg, cfg.entry_node)
+    # FIXME: assert that seen_blocks in control_stucture_short should
+    # be all of blocks (except dead code)
+    if follow:
+        cs.append(follow)
+    return cs
+
+def control_structure_iter(cfg, current, parent_kind='sequence'):
     result = []
-    print("control_structure_short: ", current)
+    follow = []
+    print("control_structure_iter: ", current)
     seen_blocks.add(current)
     block = cfg.blocks[current.number]
 
@@ -87,7 +106,7 @@ def control_structure_short(cfg, current, parent_kind='sequence'):
         if BB_NOFOLLOW in current.flags or follow_block not in dominator_blocks:
             children = []
         else:
-            children = control_structure_short(cfg, follow_block, kind)
+            children, follow  = control_structure_iter(cfg, follow_block, kind)
 
         if kind == 'loop':
             assert block.edge_count == 2
@@ -112,38 +131,67 @@ def control_structure_short(cfg, current, parent_kind='sequence'):
         # FIXME: may have to traverse in sequence, that is by dominator number or offset address?
         if jump_block in dominator_blocks and jump_block not in seen_blocks:
             if kind == 'if':
+                if follow:
+                    result.append(follow)
+                    follow = []
                 # Is this else  or not?
                 if len(jump_block.predecessors) == 1:
                     if BB_STARTS_POP_BLOCK in jump_block.flags:
+                        # this is outside of the "if"
                         assert jump_block.index[0] == jump_block.index[1]
-                        result[0].children.append(PopBlockStructure(jump_block))
+                        result.append(PopBlockStructure(jump_block))
                     else:
-                        jump_kind = 'else'
-                        else_children = control_structure_short(cfg, jump_block, jump_kind)
-                        result[0].children.append(
-                            ElseControlStructure(jump_block, else_children))
+                        # Although putting jump_block as the "else" clause
+                        # of an "if" would not be incorrect, it is probably more common
+                        # to have it follow the "then" block. That is:
+                        #   if x:
+                        #      return 5
+                        #   return 6
+                        # rathern than
+                        #   if x:
+                        #      return 5
+                        #   else:
+                        #      return 6
+                        if BB_NOFOLLOW in jump_block.flags:
+                            follow = NoFollowControlStructure(jump_block)
+                        else:
+                            jump_kind = 'else'
+                            else_children, follow  = control_structure_iter(cfg, jump_block, jump_kind)
+                            result[0].children.append(
+                                ElseControlStructure(jump_block, else_children))
+                            pass
+                        pass
+                    pass
                 else:
                     assert len(jump_block.predecessors) != 0  # this would be dead code
                     jump_kind = 'sequence'
-                    children = control_structure_short(cfg, jump_block, jump_kind)
+                    children, follow  = control_structure_iter(cfg, jump_block, jump_kind)
                     result[0].children.append(
                         SequenceControlStructure(jump_block, children))
             elif kind == 'continue':
                 # Do nothing
                 pass
             else:
-                # This is not quite right
-                jump_kind = 'sequence'
-                children = control_structure_short(cfg, jump_block, jump_kind)
-                if len(children) == 1:
-                    result.append(children[0])
-                elif len(children) == 0:
-                    pass
+                if kind not in ('then', 'else') or block.index[1] >= jump_offset:
+                    # This is not quite right
+                    jump_kind = 'sequence'
+                    children, follow = control_structure_iter(cfg, jump_block, jump_kind)
+                    if len(children) == 1:
+                        result.append(children[0])
+                    elif len(children) == 0:
+                        pass
+                    else:
+                        result.append(SequenceControlStructure(jump_block, children))
+                        pass
                 else:
-                    result.append(SequenceControlStructure(jump_block, children))
+                    jump_kind = 'sequence'
+                    follow, junk = control_structure_iter(cfg, jump_block, jump_kind)
+                    assert not junk
+                    pass
+                pass
             pass
         pass
-    return result
+    return result, follow
 
 def print_cs_tree(cs_list, indent=''):
 
@@ -159,7 +207,7 @@ def print_cs_tree(cs_list, indent=''):
             else:
                 print_cs_tree(child, indent)
             pass
-        if cs.kind not in ('continue', 'pop block'):
+        if cs.kind not in ('continue', 'pop block', 'no follow'):
           print("%send %s" % (indent, cs.kind))
     return
 

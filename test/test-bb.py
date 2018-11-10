@@ -19,6 +19,19 @@ def if_then2(a):
     if a:
         return 5
 
+# We can't distinguish between if_then3
+# and if_then4
+def if_then3(a):
+    if a:
+        return 5
+    else:
+        return 6
+
+def if_then4(a):
+    if a:
+        return 5
+    return 6
+
 def foo1(a):
     if a:
         a += 1
@@ -101,12 +114,14 @@ def if_vs_and(a, b):
 # doit(five)
 # doit(if_then1)
 # doit(if_then2)
+# doit(if_then3)
+# doit(if_then4)
 # doit(if_else)
 # doit(foo)
 # doit(foo1)
 # doit(foo2)
-# doit(while_true_if_else)
-doit(while_if_continue)
+doit(while_true_if_else)
+# doit(while_if_continue)
 # doit(while_else)
 # doit(baz)
 # doit(for_break)

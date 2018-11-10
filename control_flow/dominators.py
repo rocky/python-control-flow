@@ -79,7 +79,7 @@ class DominatorTree(object):
                 new_idom = None
                 # Find a processed predecessor
                 predecessors = [p for p in b.predecessors
-                                if post_order_number[p] > post_order_number[b]]
+                                if post_order_number.get(p, -1) > post_order_number[b]]
                 for i, p in enumerate(predecessors):
                     if p in seen:
                         new_idom = p

@@ -5,6 +5,7 @@
 
   DFS/BFS and some other utils
 
+  :copyright: (c) 2018 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
   :license: Apache 2, see LICENSE for more details.
 """
@@ -75,6 +76,9 @@ class Walker(object):
 
 # Recursive version of the post-order DFS, should only be used
 # when computing dominators on smallish CFGs
+
+# FIXME: This assumes the graph is strongly connected.
+# handle if it is a not.
 def dfs_postorder_nodes(graph, root):
   import sys
   sys.setrecursionlimit(5000)
