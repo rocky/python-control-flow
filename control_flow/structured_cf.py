@@ -28,6 +28,10 @@ class LoopControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(LoopControlStructure, self).__init__(block, 'loop', children)
 
+class WhileControlStructure(ControlStructure):
+  def __init__(self, block, children):
+      super(WhileControlStructure, self).__init__(block, 'while', children)
+
 class SequenceControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(SequenceControlStructure, self).__init__(block, 'sequence', children)
@@ -77,6 +81,27 @@ def build_control_structure(cfg, current):
     # assert not set(cfg.blocks) - seen_blocks, "Some blocks not accounted for in structured cfg"
     return cs
 
+def loop_back(block):
+    predecessors = block.predecessors
+    start_offset = block.index[0]
+    if len(predecessors) > 1:
+        for p in predecessors:
+            if p.index[0] > start_offset:
+                return True
+            pass
+        pass
+    return False
+
+def predecessor_pop_block(cfg, block):
+    for jump_offset in block.jump_offsets:
+        jump_number = cfg.offset2block[jump_offset].bb.number
+        jump_block = cfg.blocks[jump_number]
+        if BB_STARTS_POP_BLOCK in jump_block.flags:
+            return True
+        pass
+    return False
+
+
 def control_structure_iter(cfg, current, parent_kind='sequence'):
     result = []
     follow = []
@@ -101,7 +126,11 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         # FIXME: the min(list) is funky because jump_offsets is a set
         elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
             kind = 'continue'
+        elif (parent_kind == 'loop' and loop_back(block) and
+              predecessor_pop_block(cfg, block)):
+            kind = 'while'
         else:
+
             # FIXME: add "try" and so on
             kind = 'if'
 
@@ -116,6 +145,9 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             if follow:
                 children.append(follow)
             result.append(LoopControlStructure(block, children))
+        elif kind == 'while':
+            result.append(WhileControlStructure(block, children))
+            pass
         elif kind == 'if':
             result.append(IfControlStructure(block, children))
             pass
@@ -143,7 +175,11 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 if len(jump_block.predecessors) == 1:
                     if BB_STARTS_POP_BLOCK in jump_block.flags:
                         # this is outside of the "if"
-                        assert jump_block.index[0] == jump_block.index[1]
+                        try:
+                            assert jump_block.index[0] == jump_block.index[1]
+                        except:
+                            from trepan.api import debug; debug()
+
                         result.append(PopBlockStructure(jump_block))
                     else:
                         # Although putting jump_block as the "else" clause

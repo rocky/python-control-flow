@@ -65,7 +65,7 @@ def while_if_continue(a):
 def while_true_if_else(a):
     while True:
         if a:
-            return 5
+            a -= 1
         else:
             return 6
 
