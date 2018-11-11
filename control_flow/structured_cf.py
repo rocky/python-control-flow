@@ -7,7 +7,6 @@ This code is ugly.
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
                                 BB_LOOP, BB_NOFOLLOW,
-                                BB_POP_BLOCK,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
 
@@ -130,7 +129,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif parent_kind == 'else':
             kind = 'sequence'
         elif (parent_kind == 'sequence' and
-              (BB_POP_BLOCK in block.flags or
+              (BB_STARTS_POP_BLOCK in block.flags or
                BB_SINGLE_POP_BLOCK in block.flags)):
             kind = 'pop block'
         # FIXME: the min(list) is funky because jump_offsets is a set
@@ -167,6 +166,9 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif kind == 'while':
             result.append(WhileControlStructure(block, children))
             pass
+        elif kind == 'while else':
+            # else block is fixed up below.
+            result.append(WhileElseControlStructure(block, children, []))
         elif kind == 'if':
             result.append(IfControlStructure(block, children))
             pass
@@ -239,7 +241,10 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                     # This is not quite right
                     jump_kind = 'sequence'
                     jump_children, follow = control_structure_iter(cfg, jump_block, jump_kind)
-                    if len(jump_children) == 1:
+
+                    if kind == 'while else':
+                        result[0].children[-1] = jump_children
+                    elif len(jump_children) == 1:
                         result.append(jump_children[0])
                     elif len(jump_children) == 0:
                         pass
