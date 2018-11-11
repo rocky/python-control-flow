@@ -76,7 +76,7 @@ def while_else(a):
         a = 5
     return a
 
-def baz(a):
+def while_if(a):
     b = 0
     while a > 0:
         if a % 2:
@@ -124,7 +124,7 @@ def try_no_finally():
 doit(while_if_continue)
 # doit(while_true_if_else)
 # doit(while_else)
-# doit(baz)
+# doit(while_if)
 # doit(for_break)
 # doit(try_finally)
 # doit(try_no_finally)

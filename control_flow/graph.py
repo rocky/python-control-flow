@@ -7,30 +7,60 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
+# First or Basic block that we entered on. Usually
+# at offset 0.
 # Does this need to be a set?
 BB_ENTRY = 0
-BB_NOFOLLOW = 1
-BB_LOOP = 2
-BB_BREAK = 3
-BB_BLOCK = 4
-BB_STARTS_POP_BLOCK = 5
-BB_EXCEPT = 6
-BB_JUMP_UNCONDITIONAL = 7
-BB_FOR = 8
-BB_FINALLY = 9
 
+# Block is at the end and doesn't have a following instruction.
+BB_NOFOLLOW = 1
+
+# a SETUP_LOOP instruction marking the beginning of a loop.
+# the jump offset can indicate the range of the loop
+BB_LOOP = 2
+
+# A BREAK instruction breaking out of a loop
+BB_BREAK = 3
+
+# POP_BLOCKs detect presense of scope-defining
+# blocks, and can be used to tell the diffrence between
+# 'if's and 'whiles'
+BB_POP_BLOCK = 4
+
+# Does the basic block contain a single POP_BLOCK instruction?
+# If so, it can signle the difference between "while else"
+# and "while" (with no "else"). The latter has the single
+# POP_BLOCK instruction.
+BB_SINGLE_POP_BLOCK = 5
+
+# Basic blocks that start out POP_BLOCK but have further
+# instructions are generally in "else" clauses, like "while else"
+BB_STARTS_POP_BLOCK = 6
+
+BB_EXCEPT = 7
+
+# Relative or absolute JUMP instructions. Occurs in "break", "continue",
+# ends of loops, and in "if", "elif" constructs
+BB_JUMP_UNCONDITIONAL = 8
+
+# A FOR instruction which is an indicator of a "for" loop
+BB_FOR = 9
+
+# A "FINALLY" instruction which is an indicator of a "finally'
+BB_FINALLY = 10
 
 FLAG2NAME = {
-  BB_ENTRY: 'entry',
-  BB_NOFOLLOW: 'no fallthrough',
-  BB_LOOP: 'loop',
-  BB_BREAK: 'break',
-  BB_BLOCK:'block',
-  BB_STARTS_POP_BLOCK: 'starts with pop block',
-  BB_EXCEPT: 'except',
+  BB_ENTRY:              'entry',
+  BB_NOFOLLOW:           'no fallthrough',
+  BB_LOOP:               'loop',
+  BB_BREAK:              'break',
+  BB_POP_BLOCK:          'block',
+  BB_SINGLE_POP_BLOCK:   'single pop block',
+  BB_STARTS_POP_BLOCK:   'starts with pop block',
+  BB_EXCEPT:             'except',
   BB_JUMP_UNCONDITIONAL: 'unconditional',
-  BB_FOR: 'for',
-  BB_FINALLY: 'finally',
+  BB_FOR:                'for',
+  BB_FINALLY:            'finally',
 }
 
 

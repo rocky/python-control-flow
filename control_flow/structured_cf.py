@@ -6,7 +6,10 @@ This code is ugly.
 """
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
-                                BB_LOOP, BB_NOFOLLOW, BB_STARTS_POP_BLOCK)
+                                BB_LOOP, BB_NOFOLLOW,
+                                BB_POP_BLOCK,
+                                BB_SINGLE_POP_BLOCK,
+                                BB_STARTS_POP_BLOCK)
 
 seen_blocks = set()
 
@@ -31,6 +34,10 @@ class LoopControlStructure(ControlStructure):
 class WhileControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(WhileControlStructure, self).__init__(block, 'while', children)
+
+class WhileElseControlStructure(ControlStructure):
+  def __init__(self, block, children, else_children):
+      super(WhileElseControlStructure, self).__init__(block, 'while else', [children, else_children])
 
 class SequenceControlStructure(ControlStructure):
   def __init__(self, block, children):
@@ -87,19 +94,20 @@ def loop_back(block):
     if len(predecessors) > 1:
         for p in predecessors:
             if p.index[0] > start_offset:
-                return True
+                return p
             pass
         pass
-    return False
+    return None
 
 def predecessor_pop_block(cfg, block):
     for jump_offset in block.jump_offsets:
         jump_number = cfg.offset2block[jump_offset].bb.number
         jump_block = cfg.blocks[jump_number]
-        if BB_STARTS_POP_BLOCK in jump_block.flags:
-            return True
+        if (BB_STARTS_POP_BLOCK in jump_block.flags or
+            BB_SINGLE_POP_BLOCK in jump_block.flags):
+            return jump_block
         pass
-    return False
+    return None
 
 
 def control_structure_iter(cfg, current, parent_kind='sequence'):
@@ -114,6 +122,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         follow_number = cfg.offset2block[block.follow_offset].bb.number
         follow_block = cfg.blocks[follow_number]
         is_loop = BB_LOOP in current.flags
+        ppb = predecessor_pop_block(cfg, block)
         if is_loop:
             kind = 'loop'
         elif parent_kind == 'if':
@@ -121,14 +130,20 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif parent_kind == 'else':
             kind = 'sequence'
         elif (parent_kind == 'sequence' and
-              BB_STARTS_POP_BLOCK in block.flags):
-            kind = 'sequence'
+              (BB_POP_BLOCK in block.flags or
+               BB_SINGLE_POP_BLOCK in block.flags)):
+            kind = 'pop block'
         # FIXME: the min(list) is funky because jump_offsets is a set
         elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
             kind = 'continue'
-        elif (parent_kind == 'loop' and loop_back(block) and
-              predecessor_pop_block(cfg, block)):
-            kind = 'while'
+        elif (parent_kind == 'loop' and loop_back(block) and ppb):
+            if BB_SINGLE_POP_BLOCK in ppb.flags:
+                kind = 'while'
+            else:
+                assert BB_STARTS_POP_BLOCK in ppb.flags
+                kind = 'while else'
+                pass
+            pass
         else:
 
             # FIXME: add "try" and so on
@@ -139,12 +154,16 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             children = []
         else:
             children, follow  = control_structure_iter(cfg, follow_block, kind)
+            pass
 
+        # Now that classification has been done, create the specific
+        # control structure.
         if kind == 'loop':
             assert block.edge_count == 2
+            result.append(LoopControlStructure(block, children))
             if follow:
                 children.append(follow)
-            result.append(LoopControlStructure(block, children))
+                pass
         elif kind == 'while':
             result.append(WhileControlStructure(block, children))
             pass
@@ -155,6 +174,8 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             result.append(ThenControlStructure(block, children))
         elif kind == 'continue':
             result.append(ContinueControlStructure(block))
+        elif kind == 'pop block':
+            result.append(PopBlockStructure(block))
         elif kind == 'sequence':
             pass
         pass
@@ -173,7 +194,8 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                     follow = []
                 # Is this else  or not?
                 if len(jump_block.predecessors) == 1:
-                    if BB_STARTS_POP_BLOCK in jump_block.flags:
+                    if (BB_STARTS_POP_BLOCK in jump_block.flags or
+                        BB_SINGLE_POP_BLOCK in jump_block.flags):
                         # this is outside of the "if"
                         try:
                             assert jump_block.index[0] == jump_block.index[1]
@@ -216,13 +238,13 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
                     jump_kind = 'sequence'
-                    children, follow = control_structure_iter(cfg, jump_block, jump_kind)
-                    if len(children) == 1:
-                        result.append(children[0])
-                    elif len(children) == 0:
+                    jump_children, follow = control_structure_iter(cfg, jump_block, jump_kind)
+                    if len(jump_children) == 1:
+                        result.append(jump_children[0])
+                    elif len(jump_children) == 0:
                         pass
                     else:
-                        result.append(SequenceControlStructure(jump_block, children))
+                        result.append(SequenceControlStructure(jump_block, jump_children))
                         pass
                 else:
                     jump_kind = 'sequence'

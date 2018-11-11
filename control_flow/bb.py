@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
-from control_flow.graph import (BB_BLOCK, BB_EXCEPT, BB_ENTRY, BB_STARTS_POP_BLOCK,
+from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
+                                BB_EXCEPT, BB_ENTRY,
                                 BB_FINALLY, BB_FOR, BB_BREAK,
                                 BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
@@ -15,7 +16,7 @@ PYTHON_VERSIONS = (# 1.5,
 end_bb = 0
 
 class BasicBlock(object):
-  """Extended basic block from the bytecode.
+  """Basic block from the bytecode.
 
      It's a bit more than just the a continuous range of the bytecode offsets.
 
@@ -109,19 +110,19 @@ class BBMgr(object):
           # many of the below contain just one instruction). This can
           # isolate us from instruction changes in Python.
           # The classifications are used in setting basic block flag bits
-          self.BLOCK_INSTRUCTIONS   = set([opcode.opmap['POP_BLOCK']])
-          self.EXCEPT_INSTRUCTIONS  = set([opcode.opmap['POP_EXCEPT']])
-          self.FINALLY_INSTRUCTIONS = set([opcode.opmap['SETUP_FINALLY']])
-          self.FOR_INSTRUCTIONS     = set([opcode.opmap['FOR_ITER']])
-          self.JREL_INSTRUCTIONS    = set(opcode.hasjrel)
-          self.JABS_INSTRUCTIONS    = set(opcode.hasjabs)
-          self.JUMP_INSTRUCTIONS    = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-          self.JUMP_UNCONDITONAL    = set([opcode.opmap['JUMP_ABSOLUTE'],
-                                           opcode.opmap['JUMP_FORWARD']])
-          self.LOOP_INSTRUCTIONS    = set([opcode.opmap['SETUP_LOOP'],
-                                           opcode.opmap['YIELD_VALUE'],
-                                           opcode.opmap['RAISE_VARARGS']])
-          self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
+          self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap['POP_BLOCK']])
+          self.EXCEPT_INSTRUCTIONS    = set([opcode.opmap['POP_EXCEPT']])
+          self.FINALLY_INSTRUCTIONS   = set([opcode.opmap['SETUP_FINALLY']])
+          self.FOR_INSTRUCTIONS       = set([opcode.opmap['FOR_ITER']])
+          self.JREL_INSTRUCTIONS      = set(opcode.hasjrel)
+          self.JABS_INSTRUCTIONS      = set(opcode.hasjabs)
+          self.JUMP_INSTRUCTIONS      = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
+          self.JUMP_UNCONDITONAL      = set([opcode.opmap['JUMP_ABSOLUTE'],
+                                            opcode.opmap['JUMP_FORWARD']])
+          self.LOOP_INSTRUCTIONS      = set([opcode.opmap['SETUP_LOOP'],
+                                            opcode.opmap['YIELD_VALUE'],
+                                            opcode.opmap['RAISE_VARARGS']])
+          self.BREAK_INSTRUCTIONS     = set([opcode.opmap['BREAK_LOOP']])
           self.NOFOLLOW_INSTRUCTIONS  = opcode.NOFOLLOW
 
       else:
@@ -135,19 +136,19 @@ class BBMgr(object):
           # many of the below contain just one instruction). This can
           # isolate us from instruction changes in Python.
           # The classifications are used in setting basic block flag bits
-          self.BLOCK_INSTRUCTIONS   = set([opcode.opmap['POP_BLOCK']])
-          self.EXCEPT_INSTRUCTIONS  = set([])
-          self.FINALLY_INSTRUCTIONS = set([opcode.opmap['SETUP_FINALLY']])
-          self.FOR_INSTRUCTIONS     = set([opcode.opmap['FOR_ITER']])
-          self.JREL_INSTRUCTIONS    = set(opcode.hasjrel)
-          self.JABS_INSTRUCTIONS    = set(opcode.hasjabs)
-          self.JUMP_INSTRUCTIONS    = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-          self.JUMP_UNCONDITONAL    = set([opcode.opmap['JUMP_ABSOLUTE'],
-                                           opcode.opmap['JUMP_FORWARD']])
-          self.LOOP_INSTRUCTIONS    = set([opcode.opmap['SETUP_LOOP'],
-                                           opcode.opmap['YIELD_VALUE'],
+          self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap['POP_BLOCK']])
+          self.EXCEPT_INSTRUCTIONS    = set([])
+          self.FINALLY_INSTRUCTIONS   = set([opcode.opmap['SETUP_FINALLY']])
+          self.FOR_INSTRUCTIONS       = set([opcode.opmap['FOR_ITER']])
+          self.JREL_INSTRUCTIONS      = set(opcode.hasjrel)
+          self.JABS_INSTRUCTIONS      = set(opcode.hasjabs)
+          self.JUMP_INSTRUCTIONS      = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
+          self.JUMP_UNCONDITONAL      = set([opcode.opmap['JUMP_ABSOLUTE'],
+                                            opcode.opmap['JUMP_FORWARD']])
+          self.LOOP_INSTRUCTIONS      = set([opcode.opmap['SETUP_LOOP'],
+                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
-          self.BREAK_INSTRUCTIONS  = set([opcode.opmap['BREAK_LOOP']])
+          self.BREAK_INSTRUCTIONS    = set([opcode.opmap['BREAK_LOOP']])
           self.NOFOLLOW_INSTRUCTIONS  = set([opcode.opmap['RETURN_VALUE'],
                                            opcode.opmap['YIELD_VALUE'],
                                            opcode.opmap['RAISE_VARARGS']])
@@ -156,6 +157,11 @@ class BBMgr(object):
 
   def add_bb(self, start_offset, end_offset, follow_offset, flags,
              jump_offsets):
+
+      if BB_STARTS_POP_BLOCK in flags and start_offset == end_offset:
+          flags.remove(BB_STARTS_POP_BLOCK)
+          flags.add(BB_SINGLE_POP_BLOCK)
+
       self.bb_list.append(BasicBlock(start_offset, end_offset,
                                      follow_offset,
                                      flags = flags,
@@ -228,10 +234,11 @@ def basic_blocks(version, is_pypy, fn):
                 start_offset = end_offset
 
         # Add block flags for certain classes of instructions
-        if op in BB.BLOCK_INSTRUCTIONS:
-            flags.add(BB_BLOCK)
+        if op in BB.POP_BLOCK_INSTRUCTIONS:
+            flags.add(BB_POP_BLOCK)
             if start_offset == offset:
                 flags.add(BB_STARTS_POP_BLOCK)
+                flags.remove(BB_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
             flags.add(BB_EXCEPT)
         elif op in BB.FINALLY_INSTRUCTIONS:
