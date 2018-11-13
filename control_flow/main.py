@@ -10,10 +10,8 @@ import dis
 import os
 import sys
 
-def doit(fn):
-    name = fn.__name__
+def doit(fn, name):
     print(name)
-
 
     bb_list = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)
     for bb in bb_list:

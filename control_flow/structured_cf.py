@@ -34,6 +34,10 @@ class WhileControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(WhileControlStructure, self).__init__(block, 'while', children)
 
+class ForControlStructure(ControlStructure):
+  def __init__(self, block, children):
+      super(ForControlStructure, self).__init__(block, 'for', children)
+
 class WhileElseControlStructure(ControlStructure):
   def __init__(self, block, children, else_children):
       super(WhileElseControlStructure, self).__init__(block, 'while else', [children, else_children])
@@ -57,6 +61,10 @@ class ElseControlStructure(ControlStructure):
 class PopBlockStructure(ControlStructure):
   def __init__(self, block):
       super(PopBlockStructure, self).__init__(block, 'pop block', [])
+
+class PopBlockSequenceStructure(ControlStructure):
+  def __init__(self, block, children):
+      super(PopBlockSequenceStructure, self).__init__(block, 'pop block sequence', children)
 
 class NoFollowControlStructure(ControlStructure):
   def __init__(self, block):
@@ -129,9 +137,14 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif parent_kind == 'else':
             kind = 'sequence'
         elif (parent_kind == 'sequence' and
-              (BB_STARTS_POP_BLOCK in block.flags or
-               BB_SINGLE_POP_BLOCK in block.flags)):
+              BB_STARTS_POP_BLOCK in block.flags):
             kind = 'pop block'
+        elif (parent_kind == 'sequence' and
+              BB_SINGLE_POP_BLOCK in block.flags):
+            kind = 'pop block sequence'
+        elif (parent_kind == 'loop' and
+              BB_FOR in block.flags):
+            kind = 'for'
         # FIXME: the min(list) is funky because jump_offsets is a set
         elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
             kind = 'continue'
@@ -166,6 +179,9 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif kind == 'while':
             result.append(WhileControlStructure(block, children))
             pass
+        elif kind == 'for':
+            result.append(ForControlStructure(block, children))
+            pass
         elif kind == 'while else':
             # else block is fixed up below.
             result.append(WhileElseControlStructure(block, children, []))
@@ -178,6 +194,8 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             result.append(ContinueControlStructure(block))
         elif kind == 'pop block':
             result.append(PopBlockStructure(block))
+        elif kind == 'pop block sequence':
+            result.append(PopBlockSequenceStructure(block, children))
         elif kind == 'sequence':
             pass
         pass
@@ -270,7 +288,7 @@ def print_cs_tree(cs_list, indent=''):
     for cs in cs_list:
         print("%s%s %s" % (indent, cs.kind, cs.block))
         for child in cs.children:
-            if cs.kind != 'sequence':
+            if cs.kind not in ('sequence', 'pop block sequence'):
                 print_cs_tree(child, indent + '  ')
             else:
                 print_cs_tree(child, indent)
