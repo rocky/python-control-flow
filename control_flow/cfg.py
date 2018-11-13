@@ -79,9 +79,7 @@ class ControlFlowGraph(object):
 
       block = sorted_blocks[i]
       if block.follow_offset:
-          if jump_flags & block.flags:
-            kind = 'jump'
-          elif BB_NOFOLLOW in block.flags:
+          if BB_NOFOLLOW in block.flags:
             kind = 'no fallthrough'
           else:
             kind = 'fallthrough'

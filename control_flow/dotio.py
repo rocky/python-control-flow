@@ -69,6 +69,9 @@ class DotConverter(object):
     if style == '' and edge.source.bb.unreachable:
       style = '[style="dashed"] [arrowhead="empty"]'
 
+    if edge.dest.bb.unreachable:
+      style = '[style="dashed"] [arrowhead="empty"]'
+
     nid1 = self.node_ids[edge.source]
     nid2 = self.node_ids[edge.dest]
 
