@@ -63,8 +63,8 @@ class PopBlockStructure(ControlStructure):
       super(PopBlockStructure, self).__init__(block, 'pop block', [])
 
 class PopBlockSequenceStructure(ControlStructure):
-  def __init__(self, block, children):
-      super(PopBlockSequenceStructure, self).__init__(block, 'pop block sequence', children)
+  def __init__(self, block, children, kind):
+      super(PopBlockSequenceStructure, self).__init__(block, kind, children)
 
 class NoFollowControlStructure(ControlStructure):
   def __init__(self, block):
@@ -136,12 +136,12 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             kind = 'then'
         elif parent_kind == 'else':
             kind = 'sequence'
-        elif (parent_kind == 'sequence' and
+        elif (parent_kind in ('sequence', 'while else') and
               BB_STARTS_POP_BLOCK in block.flags):
-            kind = 'pop block'
-        elif (parent_kind == 'sequence' and
+            kind = 'sequence pop block %s' % parent_kind
+        elif (parent_kind in ('sequence', 'while', 'for') and
               BB_SINGLE_POP_BLOCK in block.flags):
-            kind = 'pop block sequence'
+            kind = 'pop block'
         elif (parent_kind == 'loop' and
               BB_FOR in block.flags):
             kind = 'for'
@@ -194,8 +194,8 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             result.append(ContinueControlStructure(block))
         elif kind == 'pop block':
             result.append(PopBlockStructure(block))
-        elif kind == 'pop block sequence':
-            result.append(PopBlockSequenceStructure(block, children))
+        elif kind.startswith('sequence pop'):
+            result.append(PopBlockSequenceStructure(block, children, kind))
         elif kind == 'sequence':
             pass
         pass
@@ -257,8 +257,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             else:
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
-                    jump_kind = 'sequence'
-                    jump_children, follow = control_structure_iter(cfg, jump_block, jump_kind)
+                    jump_children, follow = control_structure_iter(cfg, jump_block, kind)
 
                     if kind == 'while else':
                         result[0].children[-1] = jump_children
@@ -288,7 +287,7 @@ def print_cs_tree(cs_list, indent=''):
     for cs in cs_list:
         print("%s%s %s" % (indent, cs.kind, cs.block))
         for child in cs.children:
-            if cs.kind not in ('sequence', 'pop block sequence'):
+            if not cs.kind.startswith('sequence'):
                 print_cs_tree(child, indent + '  ')
             else:
                 print_cs_tree(child, indent)

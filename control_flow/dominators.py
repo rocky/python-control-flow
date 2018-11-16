@@ -54,15 +54,24 @@ class DominatorTree(object):
             po_finger2 = post_order_number[finger2]
 
             while po_finger1 != po_finger2:
+                no_solution = False
                 while po_finger1 < po_finger2:
-                    finger1 = doms[finger1]
+                    finger1 = doms.get(finger1, None)
+                    if finger1 is None:
+                        no_solution = True
+                        break
                     po_finger1 = post_order_number[finger1]
                     pass
                 while po_finger2 < po_finger1:
-                    finger2 = doms[finger2]
+                    finger2 = doms.get(finger2, None)
                     po_finger2 = post_order_number[finger2]
+                    if finger2 is None:
+                        no_solution = True
+                        break
                     pass
-                pass
+                if no_solution:
+                    break
+
             return finger1
 
         changed = True
@@ -71,6 +80,7 @@ class DominatorTree(object):
             for b in reversed(post_order):
 
                 seen.add(b)
+
                 # Skip start node which doesn't have a predecessor
                 # and was initialized above.
                 if b == entry:
@@ -79,21 +89,17 @@ class DominatorTree(object):
                 new_idom = None
                 # Find a processed predecessor
                 predecessors = [p for p in b.predecessors
-                                if post_order_number.get(p, -1) > post_order_number[b]]
-                for i, p in enumerate(predecessors):
-                    if p in seen:
-                        new_idom = p
-                        remaining_preds = predecessors[0:i]
-                        remaining_preds += predecessors[i+1:]
-                        break
-
-                for p in remaining_preds:
-                    if p not in seen:
+                                if post_order_number[p] > post_order_number[b]]
+                new_idom = next(iter(predecessors))
+                for p in predecessors:
+                    if p == new_idom:
+                        continue
+                    if p not in doms:
                         new_idom = intersec(p, new_idom)
                         pass
                     pass
 
-                if doms[b] != new_idom:
+                if b not in doms or doms[b] != new_idom:
                     doms[b] = new_idom
                     changed = True
                     pass
