@@ -73,6 +73,7 @@ class BasicBlock(object):
     if (follow_offset is not None and not
         BB_NOFOLLOW in self.flags):
       self.edge_count += 1
+
     end_bb += 1
 
 
@@ -94,6 +95,8 @@ class BasicBlock(object):
 class BBMgr(object):
 
   def __init__(self, version, is_pypy):
+    global end_bb
+    end_bb = 0
     self.bb_list = []
     # Pick up appropriate version
     if version in PYTHON_VERSIONS:

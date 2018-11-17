@@ -119,7 +119,11 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
     follow = []
     print("control_structure_iter: ", current)
     cfg.seen_blocks.add(current)
-    block = cfg.blocks[current.number]
+    try:
+        block = cfg.blocks[current.number]
+    except:
+        from trepan.api import debug; debug()
+        x = 1
 
     # Traverse follow block
     if block.follow_offset is not None:

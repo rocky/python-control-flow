@@ -38,5 +38,5 @@ for filename in files:
     pass
 
 
-print("%d tests %d failed" % (total, count))
-assert count == 0
+print("%d tests, %d passed." % (total, count))
+assert count == total

@@ -7,10 +7,9 @@ def testing(a):
         return 6
 def expect():
     return """
-if BasicBlock(#0 range: (0, 2), flags=[0], follow_offset=4, edge_count=2, jumps=[12])
-  then BasicBlock(#1 range: (4, 10), follow_offset=12, edge_count=1)
+if BasicBlock(#0 range: (0, 2), flags=[0], follow_offset=4, edge_count=2, jumps=[8])
+  then BasicBlock(#1 range: (4, 6), flags=[1], follow_offset=8, edge_count=0)
   end then
-  sequence BasicBlock(#2 range: (12, 14), flags=[1], follow_offset=None, edge_count=0)
-  end sequence
 end if
+no follow BasicBlock(#2 range: (8, 10), flags=[1], follow_offset=12, edge_count=0)
 """
