@@ -2,7 +2,7 @@
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
-                                BB_EXCEPT, BB_ENTRY,
+                                BB_EXCEPT, BB_ENTRY, BB_TRY,
                                 BB_FINALLY, BB_FOR, BB_BREAK,
                                 BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
@@ -115,6 +115,7 @@ class BBMgr(object):
           # The classifications are used in setting basic block flag bits
           self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap['POP_BLOCK']])
           self.EXCEPT_INSTRUCTIONS    = set([opcode.opmap['POP_EXCEPT']])
+          self.TRY_INSTRUCTIONS       = set([opcode.opmap['SETUP_EXCEPT']])
           self.FINALLY_INSTRUCTIONS   = set([opcode.opmap['SETUP_FINALLY']])
           self.FOR_INSTRUCTIONS       = set([opcode.opmap['FOR_ITER']])
           self.JREL_INSTRUCTIONS      = set(opcode.hasjrel)
@@ -244,17 +245,14 @@ def basic_blocks(version, is_pypy, fn):
                 flags.remove(BB_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
             flags.add(BB_EXCEPT)
+        elif op in BB.TRY_INSTRUCTIONS:
+            flags.add(BB_TRY)
         elif op in BB.FINALLY_INSTRUCTIONS:
             flags.add(BB_FINALLY)
         elif op in BB.FOR_INSTRUCTIONS:
             flags.add(BB_FOR)
         elif op in BB.JUMP_INSTRUCTIONS:
             # Some sort of jump instruction.
-            # While in theory an absolute jump could be part of the
-            # same (extened) basic block, for our purposes we would like to
-            # call them two basic blocks as that probably mirrors
-            # the code more simply.
-
             # Figure out where we jump to amd add it to this
             # basic block's jump offsets.
             if op in BB.JABS_INSTRUCTIONS:

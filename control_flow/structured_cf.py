@@ -1,22 +1,23 @@
 """
-From Basic Block control flow graph, create a
-structured control flow graph.
+From a control flow graph where the nodes are annotated basic blocks,
+create a structured control flow graph.
 
 This code is ugly.
+
 """
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
-                                BB_LOOP, BB_NOFOLLOW,
+                                BB_LOOP, BB_NOFOLLOW, BB_TRY,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
 
 class ControlStructure(object):
-  """Represents a basic block (or rather extended basic block) from the
-    bytecode. It's a bit more than just the a continuous range of the
-    bytecode offsets. It also contains * jump-targets offsets, * flags
-    that classify flow information in the block * graph node
-    predecessor and successor sets, filled in a later phase * some
-    layout information for dot graphing
+  """Represents a basic block from the bytecode. It's a bit more than
+    just the a continuous range of the bytecode offsets. It also
+    contains * jump-targets offsets, * flags that classify flow
+    information in the block * graph node predecessor and successor
+    sets, filled in a later phase * some layout information for dot
+    graphing
 
   """
   def __init__(self, block, kind, children):
@@ -72,6 +73,13 @@ class IfElseControlStructure(ControlStructure):
   def __init__(self, block, then_children, else_children):
       super(IfElseControlStructure, self).__init__(block, 'ifelse',
                                                    [then_children, else_children])
+class TryControlStructure(ControlStructure):
+  def __init__(self, block, try_block):
+      super(TryControlStructure, self).__init__(block, 'try', try_block)
+
+class ExceptControlStructure(ControlStructure):
+  def __init__(self, block, except_children):
+      super(ExceptControlStructure, self).__init__(block, 'except', except_children)
 
 class ContinueControlStructure(ControlStructure):
   def __init__(self, block):
@@ -119,11 +127,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
     follow = []
     print("control_structure_iter: ", current)
     cfg.seen_blocks.add(current)
-    try:
-        block = cfg.blocks[current.number]
-    except:
-        from trepan.api import debug; debug()
-        x = 1
+    block = cfg.blocks[current.number]
 
     # Traverse follow block
     if block.follow_offset is not None:
@@ -133,6 +137,10 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         ppb = predecessor_pop_block(cfg, block)
         if is_loop:
             kind = 'loop'
+        elif BB_TRY in current.flags:
+            kind = 'try'
+        elif BB_EXCEPT in current.flags:
+            kind = 'except'
         elif parent_kind == 'if':
             kind = 'then'
         elif parent_kind == 'else':
@@ -158,8 +166,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 pass
             pass
         else:
-
-            # FIXME: add "try" and so on
+            # FIXME: add others?
             kind = 'if'
 
         dominator_blocks = {n.bb for n in block.dom_set}
@@ -182,6 +189,12 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             pass
         elif kind == 'for':
             result.append(ForControlStructure(block, children))
+            pass
+        elif kind == 'try':
+            result.append(TryControlStructure(block, children))
+            pass
+        elif kind == 'except':
+            result.append(ExceptControlStructure(block, children))
             pass
         elif kind == 'while else':
             # else block is fixed up below.
@@ -252,9 +265,9 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                     children, follow  = control_structure_iter(cfg, jump_block, jump_kind)
                     result[0].children.append(
                         SequenceControlStructure(jump_block, children))
-            elif kind == 'continue':
-                # Do nothing
+            elif kind in ('continue', 'try'):
                 pass
+                # Do nothing
             else:
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
@@ -281,7 +294,6 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
 
 def cs_tree_to_str(cs_list, indent=''):
 
-
     result = ''
     # FIXME: regularlize to list in generation?
     if not isinstance(cs_list, list):
@@ -294,9 +306,12 @@ def cs_tree_to_str(cs_list, indent=''):
                 result += cs_tree_to_str(child, indent + '  ')
             else:
                 result += cs_tree_to_str(child, indent)
+                pass
             pass
         if cs.kind not in ('continue', 'pop block', 'no follow'):
-          result += "%send %s\n" % (indent, cs.kind)
+            result += "%send %s\n" % (indent, cs.kind)
+            pass
+        pass
     return result
 
 def print_structured_flow(fn, cfg, current):
@@ -328,6 +343,8 @@ def print_structured_flow(fn, cfg, current):
             for flag in bb_start.flags:
                 if flag == BB_LOOP:
                     print("LOOP")
+                elif flag == BB_TRY:
+                    print("TRY")
                 elif flag == BB_FOR:
                     print("FOR")
                 elif flag == BB_FINALLY:

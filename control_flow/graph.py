@@ -49,6 +49,10 @@ BB_FOR = 9
 # A "FINALLY" instruction which is an indicator of a "finally'
 BB_FINALLY = 10
 
+# A SETUP_EXCEPT is an indicator of "try"
+BB_TRY = 11
+
+
 FLAG2NAME = {
   BB_ENTRY:              'entry',
   BB_NOFOLLOW:           'no fallthrough',
@@ -61,6 +65,7 @@ FLAG2NAME = {
   BB_JUMP_UNCONDITIONAL: 'unconditional',
   BB_FOR:                'for',
   BB_FINALLY:            'finally',
+  BB_TRY:                'try',
 }
 
 
