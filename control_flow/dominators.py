@@ -36,15 +36,12 @@ class DominatorTree(object):
 
           Also used to build the post-dominator tree.
         """
-        seen = set()
         doms = self.doms
         doms[entry] = entry
-        seen.add(entry)
         post_order = dfs_postorder_nodes(graph, entry)
 
         post_order_number = {}
         for i, n in enumerate(post_order):
-            doms[n] = n
             post_order_number[n] = i
 
         def intersec(b1, b2):
@@ -79,8 +76,6 @@ class DominatorTree(object):
             changed = False
             for b in reversed(post_order):
 
-                seen.add(b)
-
                 # Skip start node which doesn't have a predecessor
                 # and was initialized above.
                 if b == entry:
@@ -89,12 +84,13 @@ class DominatorTree(object):
                 new_idom = None
                 # Find a processed predecessor
                 predecessors = [p for p in b.predecessors
-                                if post_order_number[p] > post_order_number[b]]
+                                if post_order_number.get(p, -1) > post_order_number[b]]
+
                 new_idom = next(iter(predecessors))
                 for p in predecessors:
                     if p == new_idom:
                         continue
-                    if p not in doms:
+                    if p in doms:
                         new_idom = intersec(p, new_idom)
                         pass
                     pass
