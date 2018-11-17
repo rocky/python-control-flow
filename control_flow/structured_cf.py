@@ -10,8 +10,6 @@ from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
 
-seen_blocks = set()
-
 class ControlStructure(object):
   """Represents a basic block (or rather extended basic block) from the
     bytecode. It's a bit more than just the a continuous range of the
@@ -85,8 +83,7 @@ class Elif(ControlStructure):
       super(LoopControlStructure, self).__init__(block, 'elif', [elif_children])
 
 def build_control_structure(cfg, current):
-    global seen_blocks
-    seen_blocks = set()
+    cfg.seen_blocks = set()
     cs, follow  = control_structure_iter(cfg, cfg.entry_node)
     # FIXME: assert that seen_blocks in control_stucture_short should
     # be all of blocks (except dead code)
@@ -121,7 +118,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
     result = []
     follow = []
     print("control_structure_iter: ", current)
-    seen_blocks.add(current)
+    cfg.seen_blocks.add(current)
     block = cfg.blocks[current.number]
 
     # Traverse follow block
@@ -207,7 +204,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         jump_number = cfg.offset2block[jump_offset].bb.number
         jump_block = cfg.blocks[jump_number]
         # FIXME: may have to traverse in sequence, that is by dominator number or offset address?
-        if jump_block in dominator_blocks and jump_block not in seen_blocks:
+        if jump_block in dominator_blocks and jump_block not in cfg.seen_blocks:
             if kind == 'if':
                 if follow:
                     result.append(follow)

@@ -11,6 +11,7 @@ class ControlFlowGraph(object):
   """
 
   def __init__(self, blocks):
+    self.seen_blocks = set()
     self.blocks = blocks
     self.offset2block = {}
     self.block_nodes = {}

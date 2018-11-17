@@ -6,12 +6,15 @@ from glob import glob
 
 
 
-if len(sys.argv) == 0:
-    mydir = osp.normpath(osp.dirname(__file__))
-    files = glob.glob(mydir + '/examples/*.py')
+if len(sys.argv) == 1:
+    mydir = osp.dirname(osp.abspath(__file__))
+    glob_path = mydir + '/../examples/*.py'
+    files = glob(glob_path)
 else:
     files = sys.argv[1:]
+    pass
 
+total = count = 0
 for filename in files:
 
     # FIXME: redo with import module
@@ -22,10 +25,18 @@ for filename in files:
     cs = doit(testing, short)  # NOQA
     got = cs.strip()
     want = expect().strip()  # NOQA
+    print("filename %s fails" % filename)
     if got != want:
         print(want)
         print('-' * 20)
         print(got)
         pass
-    assert want == got
+    else:
+        count += 1
+        pass
+    total += 1
     pass
+
+
+print("%d tests %d failed" % (total, count))
+assert count == 0
