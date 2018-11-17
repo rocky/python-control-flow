@@ -4,7 +4,9 @@ from xdis import PYTHON_VERSION, IS_PYPY
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, build_df, build_dom_set
-from control_flow.structured_cf import print_structured_flow, build_control_structure, print_cs_tree
+from control_flow.structured_cf import (
+    print_structured_flow, build_control_structure, cs_tree_to_str
+)
 
 import dis
 import os
@@ -36,11 +38,14 @@ def doit(fn, name):
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
         print('=' * 30)
         cs  = build_control_structure(cfg, cfg.entry_node)
-        print_cs_tree(cs)
+        cs_str = cs_tree_to_str(cs)
+        print(cs_str)
         print('=' * 30)
         print_structured_flow(fn, cfg, cfg.entry_node)
+        return cs_str
     except:
         import traceback
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
         print("%s had an error" % name)
+        return ''

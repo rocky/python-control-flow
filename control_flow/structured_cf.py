@@ -278,23 +278,25 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         pass
     return result, follow
 
-def print_cs_tree(cs_list, indent=''):
+def cs_tree_to_str(cs_list, indent=''):
 
+
+    result = ''
     # FIXME: regularlize to list in generation?
     if not isinstance(cs_list, list):
         cs_list = [cs_list]
 
     for cs in cs_list:
-        print("%s%s %s" % (indent, cs.kind, cs.block))
+        result += "%s%s %s\n" % (indent, cs.kind, cs.block)
         for child in cs.children:
             if not cs.kind.startswith('sequence'):
-                print_cs_tree(child, indent + '  ')
+                result += cs_tree_to_str(child, indent + '  ')
             else:
-                print_cs_tree(child, indent)
+                result += cs_tree_to_str(child, indent)
             pass
         if cs.kind not in ('continue', 'pop block', 'no follow'):
-          print("%send %s" % (indent, cs.kind))
-    return
+          result += "%send %s\n" % (indent, cs.kind)
+    return result
 
 def print_structured_flow(fn, cfg, current):
     """Print structure skeleton"""
