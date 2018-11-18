@@ -6,7 +6,9 @@ This code is ugly.
 
 """
 from xdis.std import get_instructions
-from control_flow.graph import (BB_EXCEPT, BB_FINALLY, BB_FOR,
+from control_flow.graph import (BB_EXCEPT,
+                                BB_FINALLY, BB_END_FINALLY,
+                                BB_FOR,
                                 BB_LOOP, BB_NOFOLLOW, BB_TRY,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
@@ -77,6 +79,14 @@ class TryControlStructure(ControlStructure):
   def __init__(self, block, try_block):
       super(TryControlStructure, self).__init__(block, 'try', try_block)
 
+class FinallyControlStructure(ControlStructure):
+  def __init__(self, block, children):
+      super(FinallyControlStructure, self).__init__(block, 'finally', children)
+
+class EndFinallyControlStructure(ControlStructure):
+  def __init__(self, block, finally_block):
+      super(EndFinallyControlStructure, self).__init__(block, 'end-finally', [finally_block])
+
 class ExceptControlStructure(ControlStructure):
   def __init__(self, block, except_children):
       super(ExceptControlStructure, self).__init__(block, 'except', except_children)
@@ -141,6 +151,10 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             kind = 'try'
         elif BB_EXCEPT in current.flags:
             kind = 'except'
+        elif BB_FINALLY in current.flags:
+            kind = 'finally'
+        elif BB_END_FINALLY in current.flags:
+            kind = 'end-finally'
         elif parent_kind == 'if':
             kind = 'then'
         elif parent_kind == 'else':
@@ -192,6 +206,13 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             pass
         elif kind == 'try':
             result.append(TryControlStructure(block, children))
+            pass
+        elif kind == 'finally':
+            result.append(FinallyControlStructure(block, children))
+            pass
+        elif kind == 'end-finally':
+            end_finally_block = SequenceControlStructure(follow_block, [])
+            result.append(EndFinallyControlStructure(block, end_finally_block))
             pass
         elif kind == 'except':
             result.append(ExceptControlStructure(block, children))
@@ -255,7 +276,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                             jump_kind = 'else'
                             else_children, follow  = control_structure_iter(cfg, jump_block, jump_kind)
                             result[0].children.append(
-                                ElseControlStructure(jump_block, else_children))
+                                ElseControlStructure(jump_block, else_cnnhildren))
                             pass
                         pass
                     pass
@@ -272,12 +293,12 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
                     jump_children, follow = control_structure_iter(cfg, jump_block, kind)
-
                     if kind == 'while else':
                         result[0].children[-1] = jump_children
                     elif len(jump_children) == 1:
                         result.append(jump_children[0])
-                    elif len(jump_children) == 0:
+                    elif len(jump_children) == 0 and kind != 'finally':
+                        # FIXME: perhaps we *never* should do this?
                         pass
                     else:
                         result.append(SequenceControlStructure(jump_block, jump_children))

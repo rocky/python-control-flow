@@ -1,6 +1,8 @@
 from operator import attrgetter
 from control_flow.dominators import DominatorTree
-from control_flow.graph import DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW, BB_TRY, BB_EXCEPT
+from control_flow.graph import (
+  DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW, BB_TRY,
+  BB_EXCEPT, BB_END_FINALLY)
 
 class ControlFlowGraph(object):
   """
@@ -54,10 +56,10 @@ class ControlFlowGraph(object):
 
     # Compute a block's immediate predecessors and successors
 
-    # In order to keep "try" blocks connected, if a block
-    # is an except block we will treat the previous block
-    # as though it falls into it. Even though it doesn't
-    # but should instead end in a jump.
+    # In order to keep "try" blocks connected, if a block is an
+    # "except" or "finally" block, we will treat the previous block as
+    # though it falls into it. Even though it doesn't but should
+    # instead end in a jump.
     prev_block = None
     for block in self.blocks:
       for jump_offset in block.jump_offsets:
@@ -73,8 +75,9 @@ class ControlFlowGraph(object):
         successor_block.predecessors.add(block)
         block.successors.add(successor_block)
         pass
-      if prev_block and BB_TRY in prev_block.flags:
-        assert BB_EXCEPT in block.flags
+      if (prev_block and
+          (BB_TRY in prev_block.flags or
+           BB_END_FINALLY in block.flags)):
         block.predecessors.add(prev_block)
         prev_block.successors.add(block)
       prev_block = block

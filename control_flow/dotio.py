@@ -6,7 +6,8 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from control_flow.graph import DiGraph, BB_ENTRY, BB_NOFOLLOW, format_flags
+from control_flow.graph import (
+  DiGraph, BB_ENTRY, BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags)
 
 DOT_STYLE = """
 rankdir=TD; ordering=out;
@@ -49,6 +50,8 @@ class DotConverter(object):
     #   bb = '' if edge.bb is None else str(edge.bb)
     #   labels = '[label="%s - %s"]' % (edge.flags, bb)
 
+    # color="black:invis:black"]
+
     style = ''
     edge_port = ''
     if edge.kind in ('fallthrough', 'follow', 'dom-edge'):
@@ -71,6 +74,10 @@ class DotConverter(object):
 
     if edge.dest.bb.unreachable:
       style = '[style="dashed"] [arrowhead="empty"]'
+
+    if (edge.kind == 'fallthrough' and
+        BB_JUMP_UNCONDITIONAL in edge.source.flags):
+      style = '[color="black:invis:black"]'
 
     nid1 = self.node_ids[edge.source]
     nid2 = self.node_ids[edge.dest]

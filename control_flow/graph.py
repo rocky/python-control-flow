@@ -52,6 +52,9 @@ BB_FINALLY = 10
 # A SETUP_EXCEPT is an indicator of "try"
 BB_TRY = 11
 
+# A "END_FINALLY" instruction which is the indicator of the *beginning*
+# of a "finally' block
+BB_END_FINALLY = 12
 
 FLAG2NAME = {
   BB_ENTRY:              'entry',
@@ -65,6 +68,7 @@ FLAG2NAME = {
   BB_JUMP_UNCONDITIONAL: 'unconditional',
   BB_FOR:                'for',
   BB_FINALLY:            'finally',
+  BB_END_FINALLY:        'end finally',
   BB_TRY:                'try',
 }
 

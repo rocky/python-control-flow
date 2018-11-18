@@ -3,7 +3,7 @@ from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
                                 BB_EXCEPT, BB_ENTRY, BB_TRY,
-                                BB_FINALLY, BB_FOR, BB_BREAK,
+                                BB_FINALLY, BB_END_FINALLY, BB_FOR, BB_BREAK,
                                 BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
 # The byte code versions we support
@@ -113,21 +113,22 @@ class BBMgr(object):
           # many of the below contain just one instruction). This can
           # isolate us from instruction changes in Python.
           # The classifications are used in setting basic block flag bits
-          self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap['POP_BLOCK']])
-          self.EXCEPT_INSTRUCTIONS    = set([opcode.opmap['POP_EXCEPT']])
-          self.TRY_INSTRUCTIONS       = set([opcode.opmap['SETUP_EXCEPT']])
-          self.FINALLY_INSTRUCTIONS   = set([opcode.opmap['SETUP_FINALLY']])
-          self.FOR_INSTRUCTIONS       = set([opcode.opmap['FOR_ITER']])
-          self.JREL_INSTRUCTIONS      = set(opcode.hasjrel)
-          self.JABS_INSTRUCTIONS      = set(opcode.hasjabs)
-          self.JUMP_INSTRUCTIONS      = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-          self.JUMP_UNCONDITONAL      = set([opcode.opmap['JUMP_ABSOLUTE'],
-                                            opcode.opmap['JUMP_FORWARD']])
-          self.LOOP_INSTRUCTIONS      = set([opcode.opmap['SETUP_LOOP'],
-                                            opcode.opmap['YIELD_VALUE'],
-                                            opcode.opmap['RAISE_VARARGS']])
-          self.BREAK_INSTRUCTIONS     = set([opcode.opmap['BREAK_LOOP']])
-          self.NOFOLLOW_INSTRUCTIONS  = opcode.NOFOLLOW
+          self.POP_BLOCK_INSTRUCTIONS   = set([opcode.opmap['POP_BLOCK']])
+          self.EXCEPT_INSTRUCTIONS      = set([opcode.opmap['POP_EXCEPT']])
+          self.TRY_INSTRUCTIONS         = set([opcode.opmap['SETUP_EXCEPT']])
+          self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap['END_FINALLY']])
+          self.FINALLY_INSTRUCTIONS     = set([opcode.opmap['SETUP_FINALLY']])
+          self.FOR_INSTRUCTIONS         = set([opcode.opmap['FOR_ITER']])
+          self.JREL_INSTRUCTIONS        = set(opcode.hasjrel)
+          self.JABS_INSTRUCTIONS        = set(opcode.hasjabs)
+          self.JUMP_INSTRUCTIONS        = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
+          self.JUMP_UNCONDITONAL        = set([opcode.opmap['JUMP_ABSOLUTE'],
+                                              opcode.opmap['JUMP_FORWARD']])
+          self.LOOP_INSTRUCTIONS        = set([opcode.opmap['SETUP_LOOP'],
+                                              opcode.opmap['YIELD_VALUE'],
+                                              opcode.opmap['RAISE_VARARGS']])
+          self.BREAK_INSTRUCTIONS       = set([opcode.opmap['BREAK_LOOP']])
+          self.NOFOLLOW_INSTRUCTIONS    = opcode.NOFOLLOW
 
       else:
         if PYTHON_VERSION in (2.6, 2.7):
@@ -247,8 +248,8 @@ def basic_blocks(version, is_pypy, fn):
             flags.add(BB_EXCEPT)
         elif op in BB.TRY_INSTRUCTIONS:
             flags.add(BB_TRY)
-        elif op in BB.FINALLY_INSTRUCTIONS:
-            flags.add(BB_FINALLY)
+        elif op in BB.END_FINALLY_INSTRUCTIONS:
+            flags.add(BB_END_FINALLY)
         elif op in BB.FOR_INSTRUCTIONS:
             flags.add(BB_FOR)
         elif op in BB.JUMP_INSTRUCTIONS:
@@ -268,6 +269,9 @@ def basic_blocks(version, is_pypy, fn):
                                                 flags, jump_offsets)
                 start_offset = follow_offset
             elif op != BB.opcode.SETUP_LOOP:
+                if op in BB.FINALLY_INSTRUCTIONS:
+                    flags.add(BB_FINALLY)
+
                 flags, jump_offsets = BB.add_bb(start_offset,
                                                end_offset, follow_offset,
                                                flags, jump_offsets)
