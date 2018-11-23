@@ -63,10 +63,13 @@ class ControlFlowGraph(object):
     prev_block = None
     for block in self.blocks:
       for jump_offset in block.jump_offsets:
-        assert jump_offset in self.block_offsets
-        successor_block = self.block_offsets[jump_offset]
-        successor_block.predecessors.add(block)
-        block.successors.add(successor_block)
+          try:
+              assert jump_offset in self.block_offsets
+          except:
+              from trepan.api import debug; debug()
+          successor_block = self.block_offsets[jump_offset]
+          successor_block.predecessors.add(block)
+          block.successors.add(successor_block)
       if ( block.follow_offset
            and (not (jump_flags & block.flags or
                      (BB_NOFOLLOW in block.flags))) ):
@@ -118,6 +121,18 @@ class ControlFlowGraph(object):
           if self.block_nodes[target_block] == self.block_nodes[block]:
             edge_type = 'self-loop'
 
+          g.make_add_edge(
+              self.block_nodes[block],
+              self.block_nodes[target_block],
+              edge_type)
+          pass
+      for jump_index in block.exception_offsets:
+          target_block = self.block_offsets[jump_index]
+          try:
+              assert jump_index >= block.start_offset
+          except:
+              from trepan.api import debug; debug()
+          edge_type = 'exception'
           g.make_add_edge(
               self.block_nodes[block],
               self.block_nodes[target_block],

@@ -55,9 +55,12 @@ class DotConverter(object):
     style = ''
     edge_port = ''
     if edge.kind in ('fallthrough', 'follow', 'dom-edge'):
-      if edge.kind == 'follow':
-        style = '[style="invis"]'
-      weight = 10
+        if edge.kind == 'follow':
+          style = '[style="invis"]'
+        weight = 10
+    elif edge.kind == 'exception':
+        style = '[color="red"]'
+        weight = 1
     else:
       if edge.kind == 'forward_scope':
         style = '[style="dotted"]'
@@ -77,7 +80,8 @@ class DotConverter(object):
 
     if (edge.kind == 'fallthrough' and
         BB_JUMP_UNCONDITIONAL in edge.source.flags):
-      style = '[color="black:invis:black"]'
+      # style = '[color="black:invis:black"]'
+       style = '[style="dotted"] [arrowhead="empty"]'
 
     nid1 = self.node_ids[edge.source]
     nid2 = self.node_ids[edge.dest]
