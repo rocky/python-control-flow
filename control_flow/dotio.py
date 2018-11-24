@@ -7,7 +7,8 @@
 """
 
 from control_flow.graph import (
-  DiGraph, BB_ENTRY, BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags)
+    DiGraph, BB_ENTRY, BB_EXIT,
+    BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags)
 
 DOT_STYLE = """
 rankdir=TD; ordering=out;
@@ -19,103 +20,134 @@ edge[fontsize=8 fontname="Verdana"];
 
 class DotConverter(object):
   def __init__(self, graph):
-    self.g = graph
-    self.buffer = ''
-    self.node_ids = {}
+      self.g = graph
+      self.buffer = ''
+      self.node_ids = {}
 
   @staticmethod
-  def process(graph):
-    converter = DotConverter(graph)
-    converter.run()
-    return converter.buffer
+  def process(graph, show_exit):
+      converter = DotConverter(graph)
+      converter.run(show_exit)
+      return converter.buffer
 
-  def run(self):
+  def run(self, show_exit):
     self.buffer += 'digraph G {'
     self.buffer += DOT_STYLE
 
     if isinstance(self.g, DiGraph):
-      for node in sorted(self.g.nodes, key=lambda n: n.number):
-        self.node_ids[node] = 'node_%d' % node.number
-        self.add_node(node)
+        for node in sorted(self.g.nodes, key=lambda n: n.number):
+            self.node_ids[node] = 'node_%d' % node.number
+            self.add_node(node, show_exit)
 
-      for edge in self.g.edges:
-        self.add_edge(edge)
+        for edge in self.g.edges:
+            self.add_edge(edge, show_exit)
 
     self.buffer += '}\n'
 
 
-  def add_edge(self, edge):
-    # labels = ''
-    # if edge.flags is not None:
-    #   bb = '' if edge.bb is None else str(edge.bb)
-    #   labels = '[label="%s - %s"]' % (edge.flags, bb)
+  def add_edge(self, edge, show_exit):
+      # labels = ''
+      # if edge.flags is not None:
+      #   bb = '' if edge.bb is None else str(edge.bb)
+      #   labels = '[label="%s - %s"]' % (edge.flags, bb)
 
-    # color="black:invis:black"]
+      # color="black:invis:black"]
 
-    style = ''
-    edge_port = ''
-    if edge.kind in ('fallthrough', 'follow', 'dom-edge'):
-        if edge.kind == 'follow':
-          style = '[style="invis"]'
-        weight = 10
-    elif edge.kind == 'exception':
-        style = '[color="red"]'
-        weight = 1
-    else:
-      if edge.kind == 'forward_scope':
-        style = '[style="dotted"]'
-      if edge.kind == 'self-loop':
-        edge_port = '[headport=ne] [tailport=se]';
-      weight = 1
+      if not show_exit and BB_EXIT in edge.dest.bb.flags:
+          return
 
-    if BB_NOFOLLOW in edge.source.flags:
-      style = '[style="dashed"] [arrowhead="none"]'
-      weight = 10
+      style = ''
+      edge_port = ''
 
-    if style == '' and edge.source.bb.unreachable:
-      style = '[style="dashed"] [arrowhead="empty"]'
+      if edge.kind in ('fallthrough', 'no fallthrough',
+                         'follow', 'exit edge', 'dom-edge'):
+            if edge.kind == 'follow':
+                style = '[style="invis"]'
+            if edge.kind != 'exit edge':
+                weight = 10
+      elif edge.kind == 'exception':
+            style = '[color="red"]'
+            weight = 1
+      else:
+            if edge.kind == 'forward_scope':
+                style = '[style="dotted"]'
+                pass
+            if edge.kind == 'self-loop':
+                edge_port = '[headport=ne] [tailport=se]';
+                pass
+            weight = 1
+            pass
 
-    if edge.dest.bb.unreachable:
-      style = '[style="dashed"] [arrowhead="empty"]'
+      if BB_EXIT in edge.dest.flags:
+            style = '[style="dotted"] [arrowhead="none"]'
+            weight = 2
+      elif BB_NOFOLLOW in edge.source.flags:
+            style = '[style="dashed"] [arrowhead="none"]'
+            weight = 10
 
-    if (edge.kind == 'fallthrough' and
-        BB_JUMP_UNCONDITIONAL in edge.source.flags):
-      # style = '[color="black:invis:black"]'
-       style = '[style="dotted"] [arrowhead="empty"]'
+      if style == '' and edge.source.bb.unreachable:
+            style = '[style="dashed"] [arrowhead="empty"]'
 
-    nid1 = self.node_ids[edge.source]
-    nid2 = self.node_ids[edge.dest]
+      if edge.dest.bb.unreachable:
+            style = '[style="dashed"] [arrowhead="empty"]'
+            pass
 
-    self.buffer += ('%s -> %s [weight=%d]%s%s;\n' %
-                    (nid1, nid2, weight, style, edge_port))
+      if (edge.kind == 'fallthrough' and
+            BB_JUMP_UNCONDITIONAL in edge.source.flags):
+            # style = '[color="black:invis:black"]'
+            style = '[style="dotted"] [arrowhead="empty"]'
+
+      nid1 = self.node_ids[edge.source]
+      nid2 = self.node_ids[edge.dest]
+
+      self.buffer += ('%s -> %s [weight=%d]%s%s;\n' %
+                        (nid1, nid2, weight, style, edge_port))
 
   @staticmethod
-  def node_repr(node):
-      if len(node.jump_offsets) > 0:
-        jump_text = "\ljumps=%s" % sorted(node.jump_offsets)
-      else:
-        jump_text = ""
-      if node.flags:
-        flag_text = "\lflags=%s" % format_flags(node.flags)
-      else:
-        flag_text = ""
+  def node_repr(node, align, is_exit):
+      jump_text = ""
+      if not is_exit and len(node.jump_offsets) > 0:
+          jump_text = "\ljumps=%s" % sorted(node.jump_offsets)
+          pass
 
+      if node.flags:
+          flag_text = "%sflags=%s" % (align, format_flags(node.flags))
+      else:
+          flag_text = ""
+          pass
+
+      if is_exit:
+          return "flags=exit"
+
+      reach_offset_text = ""
       if hasattr(node, 'reach_offset'):
         reach_offset_text = "\lreach_offset=%d" % node.reach_offset
-      else:
-        reach_offset_text = ""
 
       return ('offsets: %d..%d%s%s%s'
             % (node.start_offset, node.end_offset,
                flag_text, jump_text, reach_offset_text))
 
 
-  def add_node(self, node):
-    label = ''
-    style = ''
-    if BB_ENTRY in node.bb.flags:
-      style = '[shape = "oval"]'
-    elif not node.bb.predecessors:
-      style = '[style = "dashed"]'
-    label = '[label="Basic Block %d\l%s\l"]' % (node.number, self.node_repr(node.bb))
-    self.buffer += 'node_%d %s%s;\n' % (node.number, style, label)
+  def add_node(self, node, show_exit):
+
+      if not show_exit and BB_EXIT in node.bb.flags:
+          return
+
+      label = ''
+      style = ''
+      align = '\l'
+
+      is_exit = False
+      if BB_ENTRY in node.bb.flags:
+          style = '[shape = "oval"]'
+      elif BB_EXIT in node.bb.flags:
+          style = '[shape = "diamond"]'
+          align = '\n'
+          is_exit = True
+      elif not node.bb.predecessors:
+          style = '[style = "dashed"]'
+          pass
+      label = ('[label="Basic Block %d%s%s%s"]' %
+               (node.number, align, self.node_repr(node.bb, align, is_exit),
+                align))
+      self.buffer += 'node_%d %s%s;\n' % (node.number, style, label)

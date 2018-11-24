@@ -56,8 +56,16 @@ BB_TRY = 11
 # of a "finally' block
 BB_END_FINALLY = 12
 
+# An artifical block where all exits and returns are tied
+# to. There will be only one such block, and it used in
+# postdominsator or reverse dominiator calculation.
+BB_EXIT = 13
+
+
+
 FLAG2NAME = {
   BB_ENTRY:              'entry',
+  BB_EXIT:               'exit',
   BB_NOFOLLOW:           'no fallthrough',
   BB_LOOP:               'loop',
   BB_BREAK:              'break',
@@ -164,9 +172,9 @@ class DiGraph(object):
     def add_node(self, node):
         self.nodes.add(node)
 
-    def to_dot(self):
+    def to_dot(self, show_exit=False):
         from control_flow.dotio import DotConverter
-        return DotConverter.process(self)
+        return DotConverter.process(self, show_exit)
 
     @staticmethod
     def make_node(bb):

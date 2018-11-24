@@ -2,7 +2,7 @@
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
-                                BB_EXCEPT, BB_ENTRY, BB_TRY,
+                                BB_EXCEPT, BB_ENTRY, BB_TRY, BB_EXIT,
                                 BB_FINALLY, BB_END_FINALLY, BB_FOR, BB_BREAK,
                                 BB_JUMP_UNCONDITIONAL, BB_LOOP, BB_NOFOLLOW)
 
@@ -13,7 +13,7 @@ PYTHON_VERSIONS = (# 1.5,
                    # 3.0, 3.1, 3.2, 3.3, 3.4
                    3.5, 3.6, 3.7)
 
-end_bb = 0
+end_bb = -1
 
 class BasicBlock(object):
   """Basic block from the bytecode.
@@ -104,6 +104,8 @@ class BBMgr(object):
     global end_bb
     end_bb = 0
     self.bb_list = []
+    self.exit_block = None
+
     # Pick up appropriate version
     if version in PYTHON_VERSIONS:
       if PYTHON3:
@@ -178,6 +180,11 @@ class BBMgr(object):
                         flags = flags,
                         jump_offsets = jump_offsets)
       self.bb_list.append(block)
+
+      if BB_EXIT in flags:
+          assert self.exit_block is None, "Should have only one exit"
+          self.exit_block = block
+
       start_offset = end_offset
       flags = set([])
       jump_offsets = set([])
@@ -187,6 +194,7 @@ class BBMgr(object):
 def basic_blocks(version, is_pypy, fn):
     """Create a list of basic blocks found in a code object
     """
+
 
     BB = BBMgr(version, is_pypy)
 
@@ -324,10 +332,15 @@ def basic_blocks(version, is_pypy, fn):
 
     if len(BB.bb_list):
       BB.bb_list[-1].follow_offset = None
+      BB.start_block = BB.bb_list[0]
 
     # Add remaining instructions?
     if start_offset <= end_offset:
         BB.bb_list.append(BasicBlock(start_offset, end_offset, None,
                                      flags=flags, jump_offsets=jump_offsets))
+        pass
 
-    return BB.bb_list
+    # Add an artificial block where we can link the exits of other blocks
+    # to. This helps in computing reverse dominators.
+    BB.add_bb(end_offset+1, end_offset+1, None, set([BB_EXIT]), [])
+    return BB

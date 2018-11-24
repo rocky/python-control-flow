@@ -15,14 +15,14 @@ import sys
 def doit(fn, name):
     print(name)
 
-    bb_list = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)
-    for bb in bb_list:
+    bb_mgr = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)
+    for bb in bb_mgr.bb_list:
       print("\t", bb)
     dis.dis(fn)
-    cfg = ControlFlowGraph(bb_list)
+    cfg = ControlFlowGraph(bb_mgr)
     dot_path = '/tmp/flow-%s.dot' % name
     png_path = '/tmp/flow-%s.png' % name
-    open(dot_path, 'w').write(cfg.graph.to_dot())
+    open(dot_path, 'w').write(cfg.graph.to_dot(False))
     print("%s written" % dot_path)
 
     os.system("dot -Tpng %s > %s" % (dot_path, png_path))
