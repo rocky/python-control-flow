@@ -14,15 +14,33 @@ from control_flow.graph import (BB_EXCEPT,
                                 BB_STARTS_POP_BLOCK)
 
 class ControlStructure(object):
-  """Represents a basic block from the bytecode. It's a bit more than
-    just the a continuous range of the bytecode offsets. It also
-    contains * jump-targets offsets, * flags that classify flow
-    information in the block * graph node predecessor and successor
-    sets, filled in a later phase * some layout information for dot
-    graphing
+    """Encapsulates basic blocks in a way that is is nested and captures
 
-  """
-  def __init__(self, block, kind, children):
+    better the higher level structure better.
+
+    While in concept we are mirroring the Python control structures like
+    "if", "for", "for else", "while", "while else" it is not
+    exactly the same, but it is kind of a hybrid between what is seen
+    on the instruction level and what is seen at the Python source.
+
+    Here are some examples that show the hybridization. We distingush
+    block that start with "POP_BLOCK" and whether that block is a single
+    instruction has more instructions. Tracking whether a block that
+    starts "POP_BLOCK" is useful in detecting the end of a structures
+    that add scope, and checking whether there is one or more
+    instructions discriminates betweenn constructs with "else" clauses
+    like "while/for else".  Another example where there is a difference
+    is that the instructoin that consists of the jump back to a loop is
+    marked "continue" even though a Python "continue" instruction is
+    generaly not explicitly coded at the end of a loop
+
+
+    What we are mostly concerned with here is detecting the idea going
+    on so that in Earley parsing we can detect the right structure
+    unambiguously.
+    """
+
+    def __init__(self, block, kind, children):
       self.block = block
       self.kind = kind
       self.children = children
@@ -35,13 +53,17 @@ class WhileControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(WhileControlStructure, self).__init__(block, 'while', children)
 
+class WhileElseControlStructure(ControlStructure):
+  def __init__(self, block, children, else_children):
+      super(WhileElseControlStructure, self).__init__(block, 'while else', [children, else_children])
+
 class ForControlStructure(ControlStructure):
   def __init__(self, block, children):
       super(ForControlStructure, self).__init__(block, 'for', children)
 
-class WhileElseControlStructure(ControlStructure):
+class ForElseControlStructure(ControlStructure):
   def __init__(self, block, children, else_children):
-      super(WhileElseControlStructure, self).__init__(block, 'while else', [children, else_children])
+      super(ForElseControlStructure, self).__init__(block, 'for else', [children, else_children])
 
 class SequenceControlStructure(ControlStructure):
   def __init__(self, block, children):
@@ -122,6 +144,12 @@ def loop_back(block):
     return None
 
 def predecessor_pop_block(cfg, block):
+    """
+    Does a predecessor of "block" a block that
+    pops a block? We use this to distinguish
+    in a loop to detect "while" and "while else"
+    constructs
+    """
     for jump_offset in block.jump_offsets:
         jump_number = cfg.offset2block[jump_offset].bb.number
         jump_block = cfg.blocks[jump_number]
@@ -145,6 +173,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         follow_block = cfg.blocks[follow_number]
         is_loop = BB_LOOP in current.flags
         ppb = predecessor_pop_block(cfg, block)
+        starts_pop_block = BB_STARTS_POP_BLOCK in block.flags
         if is_loop:
             kind = 'loop'
         elif BB_TRY in current.flags:
@@ -159,15 +188,23 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             kind = 'then'
         elif parent_kind == 'else':
             kind = 'sequence'
-        elif (parent_kind in ('sequence', 'while else') and
-              BB_STARTS_POP_BLOCK in block.flags):
-            kind = 'sequence pop block %s' % parent_kind
+        elif (parent_kind in ('sequence', 'while else', 'for else') and starts_pop_block):
+            kind = 'sequence pop block "%s"' % parent_kind
         elif (parent_kind in ('sequence', 'while', 'for') and
               BB_SINGLE_POP_BLOCK in block.flags):
             kind = 'pop block'
-        elif (parent_kind == 'loop' and
-              BB_FOR in block.flags):
-            kind = 'for'
+        elif (parent_kind == 'loop' and BB_FOR in block.flags):
+            jump_offsets = list(block.jump_offsets)
+            assert len(jump_offsets) == 1
+            jump_offset = list(block.jump_offsets)[0]
+            jump_number = cfg.offset2block[jump_offset].bb.number
+            jump_block = cfg.blocks[jump_number]
+            if (BB_STARTS_POP_BLOCK in jump_block.flags):
+                kind = 'for else'
+            else:
+                kind = 'for'
+                pass
+            pass
         # FIXME: the min(list) is funky because jump_offsets is a set
         elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
             kind = 'continue'
@@ -192,6 +229,9 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
 
         # Now that classification has been done, create the specific
         # control structure.
+        # For for/while/try structures with "else" blocks we will
+        # add an emplty list and fill in the "else" block later.
+
         if kind == 'loop':
             assert block.edge_count == 2
             result.append(LoopControlStructure(block, children))
@@ -204,6 +244,10 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         elif kind == 'for':
             result.append(ForControlStructure(block, children))
             pass
+        elif kind == 'for else':
+            # else block is fixed up below.
+            result.append(ForElseControlStructure(block, children, []))
+            pass
         elif kind == 'try':
             result.append(TryControlStructure(block, children))
             pass
@@ -211,6 +255,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
             result.append(FinallyControlStructure(block, children))
             pass
         elif kind == 'end-finally':
+            # else block is fixed up below.
             end_finally_block = SequenceControlStructure(follow_block, [])
             result.append(EndFinallyControlStructure(block, end_finally_block))
             pass
@@ -236,7 +281,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         pass
 
     # Traverse jump blocks, unless:
-    #   we haven't already seen them; this happens in loop edges
+    #   we have already seen them; this happens in loop edges
     #   we do not dominate that block; here we defer to the encompassing dominator node
     for jump_offset in block.jump_offsets:
         jump_number = cfg.offset2block[jump_offset].bb.number
@@ -247,16 +292,12 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 if follow:
                     result.append(follow)
                     follow = []
-                # Is this else  or not?
+                # Is this "if else"?
                 if len(jump_block.predecessors) == 1:
                     if (BB_STARTS_POP_BLOCK in jump_block.flags or
                         BB_SINGLE_POP_BLOCK in jump_block.flags):
                         # this is outside of the "if"
-                        try:
-                            assert jump_block.index[0] == jump_block.index[1]
-                        except:
-                            from trepan.api import debug; debug()
-
+                        assert jump_block.index[0] == jump_block.index[1]
                         result.append(PopBlockStructure(jump_block))
                     else:
                         # Although putting jump_block as the "else" clause
@@ -276,7 +317,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                             jump_kind = 'else'
                             else_children, follow  = control_structure_iter(cfg, jump_block, jump_kind)
                             result[0].children.append(
-                                ElseControlStructure(jump_block, else_cnnhildren))
+                                ElseControlStructure(jump_block, else_children))
                             pass
                         pass
                     pass
@@ -293,7 +334,7 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
                     jump_children, follow = control_structure_iter(cfg, jump_block, kind)
-                    if kind == 'while else':
+                    if kind in ['while else', 'for else']:
                         result[0].children[-1] = jump_children
                     elif len(jump_children) == 1:
                         result.append(jump_children[0])
@@ -313,10 +354,12 @@ def control_structure_iter(cfg, current, parent_kind='sequence'):
         pass
     return result, follow
 
+# FIXME: instead of or in additon to printing we need a structure
+# that can be used in a revised print_structued_flow.
 def cs_tree_to_str(cs_list, indent=''):
 
     result = ''
-    # FIXME: regularlize to list in generation?
+    # FIXME: regularlize to pass in a list from the caller?
     if not isinstance(cs_list, list):
         cs_list = [cs_list]
 
@@ -335,6 +378,7 @@ def cs_tree_to_str(cs_list, indent=''):
         pass
     return result
 
+# FIXME: this will be redone to use the result of cs_tree_to_str
 def print_structured_flow(fn, cfg, current):
     """Print structure skeleton"""
     print("\n" + ('-' * 40))

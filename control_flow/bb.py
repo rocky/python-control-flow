@@ -282,13 +282,18 @@ def basic_blocks(version, is_pypy, fn):
             try_stack[-1].exception_offsets.add(start_offset)
             pass
         elif op in BB.TRY_INSTRUCTIONS:
-            end_try_offset_stack.append(follow_offset + inst.arg)
+            end_try_offset_stack.append(inst.argval)
             flags.add(BB_TRY)
         elif op in BB.END_FINALLY_INSTRUCTIONS:
             flags.add(BB_END_FINALLY)
             try_stack[-1].exception_offsets.add(start_offset)
         elif op in BB.FOR_INSTRUCTIONS:
             flags.add(BB_FOR)
+            jump_offsets.add(inst.argval)
+            block, flags, jump_offsets = BB.add_bb(start_offset,
+                                                   end_offset, follow_offset,
+                                                   flags, jump_offsets)
+            start_offset = follow_offset
         elif op in BB.JUMP_INSTRUCTIONS:
             # Some sort of jump instruction.
             # Figure out where we jump to amd add it to this
@@ -296,7 +301,7 @@ def basic_blocks(version, is_pypy, fn):
             if op in BB.JABS_INSTRUCTIONS:
                 jump_offset = inst.arg
             else:
-                jump_offset = follow_offset + inst.arg
+                jump_offset = inst.argval
 
             jump_offsets.add(jump_offset)
             if op in BB.JUMP_UNCONDITONAL:
