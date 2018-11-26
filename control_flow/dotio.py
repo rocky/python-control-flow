@@ -33,18 +33,31 @@ class DotConverter(object):
       converter.run(show_exit)
       return converter.buffer
 
+  # See Stackoverflow link below for information on how imporve
+  # layout of graph. It's a mess and not very well understood.
   def run(self, show_exit):
     self.buffer += 'digraph G {'
     self.buffer += DOT_STYLE
 
     if isinstance(self.g, DiGraph):
-        self.buffer += "\n  # nodes:\n"
+        self.buffer += "\n  # basic blocks:\n"
         for node in sorted(self.g.nodes, key=lambda n: n.number):
-            self.node_ids[node] = 'node_%d' % node.number
+            self.node_ids[node] = 'block_%d' % node.number
             self.add_node(node, show_exit)
 
-        self.buffer += "\n  # edges:\n"
-        for edge in self.g.edges:
+        self.buffer += """
+  # Edges should be ordered from innermost block edges to outmost.
+  # If layout gives ugly edge crossing, change the order or the edges
+  # and/or add port directions on nodes For example:
+  #  block_1:sw -> block_4:nw or
+  #  block_0 -> block_3:ne
+  # See https://stackoverflow.com/questions/53468814/how-can-i-influence-graphviz-dot-to-prefer-which-edges-can-cross/53472852#53472852
+
+"""
+        # FIXME: We really want in reverse dominiator order but I think this is
+        # close approximation.
+        for edge in sorted(self.g.edges, reverse=True,
+                           key=lambda n: (n.source.number, -n.dest.number)):
             self.add_edge(edge, show_exit)
 
     self.buffer += '}\n'
@@ -63,6 +76,8 @@ class DotConverter(object):
 
       style = ''
       edge_port = ''
+      source_port = ''
+      dest_port = ''
 
       if edge.kind in ('fallthrough', 'no fallthrough',
                          'follow', 'exit edge', 'dom-edge'):
@@ -73,22 +88,52 @@ class DotConverter(object):
               weight = 10
       elif edge.kind == 'exception':
           style = '[color="red"]'
+          if edge.source.bb.number + 1 == edge.dest.bb.number:
+              weight = 10
+          else:
+              weight = 1
+              source_port =':se'
+              dest_port =':ne'
           # edge_port = '[headport=nw] [tailport=sw]';
           # edge_port = '[headport=_] [tailport=_]';
-          weight = 1
       else:
             if edge.kind == 'forward_scope':
                 style = '[style="dotted"]'
+                if edge.source.bb.number + 1 == edge.dest.bb.number:
+                    weight = 10
+                    source_port =':c'
+                    dest_port =':c'
+                else:
+                    weight = 1
+                    source_port =':se'
+                    dest_port =':ne'
                 pass
-            if edge.kind == 'self-loop':
+            elif edge.kind == 'self-loop':
                 edge_port = '[headport=ne] [tailport=se]';
                 pass
+            elif edge.kind == 'backward':
+                if edge.dest.bb.number + 1 == edge.source.bb.number:
+                    # For a loop to the immmediate predecessor we use
+                    # a somewhat straight centered backward arrow.
+                    source_port =':c'
+                    dest_port =':c'
+                else:
+                    source_port =':nw'
+                    dest_port =':sw'
             weight = 1
             pass
 
       if BB_EXIT in edge.dest.flags:
             style = '[style="dotted"] [arrowhead="none"]'
-            weight = 2
+            if edge.source.bb.number + 1 == edge.dest.bb.number:
+                weight = 10
+                source_port =':c'
+                dest_port =':c'
+            else:
+                weight = 1
+                source_port =':se'
+                dest_port =':ne'
+                pass
       elif BB_NOFOLLOW in edge.source.flags:
             style = '[style="dashed"] [arrowhead="none"]'
             weight = 10
@@ -109,8 +154,9 @@ class DotConverter(object):
       nid1 = self.node_ids[edge.source]
       nid2 = self.node_ids[edge.dest]
 
-      self.buffer += ('  %s -> %s [weight=%d]%s%s;\n' %
-                        (nid1, nid2, weight, style, edge_port))
+      self.buffer += ('  %s%s -> %s%s [weight=%d]%s%s;\n' %
+                        (nid1, source_port, nid2, dest_port,
+                         weight, style, edge_port))
 
   @staticmethod
   def node_repr(node, align, is_exit):
@@ -159,4 +205,4 @@ class DotConverter(object):
       label = ('[label="Basic Block %d%s%s%s"]' %
                (node.number, align, self.node_repr(node.bb, align, is_exit),
                 align))
-      self.buffer += '  node_%d %s%s;\n' % (node.number, style, label)
+      self.buffer += '  block_%d %s%s;\n' % (node.number, style, label)
