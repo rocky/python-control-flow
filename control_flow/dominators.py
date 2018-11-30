@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+1# -*- coding: utf-8 -*-
 """
   Dominator tree
 
@@ -18,8 +18,9 @@ class DominatorTree(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.doms = {}
-        self.df = {}
+        self.doms = {}  # map of note to its dominator
+        self.pdoms = {} # map of node to its post-dominator
+        self.df = {}    # dominator frontier
         self.build()
 
 
@@ -27,18 +28,20 @@ class DominatorTree(object):
         graph = self.cfg.graph
         entry = self.cfg.entry_node
         self.build_dominators(graph, entry)
+        # entry = self.cfg.exit_node
+        # self.build_dominators(graph, entry, post_dom=True)
 
 
-    def build_dominators(self, graph, entry):
+    def build_dominators(self, graph, entry, post_dom=False):
         """
           Builds the dominator tree based on:
             http://www.cs.rice.edu/~keith/Embed/dom.pdf
 
           Also used to build the post-dominator tree.
         """
-        doms = self.doms
+        doms = self.doms if not post_dom else self.pdoms
         doms[entry] = entry
-        post_order = dfs_postorder_nodes(graph, entry)
+        post_order = dfs_postorder_nodes(graph, entry, post_dom)
 
         post_order_number = {}
         for i, n in enumerate(post_order):
@@ -83,8 +86,12 @@ class DominatorTree(object):
 
                 new_idom = None
                 # Find a processed predecessor
-                predecessors = [p for p in b.predecessors
-                                if post_order_number.get(p, -1) > post_order_number[b]]
+                if post_dom:
+                    predecessors = [p for p in b.successors
+                                    if post_order_number.get(p, -1) < post_order_number[b]]
+                else:
+                    predecessors = [p for p in b.predecessors
+                                    if post_order_number.get(p, -1) > post_order_number[b]]
 
                 new_idom = next(iter(predecessors))
                 for p in predecessors:
@@ -140,7 +147,7 @@ def build_dom_set1(node):
         node.bb.dom_set |= child.bb.dom_set
 
 # Note: this has to be done after calling tree
-def build_df(t):
+def dfs_forest(t):
     """
     Builds data flow graph using Depth-First search.
     """

@@ -40,15 +40,18 @@ class Walker(object):
 
   @property
   def visitor(self):
-    return self._visitor
+      return self._visitor
 
   @visitor.setter
   def visitor(self, value):
-    self._visitor = value
+      self._visitor = value
+      return
 
   def traverse(self, root):
-    self.worklist = []
-    self.__run(root)
+      self.worklist = []
+      self.__run(root)
+      return
+
 
   def __run(self, root=None):
     visited = set()
@@ -79,17 +82,22 @@ class Walker(object):
 
 # FIXME: This assumes the graph is strongly connected.
 # handle if it is a not.
-def dfs_postorder_nodes(graph, root):
-  import sys
-  sys.setrecursionlimit(5000)
-  visited = set()
+def dfs_postorder_nodes(graph, root, post_dom):
+    import sys
+    sys.setrecursionlimit(5000)
+    visited = set()
 
-  def _dfs(node, _visited):
-    _visited.add(node)
-    for dest_node in node.successors:
-      if dest_node not in _visited:
-        for child in _dfs(dest_node, _visited):
-          yield child
-    yield node
+    def _dfs(node, _visited):
+        _visited.add(node)
+        successors = node.predecessors if post_dom else node.successors
+        for dest_node in successors:
+            if dest_node not in _visited:
+                for child in _dfs(dest_node, _visited):
+                    yield child
+                    pass
+                pass
+            pass
+        yield node
+        return
 
-  return [n for n in _dfs(root, visited)]
+    return [n for n in _dfs(root, visited)]

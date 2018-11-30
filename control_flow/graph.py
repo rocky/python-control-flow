@@ -92,9 +92,6 @@ class Node(object):
 
     def __init__(self, bb):
         Node.GLOBAL_COUNTER += 1
-        if Node.GLOBAL_COUNTER == 11:
-            print("GC: %d" % Node.GLOBAL_COUNTER)
-            from trepan.api import debug; debug()
         if bb.number is None:
           self.number = Node.GLOBAL_COUNTER
         else:

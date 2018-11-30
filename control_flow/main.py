@@ -3,7 +3,7 @@ from __future__ import print_function
 from xdis import PYTHON_VERSION, IS_PYPY
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
-from control_flow.dominators import DominatorTree, build_df, build_dom_set
+from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
 from control_flow.structured_cf import (
     print_structured_flow, build_control_structure, cs_tree_to_str
 )
@@ -27,9 +27,9 @@ def doit(fn, name):
 
     os.system("dot -Tpng %s > %s" % (dot_path, png_path))
     try:
-        cfg.dom_tree = DominatorTree(cfg).tree()
-
-        build_df(cfg.dom_tree)
+        dt = DominatorTree(cfg)
+        cfg.dom_tree = dt.tree()
+        dfs_forest(cfg.dom_tree)
         build_dom_set(cfg.dom_tree)
         dot_path = '/tmp/flow-dom-%s.dot' % name
         png_path = '/tmp/flow-dom-%s.png' % name
