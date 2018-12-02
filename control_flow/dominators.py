@@ -28,8 +28,8 @@ class DominatorTree(object):
         graph = self.cfg.graph
         entry = self.cfg.entry_node
         self.build_dominators(graph, entry)
-        # entry = self.cfg.exit_node
-        # self.build_dominators(graph, entry, post_dom=True)
+        entry = self.cfg.exit_node
+        self.build_dominators(graph, entry, post_dom=True)
 
 
     def build_dominators(self, graph, entry, post_dom=False):
@@ -75,6 +75,7 @@ class DominatorTree(object):
             return finger1
 
         changed = True
+
         while changed:
             changed = False
             for b in reversed(post_order):
@@ -87,11 +88,12 @@ class DominatorTree(object):
                 new_idom = None
                 # Find a processed predecessor
                 if post_dom:
-                    predecessors = [p for p in b.successors
-                                    if post_order_number.get(p, -1) < post_order_number[b]]
+                    predecessors = list(b.successors)
                 else:
                     predecessors = [p for p in b.predecessors
                                     if post_order_number.get(p, -1) > post_order_number[b]]
+                if len(predecessors) == 0:
+                    continue
 
                 new_idom = next(iter(predecessors))
                 for p in predecessors:
@@ -110,10 +112,17 @@ class DominatorTree(object):
             pass
         return
 
-    def tree(self):
+    def tree(self, do_pdoms=False):
         """Makes a the dominator tree"""
         t_nodes = {}
-        doms = self.doms
+
+        if do_pdoms:
+            edge_type = 'pdom-edge'
+            doms = self.pdoms
+        else:
+            edge_type = 'dom-edge'
+            doms = self.doms
+
         t = TreeGraph()
 
         for node in doms:
@@ -128,7 +137,7 @@ class DominatorTree(object):
                     parent_node = t.make_add_node(parent)
                     t_nodes[parent] = parent_node
                 parent_node = t_nodes[parent]
-                t.make_add_edge(parent_node, cur_node, 'dom-edge')
+                t.make_add_edge(parent_node, cur_node, edge_type)
                 pass
             pass
         return t

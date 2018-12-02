@@ -56,14 +56,17 @@ class DotConverter(object):
 """
         # FIXME: We really want in reverse dominiator order but I think this is
         # close approximation.
+        seen_edge = set()
         for edge in sorted(self.g.edges, reverse=True,
                            key=lambda n: (n.source.number, -n.dest.number)):
-            self.add_edge(edge, show_exit)
+            edge_pair  = (edge.source.number, edge.dest.number)
+            self.add_edge(edge, show_exit, edge_pair in seen_edge)
+            seen_edge.add(edge_pair)
 
     self.buffer += '}\n'
 
 
-  def add_edge(self, edge, show_exit):
+  def add_edge(self, edge, show_exit, edge_seen):
       # labels = ''
       # if edge.flags is not None:
       #   bb = '' if edge.bb is None else str(edge.bb)
@@ -80,7 +83,7 @@ class DotConverter(object):
       dest_port = ''
 
       if edge.kind in ('fallthrough', 'no fallthrough',
-                         'follow', 'exit edge', 'dom-edge'):
+                         'follow', 'exit edge', 'dom-edge', 'pdom-edge'):
           if edge.kind == 'follow':
               style = '[style="invis"]'
               pass
@@ -149,6 +152,8 @@ class DotConverter(object):
           BB_JUMP_UNCONDITIONAL in edge.source.flags):
           # style = '[color="black:invis:black"]'
           # style = '[style="dotted"] [arrowhead="empty"]'
+          if edge_seen:
+              return
           style = '[style="invis"]'
 
       nid1 = self.node_ids[edge.source]

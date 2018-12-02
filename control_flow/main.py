@@ -28,7 +28,8 @@ def doit(fn, name):
     os.system("dot -Tpng %s > %s" % (dot_path, png_path))
     try:
         dt = DominatorTree(cfg)
-        cfg.dom_tree = dt.tree()
+
+        cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree)
         build_dom_set(cfg.dom_tree)
         dot_path = '/tmp/flow-dom-%s.dot' % name
@@ -36,6 +37,18 @@ def doit(fn, name):
         open(dot_path, 'w').write(cfg.dom_tree.to_dot())
         print("%s written" % dot_path)
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
+
+        print('*' * 30)
+
+        cfg.pdom_tree = dt.tree(True)
+        dfs_forest(cfg.pdom_tree)
+        build_dom_set(cfg.pdom_tree)
+        dot_path = '/tmp/flow-pdom-%s.dot' % name
+        png_path = '/tmp/flow-pdom-%s.png' % name
+        open(dot_path, 'w').write(cfg.pdom_tree.to_dot())
+        print("%s written" % dot_path)
+        os.system("dot -Tpng %s > %s" % (dot_path, png_path))
+
         print('=' * 30)
         cs  = build_control_structure(cfg, cfg.entry_node)
         cs_str = cs_tree_to_str(cs)

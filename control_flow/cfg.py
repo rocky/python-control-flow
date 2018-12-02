@@ -51,42 +51,33 @@ class ControlFlowGraph(object):
 
     # Add nodes
     for block in self.blocks:
-      self.block_offsets[block.start_offset] = block
-      block_node = g.make_add_node(block)
-      self.block_nodes[block] = block_node
-      self.offset2block[block.index[0]] = block_node
+        self.block_offsets[block.start_offset] = block
+        block_node = g.make_add_node(block)
+        self.block_nodes[block] = block_node
+        self.offset2block[block.index[0]] = block_node
+        pass
 
     self.exit_block = block_node
     # Compute a block's immediate predecessors and successors
 
-    # In order to keep "try" blocks connected, if a block is an
-    # "except" or "finally" block, we will treat the previous block as
-    # though it falls into it. Even though it doesn't but should
-    # instead end in a jump.
-    prev_block = None
     for block in self.blocks:
-      for jump_offset in block.jump_offsets:
-          assert jump_offset in self.block_offsets
-          successor_block = self.block_offsets[jump_offset]
-          successor_block.predecessors.add(block)
-          block.successors.add(successor_block)
-      if BB_NOFOLLOW in block.flags:
-        exit_block.predecessors.add(block)
-        block.successors.add(exit_block)
+
+        for jump_offset in set(block.jump_offsets) | block.exception_offsets:
+            assert jump_offset in self.block_offsets
+            successor_block = self.block_offsets[jump_offset]
+            successor_block.predecessors.add(block)
+            block.successors.add(successor_block)
+        if BB_NOFOLLOW in block.flags:
+            exit_block.predecessors.add(block)
+            block.successors.add(exit_block)
+            pass
+        elif ( block.follow_offset
+                and (not (jump_flags & block.flags)) ):
+            assert block.follow_offset in self.block_offsets
+            successor_block = self.block_offsets[block.follow_offset]
+            successor_block.predecessors.add(block)
+            block.successors.add(successor_block)
         pass
-      elif ( block.follow_offset
-           and (not (jump_flags & block.flags)) ):
-        assert block.follow_offset in self.block_offsets
-        successor_block = self.block_offsets[block.follow_offset]
-        successor_block.predecessors.add(block)
-        block.successors.add(successor_block)
-      if (prev_block and
-          (BB_TRY in prev_block.flags or
-           BB_END_FINALLY in block.flags)):
-        block.predecessors.add(prev_block)
-        prev_block.successors.add(block)
-      prev_block = block
-      pass
 
     assert(len(self.blocks) > 0)
     self.entry_node = self.blocks[0]
