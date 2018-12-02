@@ -87,6 +87,32 @@ nofollow_flags = set([BB_NOFOLLOW])
 def format_flags(flags):
     return ', '.join([FLAG2NAME[flag] for flag in FLAG2NAME if flag in flags])
 
+def format_flags_with_width(flags, max_width, newline):
+    result = ''
+    r = 0
+    sep = ''
+    remain = max_width
+    for flag in FLAG2NAME:
+        if flag in flags:
+            add = sep + FLAG2NAME[flag]
+            a = len(add)
+            remain = max_width - (r + a)
+            if remain <= 1:
+                if result:
+                    result += ',' + (' ' * (remain - 1))
+                    add = FLAG2NAME[flag]
+                    pass
+                result += newline
+                r = 0
+            r += a
+            result += add
+            sep = ', '
+            pass
+        pass
+
+    return result + (' ' * remain)
+
+
 class Node(object):
     GLOBAL_COUNTER = 0
 

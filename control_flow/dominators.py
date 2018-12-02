@@ -64,7 +64,11 @@ class DominatorTree(object):
                     pass
                 while po_finger2 < po_finger1:
                     finger2 = doms.get(finger2, None)
-                    po_finger2 = post_order_number[finger2]
+                    try:
+                        po_finger2 = post_order_number[finger2]
+                    except:
+                        no_solution = True
+                        break
                     if finger2 is None:
                         no_solution = True
                         break

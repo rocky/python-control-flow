@@ -7,18 +7,19 @@
 """
 
 from control_flow.graph import (
-    DiGraph, BB_ENTRY, BB_EXIT,
-    BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags)
+    DiGraph, BB_ENTRY, BB_EXIT, BB_END_FINALLY,
+    BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags_with_width)
 
 DOT_STYLE = """
-  graph[fontsize=10 fontname="Verdana"];
+  graph[fontsize=10 fontname="DejaVu Sans Mono"];
 
   mclimit=1.5;
   rankdir=TD; ordering=out;
   color="#efefef";
 
-  node[shape=box style=filled fontsize=8 fontname="Verdana" fillcolor="#efefef"];
-  edge[fontsize=8 fontname="Verdana"];
+  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
+       fillcolor="#efefef", width=2.5];
+  edge[fontsize=10 fontname="Verdana"];
 """
 
 class DotConverter(object):
@@ -95,7 +96,10 @@ class DotConverter(object):
               weight = 10
           else:
               weight = 1
-              source_port =':se'
+              if BB_END_FINALLY in edge.dest.bb.flags:
+                  source_port =':e'
+              else:
+                  source_port =':se'
               dest_port =':ne'
           # edge_port = '[headport=nw] [tailport=sw]';
           # edge_port = '[headport=_] [tailport=_]';
@@ -171,7 +175,9 @@ class DotConverter(object):
           pass
 
       if node.flags:
-          flag_text = "%sflags=%s" % (align, format_flags(node.flags))
+          flag_text = "%sflags=%s" % (align,
+                                      format_flags_with_width(node.flags,
+                                                              30, align + (" " * (len("flags=")))))
       else:
           flag_text = ""
           pass
