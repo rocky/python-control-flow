@@ -30,8 +30,8 @@ def doit(fn, name):
         dt = DominatorTree(cfg)
 
         cfg.dom_tree = dt.tree(False)
-        dfs_forest(cfg.dom_tree)
-        build_dom_set(cfg.dom_tree)
+        dfs_forest(cfg.dom_tree, False)
+        build_dom_set(cfg.dom_tree, False)
         dot_path = '/tmp/flow-dom-%s.dot' % name
         png_path = '/tmp/flow-dom-%s.png' % name
         open(dot_path, 'w').write(cfg.dom_tree.to_dot())
@@ -41,8 +41,8 @@ def doit(fn, name):
         print('*' * 30)
 
         cfg.pdom_tree = dt.tree(True)
-        dfs_forest(cfg.pdom_tree)
-        build_dom_set(cfg.pdom_tree)
+        dfs_forest(cfg.pdom_tree, True)
+        build_dom_set(cfg.pdom_tree, True)
         dot_path = '/tmp/flow-pdom-%s.dot' % name
         png_path = '/tmp/flow-pdom-%s.png' % name
         open(dot_path, 'w').write(cfg.pdom_tree.to_dot())

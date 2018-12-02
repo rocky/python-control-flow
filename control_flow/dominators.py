@@ -146,42 +146,60 @@ class DominatorTree(object):
             pass
         return t
 
-def build_dom_set(t):
+def build_dom_set(t, do_pdoms):
     """Makes a the dominator set for each node in the tree"""
     if t.nodes:
-            return build_dom_set1(t.nodes[0])
+            return build_dom_set1(t.nodes[0], do_pdoms)
 
-def build_dom_set1(node):
+def build_dom_set1(node, do_pdoms):
     """Build dominator sets from dominator node"""
 
-    node.bb.dom_set = set(node.bb.doms)
+    if do_pdoms:
+        node.bb.pdom_set = set(node.bb.pdoms)
+    else:
+        node.bb.dom_set = set(node.bb.doms)
+        pass
+
     for child in node.children:
-        build_dom_set1(child)
-        node.bb.dom_set |= child.bb.dom_set
+        build_dom_set1(child, do_pdoms)
+        if do_pdoms:
+            node.bb.pdom_set |= child.bb.pdom_set
+        else:
+            node.bb.dom_set |= child.bb.dom_set
 
 # Note: this has to be done after calling tree
-def dfs_forest(t):
+def dfs_forest(t, do_pdoms):
     """
     Builds data flow graph using Depth-First search.
     """
 
-    def dfs(seen, node):
+    def dfs(seen, node, do_pdoms):
         if node in seen:
             return
         seen.add(node)
-        node.bb.doms = node.doms = set([node])
-        node.bb.reach_offset = node.reach_offset = node.bb.end_offset
+        if do_pdoms:
+            node.bb.pdoms = node.pdoms = set([node])
+        else:
+            node.bb.doms = node.doms = set([node])
+            node.bb.reach_offset = node.reach_offset = node.bb.end_offset
+
         for n in node.children:
-            dfs(seen, n)
-            node.doms |= node.doms
-            node.bb.doms |= node.doms
-            if node.reach_offset < n.reach_offset:
-                node.bb.reach_offset = node.reach_offset = n.reach_offset
+            dfs(seen, n, do_pdoms)
+            if do_pdoms:
+                node.pdoms |= node.pdoms
+                node.bb.pdoms |= node.pdoms
+            else:
+                node.doms |= node.doms
+                node.bb.doms |= node.doms
+                if node.reach_offset < n.reach_offset:
+                    node.bb.reach_offset = node.reach_offset = n.reach_offset
+                    pass
+                pass
         # print("node %d has children %s" %
         #       (node.number, [n.number for n in node.children]))
 
     seen = set([])
     for node in t.nodes:
         if node not in seen:
-            dfs(seen, node)
+            dfs(seen, node, do_pdoms)
     return

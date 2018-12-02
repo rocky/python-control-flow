@@ -18,9 +18,13 @@ DOT_STYLE = """
   color="#efefef";
 
   node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
-       fillcolor="#efefef", width=2.5];
+       fillcolor="#efefef", width=2];
   edge[fontsize=10 fontname="Verdana"];
 """
+
+flags_prefix = "flags="
+FEL = len(flags_prefix)
+NODE_TEXT_WIDTH = 26 + FEL
 
 class DotConverter(object):
   def __init__(self, graph):
@@ -175,9 +179,9 @@ class DotConverter(object):
           pass
 
       if node.flags:
-          flag_text = "%sflags=%s" % (align,
-                                      format_flags_with_width(node.flags,
-                                                              30, align + (" " * (len("flags=")))))
+          flag_text = "%s%s%s" % (align, flags_prefix,
+                                  format_flags_with_width(node.flags, NODE_TEXT_WIDTH - FEL,
+                                                          align + (" " * (len("flags=")))))
       else:
           flag_text = ""
           pass
@@ -187,11 +191,16 @@ class DotConverter(object):
 
       reach_offset_text = ""
       if hasattr(node, 'reach_offset'):
-        reach_offset_text = "\lreach_offset=%d" % node.reach_offset
+          reach_offset_text = "\lreach_offset=%d" % node.reach_offset
 
-      return ('offsets: %d..%d%s%s%s'
-            % (node.start_offset, node.end_offset,
-               flag_text, jump_text, reach_offset_text))
+      offset_text = "offset: %d..%d" % (node.start_offset, node.end_offset)
+      l = len(offset_text)
+      if l < NODE_TEXT_WIDTH:
+          offset_text += (' ' * (NODE_TEXT_WIDTH - l))
+
+
+      return ('%s%s%s%s'
+            % (offset_text, flag_text, jump_text, reach_offset_text))
 
 
   def add_node(self, node, show_exit):
