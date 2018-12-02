@@ -61,6 +61,9 @@ BB_END_FINALLY = 12
 # postdominsator or reverse dominiator calculation.
 BB_EXIT = 13
 
+# Has a conditional jump of some sort. This would be
+# found in "if", and "while" constructs.
+BB_JUMP_CONDITIONAL = 14
 
 
 FLAG2NAME = {
@@ -74,6 +77,7 @@ FLAG2NAME = {
   BB_STARTS_POP_BLOCK:   'starts with pop block',
   BB_EXCEPT:             'except',
   BB_JUMP_UNCONDITIONAL: 'unconditional',
+  BB_JUMP_CONDITIONAL:   'conditional jump',
   BB_FOR:                'for',
   BB_FINALLY:            'finally',
   BB_END_FINALLY:        'end finally',

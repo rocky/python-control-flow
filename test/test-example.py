@@ -31,7 +31,7 @@ for filename in files:
         print('-' * 20)
         print(got)
         pass
-        # sys.exit(1)
+        sys.exit(1)
     else:
         count += 1
         pass

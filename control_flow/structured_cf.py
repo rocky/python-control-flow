@@ -8,7 +8,7 @@ This code is ugly.
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT,
                                 BB_FINALLY, BB_END_FINALLY,
-                                BB_FOR,
+                                BB_FOR, BB_JUMP_CONDITIONAL,
                                 BB_LOOP, BB_NOFOLLOW, BB_TRY,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
@@ -234,9 +234,11 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         else:
             kind = 'try else'
             pass
+    elif BB_JUMP_CONDITIONAL in current.flags:
+        kind = 'if'
     else:
         # FIXME: add others?
-        kind = 'if'
+        kind = 'sequence'
 
     dominator_blocks = {n.bb for n in block.dom_set}
     if BB_NOFOLLOW in current.flags or follow_block not in dominator_blocks:
@@ -302,7 +304,12 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         result.append(IfControlStructure(block, children))
         pass
     elif kind == 'then':
+        if follow and current in {node.bb for node in parent.dom_set}:
+            children.append(follow)
+            follow = None
+            pass
         result.append(ThenControlStructure(block, children))
+
     elif kind == 'continue':
         result.append(ContinueControlStructure(block))
     elif kind == 'pop block':
@@ -310,6 +317,9 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind.startswith('sequence pop'):
         result.append(PopBlockSequenceStructure(block, children, kind))
     elif kind == 'sequence':
+        if current in {node.bb for node in parent.dom_set}:
+            follow = SequenceControlStructure(block, children)
+            pass
         pass
     pass
 
@@ -358,8 +368,10 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                     assert len(jump_block.predecessors) != 0  # this would be dead code
                     jump_kind = 'sequence'
                     children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
-                    result[0].children.append(
-                        SequenceControlStructure(jump_block, children))
+                    if jump_block.number != follow.block.number:
+                        result[0].children.append(
+                            SequenceControlStructure(jump_block, children))
+                        pass
             elif kind in ('continue', 'try'):
                 pass
                 # Do nothing
