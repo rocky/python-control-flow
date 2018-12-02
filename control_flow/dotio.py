@@ -131,6 +131,13 @@ class DotConverter(object):
                 else:
                     source_port =':nw'
                     dest_port =':sw'
+                    pass
+            # FIXME: these edges need to come earlier
+            # elif BB_JUMP_UNCONDITIONAL in edge.source.flags:
+            #     source_port =':sw'
+            #     dest_port =':nw'
+            #     pass
+
             weight = 1
             pass
 
