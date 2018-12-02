@@ -177,7 +177,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     cfg.seen_blocks.add(current)
     block = cfg.blocks[current.number]
 
-    # Traverse follow block
+    # Find follow block
     if block.follow_offset is not None:
         follow_number = cfg.offset2block[block.follow_offset].bb.number
         follow_block = cfg.blocks[follow_number]
@@ -227,8 +227,13 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
             kind = 'while else'
             pass
         pass
-    elif parent_kind == 'try' and current.start_offset in parent.jump_offsets:
-        kind = 'try else'
+    elif (parent_kind == 'try' and
+          current.start_offset in parent.jump_offsets):
+        if parent in {node.bb for node in current.pdom_set}:
+            kind = 'try meet'
+        else:
+            kind = 'try else'
+            pass
     else:
         # FIXME: add others?
         kind = 'if'
@@ -250,6 +255,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         result.append(LoopControlStructure(block, children))
         if follow:
             children.append(follow)
+            follow = []
             pass
     elif kind == 'while':
         result.append(WhileControlStructure(block, children))
@@ -275,11 +281,16 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
             children.append(follow)
             pass
         result.append(TryElseControlStructure(block, children))
+    elif kind == 'try meet':
+        follow = SequenceControlStructure(block, children)
     elif kind == 'finally':
         result.append(FinallyControlStructure(block, children))
     elif kind == 'end-finally':
         # else block is fixed up below.
-        end_finally_block = SequenceControlStructure(follow_block, [])
+        if follow_block in {node.bb for node in current.dom_set}:
+            end_finally_block = SequenceControlStructure(follow_block, [])
+        else:
+            end_finally_block = []
         result.append(EndFinallyControlStructure(block, end_finally_block))
     elif kind == 'except':
         result.append(ExceptControlStructure(block, children))
@@ -395,7 +406,9 @@ def cs_tree_to_str(cs_list, indent=''):
                 pass
             pass
         if cs.kind not in ('continue', 'pop block', 'no follow'):
-            result += "%send %s\n" % (indent, cs.kind)
+            if cs.block.start_offset != cs.block.end_offset:
+                result += "%send %s\n" % (indent, cs.kind)
+                pass
             pass
         pass
     return result
