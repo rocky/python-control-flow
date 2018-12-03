@@ -170,9 +170,12 @@ def predecessor_pop_block(cfg, block):
 
 
 def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
+    print("control_structure_iter: ", current)
+
     result = []
     follow = []
-    print("control_structure_iter: ", current)
+    follow_block = None
+    children = []
 
     cfg.seen_blocks.add(current)
     block = cfg.blocks[current.number]
@@ -196,6 +199,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif BB_END_FINALLY in current.flags:
         kind = 'end-finally'
     elif parent_kind == 'if':
+        children, follow = control_structure_iter(cfg, current, parent, 'sequence')
         kind = 'then'
     elif parent_kind == 'else':
         kind = 'sequence'
@@ -240,11 +244,14 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         # FIXME: add others?
         kind = 'sequence'
 
+
     dominator_blocks = {n.bb for n in block.dom_set}
-    if BB_NOFOLLOW in current.flags or follow_block not in dominator_blocks:
-        children = []
-    else:
-        children, follow  = control_structure_iter(cfg, follow_block, current, kind)
+    if not children:
+        if BB_NOFOLLOW in current.flags or follow_block not in dominator_blocks:
+            children = []
+        else:
+            children, follow  = control_structure_iter(cfg, follow_block, current, kind)
+            pass
         pass
 
     # Now that classification has been done, create the specific
@@ -317,7 +324,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind.startswith('sequence pop'):
         result.append(PopBlockSequenceStructure(block, children, kind))
     elif kind == 'sequence':
-        if current in {node.bb for node in parent.dom_set}:
+        if parent and current in {node.bb for node in parent.dom_set}:
             follow = SequenceControlStructure(block, children)
             pass
         pass
