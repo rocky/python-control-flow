@@ -6,5 +6,5 @@ def testing(a):
 
 def expect():
     return """
-control_structure_iter:  BasicBlock(#0 range: (0, 6), flags=[0, 1], follow_offset=None, edge_count=0)
+sequence BasicBlock(#0 range: (0, 6), flags=[0, 1], follow_offset=None, edge_count=0)
 """

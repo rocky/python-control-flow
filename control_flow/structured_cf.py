@@ -8,7 +8,8 @@ This code is ugly.
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT,
                                 BB_FINALLY, BB_END_FINALLY,
-                                BB_FOR, BB_JUMP_CONDITIONAL,
+                                BB_FOR,
+                                BB_JUMP_CONDITIONAL, BB_JUMP_UNCONDITIONAL,
                                 BB_LOOP, BB_NOFOLLOW, BB_TRY,
                                 BB_SINGLE_POP_BLOCK,
                                 BB_STARTS_POP_BLOCK)
@@ -214,7 +215,15 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         jump_offset = list(block.jump_offsets)[0]
         jump_number = cfg.offset2block[jump_offset].bb.number
         jump_block = cfg.blocks[jump_number]
-        if (BB_STARTS_POP_BLOCK in jump_block.flags):
+        # For else blocks start with a POP_BLOCK and
+        # do not end in an unconditional jump, but instead fall
+        # through to the "for" end meet block.
+        # if a: if ...then (for ... endfor) else ... endif
+        # there will be a jump from the "for" around the "else"
+        # as part of the "then" block. after the "for" is done.
+        # Jut jump around the "else" will be POP_BLOCK, JUMP_ABSOLUTE.
+        if (BB_STARTS_POP_BLOCK in jump_block.flags and
+            BB_JUMP_UNCONDITIONAL not in jump_block.flags):
             kind = 'for else'
         else:
             kind = 'for'
@@ -327,6 +336,8 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         if parent and current in {node.bb for node in parent.dom_set}:
             follow = SequenceControlStructure(block, children)
             pass
+        else:
+            result.append(SequenceControlStructure(block, children))
         pass
     pass
 
@@ -424,10 +435,8 @@ def cs_tree_to_str(cs_list, indent=''):
                 result += cs_tree_to_str(child, indent)
                 pass
             pass
-        if cs.kind not in ('continue', 'pop block', 'no follow'):
-            if cs.block.start_offset != cs.block.end_offset:
-                result += "%send %s\n" % (indent, cs.kind)
-                pass
+        if cs.children:
+            result += "%send %s\n" % (indent, cs.kind)
             pass
         pass
     return result
