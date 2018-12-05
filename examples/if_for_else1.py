@@ -18,5 +18,4 @@ if BasicBlock(#0 range: (0, 2), flags=[0, 14], follow_offset=4, edge_count=2, ju
   end loop
   else BasicBlock(#5 range: (32, 34), follow_offset=36, edge_count=1)
 end if
-sequence BasicBlock(#5 range: (32, 34), follow_offset=36, edge_count=1)
 """

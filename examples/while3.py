@@ -14,5 +14,5 @@ loop BasicBlock(#0 range: (0, 0), flags=[0, 2], follow_offset=2, edge_count=2, j
   end while
   pop block BasicBlock(#3 range: (16, 16), flags=[5], follow_offset=18, edge_count=1)
 end loop
-sequence BasicBlock(#4 range: (18, 20), flags=[1], follow_offset=None, edge_count=0)
+sequence BasicBlock(#4 range: (18, 28), flags=[1], follow_offset=None, edge_count=0)
 """

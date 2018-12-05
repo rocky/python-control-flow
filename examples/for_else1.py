@@ -5,6 +5,7 @@ def testing(a):
         print(i)
     else:
         a = 5
+    return a
 
 def expect():
     return """

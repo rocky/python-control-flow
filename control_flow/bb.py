@@ -31,6 +31,7 @@ class BasicBlock(object):
   """
 
   def __init__(self, start_offset, end_offset, follow_offset,
+               loop_offset,
                flags = set(),
                jump_offsets=set()):
 
@@ -49,6 +50,10 @@ class BasicBlock(object):
     # the flow-control graph, we place the following basic block
     # immediately below.
     self.follow_offset = follow_offset
+
+    # Loops can start somewhere in the middle of the basic block.
+    # FIXME: generalize to other kinds of instructions too?
+    self.loop_offset = loop_offset
 
     # Jump offsets is the targets of all of the jump instructions
     # inside the basic block. Note that jump offsets can come from
@@ -138,9 +143,10 @@ class BBMgr(object):
                                                opcode.opmap['JUMP_IF_FALSE_OR_POP'],
                                                opcode.opmap['JUMP_IF_TRUE_OR_POP']])
 
-          self.LOOP_INSTRUCTIONS        = set([opcode.opmap['SETUP_LOOP'],
-                                              opcode.opmap['YIELD_VALUE'],
-                                              opcode.opmap['RAISE_VARARGS']])
+          self.LOOP_INSTRUCTIONS        = set([opcode.opmap['SETUP_LOOP']])
+          # ??
+          #                                   opcode.opmap['YIELD_VALUE'],
+          #                                   opcode.opmap['RAISE_VARARGS']])
           self.BREAK_INSTRUCTIONS       = set([opcode.opmap['BREAK_LOOP']])
           self.NOFOLLOW_INSTRUCTIONS    = opcode.NOFOLLOW
 
@@ -168,9 +174,10 @@ class BBMgr(object):
                                               opcode.opmap['POP_JUMP_IF_TRUE'],
                                               opcode.opmap['JUMP_IF_FALSE_OR_POP'],
                                               opcode.opmap['JUMP_IF_TRUE_OR_POP']])
-          self.LOOP_INSTRUCTIONS       = set([opcode.opmap['SETUP_LOOP'],
-                                             opcode.opmap['YIELD_VALUE'],
-                                             opcode.opmap['RAISE_VARARGS']])
+          self.LOOP_INSTRUCTIONS       = set([opcode.opmap['SETUP_LOOP']]),
+          # ??
+          #                                   opcode.opmap['YIELD_VALUE'],
+          #                                  opcode.opmap['RAISE_VARARGS']])
           self.BREAK_INSTRUCTIONS      = set([opcode.opmap['BREAK_LOOP']])
           self.NOFOLLOW_INSTRUCTIONS   = set([opcode.opmap['RETURN_VALUE'],
                                              opcode.opmap['YIELD_VALUE'],
@@ -178,7 +185,7 @@ class BBMgr(object):
     else:
       raise RuntimeError("Version %s not supported yet" % PYTHON_VERSION)
 
-  def add_bb(self, start_offset, end_offset, follow_offset, flags,
+  def add_bb(self, start_offset, end_offset, loop_offset, follow_offset, flags,
              jump_offsets):
 
       if BB_STARTS_POP_BLOCK in flags and start_offset == end_offset:
@@ -188,7 +195,8 @@ class BBMgr(object):
       block = BasicBlock(start_offset, end_offset,
                         follow_offset,
                         flags = flags,
-                        jump_offsets = jump_offsets)
+                        jump_offsets = jump_offsets,
+                        loop_offset = loop_offset)
       self.bb_list.append(block)
 
       if BB_EXIT in flags:
@@ -231,6 +239,7 @@ def basic_blocks(version, is_pypy, fn):
     end_try_offset_stack = []
     try_stack = []
     end_try_offset = None
+    loop_offset = None
 
     for inst in get_instructions(fn):
         prev_offset = end_offset
@@ -241,17 +250,18 @@ def basic_blocks(version, is_pypy, fn):
 
         if offset == end_try_offset:
           if len(end_try_offset_stack):
-            end_try_offset = end_try_offset_stack[-1]
-            end_try_offset_stack.pop()
+              end_try_offset = end_try_offset_stack[-1]
+              end_try_offset_stack.pop()
           else:
-            end_try_offset = None
+              end_try_offset = None
 
 
-        if op == BB.opcode.SETUP_LOOP:
-          jump_offset = follow_offset + inst.arg
-          endloop_offsets.append(jump_offset)
+        if op in BB.LOOP_INSTRUCTIONS:
+            jump_offset = follow_offset + inst.arg
+            endloop_offsets.append(jump_offset)
+            loop_offset = offset
         elif offset == endloop_offsets[-1]:
-          endloop_offsets.pop()
+            endloop_offsets.pop()
         pass
 
         if op in BB.LOOP_INSTRUCTIONS:
@@ -259,9 +269,10 @@ def basic_blocks(version, is_pypy, fn):
         elif op in BB.BREAK_INSTRUCTIONS:
             flags.add(BB_BREAK)
             jump_offsets.add(endloop_offsets[-1])
-            block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                   end_offset, follow_offset,
+            block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
+                                                   loop_offset, follow_offset,
                                                    flags, jump_offsets)
+            loop_offset = None
             if BB_TRY in block.flags:
                 try_stack.append(block)
             start_offset = follow_offset
@@ -271,9 +282,10 @@ def basic_blocks(version, is_pypy, fn):
             # This instruction definitely starts a new basic block
             # Close off any prior basic block
             if start_offset < end_offset:
-                block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                       prev_offset, end_offset,
+                block, flags, jump_offsets = BB.add_bb(start_offset, prev_offset,
+                                                       loop_offset, end_offset,
                                                        flags, jump_offsets)
+                loop_offset = None
                 if BB_TRY in block.flags:
                     try_stack.append(block)
                     pass
@@ -303,9 +315,10 @@ def basic_blocks(version, is_pypy, fn):
         elif op in BB.FOR_INSTRUCTIONS:
             flags.add(BB_FOR)
             jump_offsets.add(inst.argval)
-            block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                   end_offset, follow_offset,
+            block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
+                                                   loop_offset, follow_offset,
                                                    flags, jump_offsets)
+            loop_offset = None
             start_offset = follow_offset
         elif op in BB.JUMP_INSTRUCTIONS:
             # Some sort of jump instruction.
@@ -319,9 +332,10 @@ def basic_blocks(version, is_pypy, fn):
             jump_offsets.add(jump_offset)
             if op in BB.JUMP_UNCONDITONAL:
                 flags.add(BB_JUMP_UNCONDITIONAL)
-                block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                       end_offset, follow_offset,
+                block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
+                                                       loop_offset, follow_offset,
                                                        flags, jump_offsets)
+                loop_offset = None
                 if BB_TRY in block.flags:
                     try_stack.append(block)
                     pass
@@ -331,9 +345,10 @@ def basic_blocks(version, is_pypy, fn):
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
-                block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                       end_offset, follow_offset,
+                block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
+                                                       loop_offset, follow_offset,
                                                        flags, jump_offsets)
+                loop_offset = None
                 if BB_TRY in block.flags:
                     try_stack.append(block)
                 start_offset = follow_offset
@@ -341,9 +356,10 @@ def basic_blocks(version, is_pypy, fn):
                 pass
         elif op in BB.NOFOLLOW_INSTRUCTIONS:
             flags.add(BB_NOFOLLOW)
-            last_block, flags, jump_offsets = BB.add_bb(start_offset,
-                                                        end_offset, follow_offset,
+            last_block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
+                                                        loop_offset, follow_offset,
                                                         flags, jump_offsets)
+            loop_offset = None
             start_offset = follow_offset
             pass
         pass
@@ -354,11 +370,12 @@ def basic_blocks(version, is_pypy, fn):
 
     # Add remaining instructions?
     if start_offset <= end_offset:
-        BB.bb_list.append(BasicBlock(start_offset, end_offset, None,
+        BB.bb_list.append(BasicBlock(start_offset, end_offset, loop_offset, None,
                                      flags=flags, jump_offsets=jump_offsets))
+        loop_offset = None
         pass
 
     # Add an artificial block where we can link the exits of other blocks
     # to. This helps in computing reverse dominators.
-    BB.add_bb(end_offset+1, end_offset+1, None, set([BB_EXIT]), [])
+    BB.add_bb(end_offset+1, end_offset+1, None, None, set([BB_EXIT]), [])
     return BB

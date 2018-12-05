@@ -377,6 +377,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                         else:
                             jump_kind = 'else'
                             else_children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
+                            follow = None
                             result[0].children.append(
                                 ElseControlStructure(jump_block, else_children))
                             pass
@@ -430,14 +431,27 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
 
     for cs in cs_list:
         result += "%s%s %s\n" % (indent, cs.kind, cs.block)
-        if cs.kind in ('loop', 'while', 'while_else', 'for', 'for else',
-                       'sequence pop block "while_else"', 'try'):
-            offset = cs.block.start_offset
+        if cs.kind in ('loop',
+                       'while', 'while_else',
+                       'for', 'for else',
+                       'else', 'then', 'try',
+                       'sequence pop block "while_else"'):
+            if cs.kind == 'loop':
+                offset = cs.block.loop_offset
+            else:
+                offset = cs.block.start_offset
             offset_marks = cs_marks.get(offset, [])
             if cs.kind == 'sequence pop block "while_else"':
                 cs.kind = 'WELSE_BLOCK'
             offset_marks.insert(0, cs.kind)
             cs_marks[offset] = offset_marks
+
+        elif cs.kind in ('if', ):
+            offset = cs.block.end_offset
+            offset_marks = cs_marks.get(offset, [])
+            offset_marks.insert(0, cs.kind)
+            cs_marks[offset] = offset_marks
+
 
         for child in cs.children:
             if not cs.kind.startswith('sequence'):
@@ -450,17 +464,20 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
             result += "%send %s\n" % (indent, cs.kind)
             pass
         pass
-        if cs.kind in ('loop', 'while', 'while_else', 'for', 'for else', 'try', 'continue'):
+        if cs.kind in ('loop',
+                       'while', 'while_else',
+                       'for', 'for else',
+                       'if', 'else', 'then', 'try', 'continue'):
             if cs.children:
-                last_child = cs.children[-1]
+                last_child = cs.children[-1] if cs.children[-1] else cs.children[0]
                 while True:
                     if isinstance(last_child, list):
-                        last_child = last_child[-1]
-                        continue
-                    if last_child.children:
-                        last_child = last_child.children[-1]
-                        continue
-                    break
+                        last_child = last_child[-1] if last_child[-1] else last_child[-2]
+                    elif last_child.children:
+                        last_child = last_child.children
+                    else:
+                        break
+                    pass
                 end_offset = last_child.block.end_offset
             else:
                 end_offset = cs.block.end_offset
