@@ -51,10 +51,11 @@ def doit(fn, name):
 
         print('=' * 30)
         cs  = build_control_structure(cfg, cfg.entry_node)
-        cs_str = cs_tree_to_str(cs)
+        cs_marks = {}
+        cs_str = cs_tree_to_str(cs, cs_marks)
         print(cs_str)
         print('=' * 30)
-        print_structured_flow(fn, cfg, cfg.entry_node)
+        print_structured_flow(fn, cfg, cfg.entry_node, cs_marks)
         return cs_str
     except:
         import traceback

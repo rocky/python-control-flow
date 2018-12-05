@@ -20,7 +20,7 @@ class ControlStructure(object):
     better the higher level structure better.
 
     While in concept we are mirroring the Python control structures like
-    "if", "for", "for else", "while", "while else" it is not
+    "if", "for", "for else", "while", "while_else" it is not
     exactly the same, but it is kind of a hybrid between what is seen
     on the instruction level and what is seen at the Python source.
 
@@ -59,7 +59,7 @@ class WhileControlStructure(ControlStructure):
 
 class WhileElseControlStructure(ControlStructure):
     def __init__(self, block, children, else_children):
-        super(WhileElseControlStructure, self).__init__(block, 'while else', [children, else_children])
+        super(WhileElseControlStructure, self).__init__(block, 'while_else', [children, else_children])
 
 class ForControlStructure(ControlStructure):
     def __init__(self, block, children):
@@ -157,7 +157,7 @@ def predecessor_pop_block(cfg, block):
     """
     Does a predecessor of "block" a block that
     pops a block? We use this to distinguish
-    in a loop to detect "while" and "while else"
+    in a loop to detect "while" and "while_else"
     constructs
     """
     for jump_offset in block.jump_offsets:
@@ -204,7 +204,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         kind = 'then'
     elif parent_kind == 'else':
         kind = 'sequence'
-    elif (parent_kind in ('sequence', 'while else', 'for else') and starts_pop_block):
+    elif (parent_kind in ('sequence', 'while_else', 'for else') and starts_pop_block):
         kind = 'sequence pop block "%s"' % parent_kind
     elif (parent_kind in ('sequence', 'while', 'for') and
           BB_SINGLE_POP_BLOCK in block.flags):
@@ -237,7 +237,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
             kind = 'while'
         else:
             assert BB_STARTS_POP_BLOCK in ppb.flags
-            kind = 'while else'
+            kind = 'while_else'
             pass
         pass
     elif (parent_kind == 'try' and
@@ -313,7 +313,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind == 'except':
         result.append(ExceptControlStructure(block, children))
         pass
-    elif kind == 'while else':
+    elif kind == 'while_else':
         # else block is fixed up below.
         result.append(WhileElseControlStructure(block, children, []))
     elif kind == 'if':
@@ -397,7 +397,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
                     jump_children, follow = control_structure_iter(cfg, jump_block, current, kind)
-                    if kind in ['while else', 'for else']:
+                    if kind in ['while_else', 'for else']:
                         result[0].children[-1] = jump_children
                     elif len(jump_children) == 1:
                         result.append(jump_children[0])
@@ -419,7 +419,9 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
 
 # FIXME: instead of or in additon to printing we need a structure
 # that can be used in a revised print_structued_flow.
-def cs_tree_to_str(cs_list, indent=''):
+def cs_tree_to_str(cs_list, cs_marks, indent=''):
+
+    # pop(0), insert(0,x)
 
     result = ''
     # FIXME: regularlize to pass in a list from the caller?
@@ -428,73 +430,66 @@ def cs_tree_to_str(cs_list, indent=''):
 
     for cs in cs_list:
         result += "%s%s %s\n" % (indent, cs.kind, cs.block)
+        if cs.kind in ('loop', 'while', 'while_else', 'for', 'for else',
+                       'sequence pop block "while_else"', 'try'):
+            offset = cs.block.start_offset
+            offset_marks = cs_marks.get(offset, [])
+            if cs.kind == 'sequence pop block "while_else"':
+                cs.kind = 'WELSE_BLOCK'
+            offset_marks.insert(0, cs.kind)
+            cs_marks[offset] = offset_marks
+
         for child in cs.children:
             if not cs.kind.startswith('sequence'):
-                result += cs_tree_to_str(child, indent + '  ')
+                result += cs_tree_to_str(child, cs_marks, indent + '  ')
             else:
-                result += cs_tree_to_str(child, indent)
+                result += cs_tree_to_str(child, cs_marks, indent)
                 pass
             pass
         if cs.children:
             result += "%send %s\n" % (indent, cs.kind)
             pass
         pass
+        if cs.kind in ('loop', 'while', 'while_else', 'for', 'for else', 'try', 'continue'):
+            if cs.children:
+                last_child = cs.children[-1]
+                while True:
+                    if isinstance(last_child, list):
+                        last_child = last_child[-1]
+                        continue
+                    if last_child.children:
+                        last_child = last_child.children[-1]
+                        continue
+                    break
+                end_offset = last_child.block.end_offset
+            else:
+                end_offset = cs.block.end_offset
+            offset_marks = cs_marks.get(end_offset, [])
+            offset_marks.append('end_' + cs.kind)
+            cs_marks[end_offset] = offset_marks
     return result
 
 # FIXME: this will be redone to use the result of cs_tree_to_str
-def print_structured_flow(fn, cfg, current):
+def print_structured_flow(fn, cfg, current, cs_marks):
     """Print structure skeleton"""
     print("\n" + ('-' * 40))
-    bb_list = cfg.blocks
-
-    offset2bb_start = {bb.start_offset: bb for bb in bb_list}
-    offset2bb_end = {}
-    setup_loop_target = set()
-    for bb in bb_list:
-        if not hasattr(bb, 'reach_offset'):
-            # Dead code
-            continue
-        if bb.reach_offset not in offset2bb_end:
-            print("reach_offset %d, bb #%d" % (bb.reach_offset, bb.number))
-            offset2bb_end[bb.reach_offset] = [bb]
-        else:
-            # Smaller ranges (which appear later), go to
-            # the front of the list
-            offset2bb_end[bb.reach_offset].insert(0, bb)
-
     for inst in get_instructions(fn):
         offset = inst.offset
-        if inst.opname == 'SETUP_LOOP':
-            setup_loop_target.add(inst.argval)
-        bb_start = offset2bb_start.get(offset, None)
-        if bb_start:
-            for flag in bb_start.flags:
-                if flag == BB_LOOP:
-                    print("LOOP")
-                elif flag == BB_TRY:
-                    print("TRY")
-                elif flag == BB_FOR:
-                    print("FOR")
-                elif flag == BB_FINALLY:
-                    print("FINALLY")
-                elif flag == BB_EXCEPT:
-                    print("EXCEPT")
+        remain = []
+        if offset in cs_marks:
+            for item in cs_marks[offset]:
+                if not item.startswith('end'):
+                    print(item.upper())
+                else:
+                    if item == 'end_continue':
+                        item = 'CONTINUE'
+                    remain.append(item)
                     pass
                 pass
             pass
-        if offset in setup_loop_target:
-            print("END_SETUP_LOOP")
-
         print(inst.disassemble())
-        if offset in offset2bb_end:
-            for bb in offset2bb_end[offset]:
-                if BB_LOOP in bb.flags:
-                    print("[** loop dominator end for BB: #%s, start offset: %s, end offset: %d]" %
-                          (bb.number, bb.index[0], bb.reach_offset))
-                else:
-                    print("** dominator end for BB: #%s, start offset: %s, end offset: %d" %
-                          (bb.number, bb.index[0], bb.reach_offset))
-                pass
+        for item in remain:
+            print(item.upper())
             pass
         pass
     return
