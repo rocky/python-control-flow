@@ -20,7 +20,7 @@ class ControlStructure(object):
     better the higher level structure better.
 
     While in concept we are mirroring the Python control structures like
-    "if", "for", "for else", "while", "while_else" it is not
+    "if", "for", "for_else", "while", "while_else" it is not
     exactly the same, but it is kind of a hybrid between what is seen
     on the instruction level and what is seen at the Python source.
 
@@ -67,7 +67,7 @@ class ForControlStructure(ControlStructure):
 
 class ForElseControlStructure(ControlStructure):
     def __init__(self, block, children, else_children):
-        super(ForElseControlStructure, self).__init__(block, 'for else', [children, else_children])
+        super(ForElseControlStructure, self).__init__(block, 'for_else', [children, else_children])
 
 class SequenceControlStructure(ControlStructure):
     def __init__(self, block, children):
@@ -107,7 +107,7 @@ class TryControlStructure(ControlStructure):
 
 class TryElseControlStructure(ControlStructure):
     def __init__(self, block, children):
-        super(TryElseControlStructure, self).__init__(block, 'try else', children)
+        super(TryElseControlStructure, self).__init__(block, 'try_else', children)
         return
     pass
 
@@ -117,7 +117,7 @@ class FinallyControlStructure(ControlStructure):
 
 class EndFinallyControlStructure(ControlStructure):
     def __init__(self, block, finally_block):
-        super(EndFinallyControlStructure, self).__init__(block, 'end-finally', [finally_block])
+        super(EndFinallyControlStructure, self).__init__(block, 'end_finally', [finally_block])
 
 class ExceptControlStructure(ControlStructure):
     def __init__(self, block, except_children):
@@ -198,13 +198,13 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif BB_FINALLY in current.flags:
         kind = 'finally'
     elif BB_END_FINALLY in current.flags:
-        kind = 'end-finally'
+        kind = 'end_finally'
     elif parent_kind == 'if':
         children, follow = control_structure_iter(cfg, current, parent, 'sequence')
         kind = 'then'
     elif parent_kind == 'else':
         kind = 'sequence'
-    elif (parent_kind in ('sequence', 'while_else', 'for else') and starts_pop_block):
+    elif (parent_kind in ('sequence', 'while_else', 'for_else') and starts_pop_block):
         kind = 'sequence pop block "%s"' % parent_kind
     elif (parent_kind in ('sequence', 'while', 'for') and
           BB_SINGLE_POP_BLOCK in block.flags):
@@ -224,7 +224,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         # Jut jump around the "else" will be POP_BLOCK, JUMP_ABSOLUTE.
         if (BB_STARTS_POP_BLOCK in jump_block.flags and
             BB_JUMP_UNCONDITIONAL not in jump_block.flags):
-            kind = 'for else'
+            kind = 'for_else'
         else:
             kind = 'for'
             pass
@@ -245,7 +245,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         if parent in {node.bb for node in current.pdom_set}:
             kind = 'try meet'
         else:
-            kind = 'try else'
+            kind = 'try_else'
             pass
     elif BB_JUMP_CONDITIONAL in current.flags:
         kind = 'if'
@@ -263,11 +263,6 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
             pass
         pass
 
-    # Now that classification has been done, create the specific
-    # control structure.
-    # For for/while/try structures with "else" blocks we will
-    # add an emplty list and fill in the "else" block later.
-
     if kind == 'loop':
         assert block.edge_count == 2
         result.append(LoopControlStructure(block, children))
@@ -281,7 +276,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind == 'for':
         result.append(ForControlStructure(block, children))
         pass
-    elif kind == 'for else':
+    elif kind == 'for_else':
         # else block is fixed up below.
         result.append(ForElseControlStructure(block, children, []))
         pass
@@ -294,7 +289,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                 children.append(except_children)
             pass
         result.append(TryControlStructure(block, children))
-    elif kind == 'try else':
+    elif kind == 'try_else':
         if follow:
             children.append(follow)
             pass
@@ -303,7 +298,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         follow = SequenceControlStructure(block, children)
     elif kind == 'finally':
         result.append(FinallyControlStructure(block, children))
-    elif kind == 'end-finally':
+    elif kind == 'end_finally':
         # else block is fixed up below.
         if follow_block in {node.bb for node in current.dom_set}:
             end_finally_block = SequenceControlStructure(follow_block, [])
@@ -333,11 +328,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind.startswith('sequence pop'):
         result.append(PopBlockSequenceStructure(block, children, kind))
     elif kind == 'sequence':
-        if parent and current in {node.bb for node in parent.dom_set}:
-            follow = SequenceControlStructure(block, children)
-            pass
-        else:
-            result.append(SequenceControlStructure(block, children))
+        result.append(SequenceControlStructure(block, children))
         pass
     pass
 
@@ -377,7 +368,10 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                         else:
                             jump_kind = 'else'
                             else_children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
-                            follow = None
+                            jump_dominator_blocks = {n.bb for n in jump_block.dom_set}
+                            if follow and follow in jump_dominator_blocks:
+                                follow = None
+                                pass
                             result[0].children.append(
                                 ElseControlStructure(jump_block, else_children))
                             pass
@@ -387,7 +381,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                     assert len(jump_block.predecessors) != 0  # this would be dead code
                     jump_kind = 'sequence'
                     children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
-                    if jump_block.number != follow.block.number:
+                    if follow and jump_block.number != follow.block.number:
                         result[0].children.append(
                             SequenceControlStructure(jump_block, children))
                         pass
@@ -398,7 +392,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                 if kind not in ('then', 'else') or block.index[1] >= jump_offset:
                     # This is not quite right
                     jump_children, follow = control_structure_iter(cfg, jump_block, current, kind)
-                    if kind in ['while_else', 'for else']:
+                    if kind in ['while_else', 'for_else']:
                         result[0].children[-1] = jump_children
                     elif len(jump_children) == 1:
                         result.append(jump_children[0])
@@ -433,8 +427,9 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
         result += "%s%s %s\n" % (indent, cs.kind, cs.block)
         if cs.kind in ('loop',
                        'while', 'while_else',
-                       'for', 'for else',
-                       'else', 'then', 'try',
+                       'for', 'for_else',
+                       'else', 'then',
+                       'try', 'try_else', 'except',
                        'sequence pop block "while_else"'):
             if cs.kind == 'loop':
                 offset = cs.block.loop_offset
@@ -454,20 +449,23 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
 
 
         for child in cs.children:
-            if not cs.kind.startswith('sequence'):
+            if child and not cs.kind.startswith('sequence'):
                 result += cs_tree_to_str(child, cs_marks, indent + '  ')
             else:
                 result += cs_tree_to_str(child, cs_marks, indent)
                 pass
             pass
-        if cs.children:
+        if cs.children and cs.block.start_offset != cs.block.end_offset:
+            assert cs.block.start_offset < cs.block.end_offset
             result += "%send %s\n" % (indent, cs.kind)
             pass
         pass
         if cs.kind in ('loop',
                        'while', 'while_else',
                        'for', 'for else',
-                       'if', 'else', 'then', 'try', 'continue'):
+                       'if', 'else', 'then',
+                       'try', 'try_else', 'except',
+                       'continue'):
             if cs.children:
                 last_child = cs.children[-1] if cs.children[-1] else cs.children[0]
                 while True:

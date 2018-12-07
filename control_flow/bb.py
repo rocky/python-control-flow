@@ -72,7 +72,7 @@ class BasicBlock(object):
     self.successors = set()
 
     # List of blocks we dominiate is empty
-    self.doms = set()
+    self.dom_set = set()
 
     # Set true if this is dead code, or unreachable
     self.unreachable = False
