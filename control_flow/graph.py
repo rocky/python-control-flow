@@ -65,23 +65,32 @@ BB_EXIT = 13
 # found in "if", and "while" constructs.
 BB_JUMP_CONDITIONAL = 14
 
+# Jumps to what would be the fallthough.
+# If there were optimization, this instruction would be removed.
+# This crud though can be useful in determining control
+# structure is used in the same way junk DNA may be
+# useful in determining evolution history.
+# We mostly use it in drawing graphs to make
+# sure the jump arrow points straight down.
+BB_JUMP_TO_FALLTHROUGH = 15
 
 FLAG2NAME = {
-  BB_ENTRY:              'entry',
-  BB_EXIT:               'exit',
-  BB_NOFOLLOW:           'no fallthrough',
-  BB_LOOP:               'loop',
-  BB_BREAK:              'break',
-  BB_POP_BLOCK:          'block',
-  BB_SINGLE_POP_BLOCK:   'single pop block',
-  BB_STARTS_POP_BLOCK:   'starts with pop block',
-  BB_EXCEPT:             'except',
-  BB_JUMP_UNCONDITIONAL: 'unconditional',
-  BB_JUMP_CONDITIONAL:   'conditional jump',
-  BB_FOR:                'for',
-  BB_FINALLY:            'finally',
-  BB_END_FINALLY:        'end finally',
-  BB_TRY:                'try',
+  BB_ENTRY:               'entry',
+  BB_EXIT:                'exit',
+  BB_NOFOLLOW:            'no fallthrough',
+  BB_LOOP:                'loop',
+  BB_BREAK:               'break',
+  BB_POP_BLOCK:           'block',
+  BB_SINGLE_POP_BLOCK:    'single pop block',
+  BB_STARTS_POP_BLOCK:    'starts with pop block',
+  BB_EXCEPT:              'except',
+  BB_JUMP_UNCONDITIONAL:  'unconditional',
+  BB_JUMP_CONDITIONAL:    'conditional jump',
+  BB_JUMP_TO_FALLTHROUGH: 'jump to fallthough',
+  BB_FOR:                 'for',
+  BB_FINALLY:             'finally',
+  BB_END_FINALLY:         'end finally',
+  BB_TRY:                 'try',
 }
 
 

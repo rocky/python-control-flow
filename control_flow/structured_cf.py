@@ -5,6 +5,7 @@ create a structured control flow graph.
 This code is ugly.
 
 """
+from __future__ import print_function
 from xdis.std import get_instructions
 from control_flow.graph import (BB_EXCEPT,
                                 BB_FINALLY, BB_END_FINALLY,

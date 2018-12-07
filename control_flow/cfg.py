@@ -63,7 +63,10 @@ class ControlFlowGraph(object):
     for block in self.blocks:
 
         for jump_offset in set(block.jump_offsets) | block.exception_offsets:
-            assert jump_offset in self.block_offsets
+            try:
+                assert jump_offset in self.block_offsets
+            except:
+                from trepan.api import debug; debug()
             successor_block = self.block_offsets[jump_offset]
             successor_block.predecessors.add(block)
             block.successors.add(successor_block)

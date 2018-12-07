@@ -4,7 +4,7 @@ from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
                                 BB_EXCEPT, BB_ENTRY, BB_TRY, BB_EXIT,
                                 BB_FINALLY, BB_END_FINALLY, BB_FOR, BB_BREAK,
-                                BB_JUMP_CONDITIONAL, BB_JUMP_UNCONDITIONAL,
+                                BB_JUMP_CONDITIONAL, BB_JUMP_UNCONDITIONAL, BB_JUMP_TO_FALLTHROUGH,
                                 BB_LOOP, BB_NOFOLLOW)
 
 # The byte code versions we support
@@ -163,7 +163,9 @@ class BBMgr(object):
           # The classifications are used in setting basic block flag bits
           self.POP_BLOCK_INSTRUCTIONS  = set([opcode.opmap['POP_BLOCK']])
           self.EXCEPT_INSTRUCTIONS     = set([])
+          self.TRY_INSTRUCTIONS         = set([opcode.opmap['SETUP_EXCEPT']])
           self.FINALLY_INSTRUCTIONS    = set([opcode.opmap['SETUP_FINALLY']])
+          self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap['END_FINALLY']])
           self.FOR_INSTRUCTIONS        = set([opcode.opmap['FOR_ITER']])
           self.JREL_INSTRUCTIONS       = set(opcode.hasjrel)
           self.JABS_INSTRUCTIONS       = set(opcode.hasjabs)
@@ -174,7 +176,7 @@ class BBMgr(object):
                                               opcode.opmap['POP_JUMP_IF_TRUE'],
                                               opcode.opmap['JUMP_IF_FALSE_OR_POP'],
                                               opcode.opmap['JUMP_IF_TRUE_OR_POP']])
-          self.LOOP_INSTRUCTIONS       = set([opcode.opmap['SETUP_LOOP']]),
+          self.LOOP_INSTRUCTIONS       = set([opcode.opmap['SETUP_LOOP']])
           # ??
           #                                   opcode.opmap['YIELD_VALUE'],
           #                                  opcode.opmap['RAISE_VARARGS']])
@@ -332,6 +334,9 @@ def basic_blocks(version, is_pypy, fn):
             jump_offsets.add(jump_offset)
             if op in BB.JUMP_UNCONDITONAL:
                 flags.add(BB_JUMP_UNCONDITIONAL)
+                if jump_offset == follow_offset:
+                    flags.add(BB_JUMP_TO_FALLTHROUGH)
+                    pass
                 block, flags, jump_offsets = BB.add_bb(start_offset, end_offset,
                                                        loop_offset, follow_offset,
                                                        flags, jump_offsets)

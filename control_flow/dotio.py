@@ -8,6 +8,7 @@
 
 from control_flow.graph import (
     DiGraph, BB_ENTRY, BB_EXIT, BB_END_FINALLY,
+    BB_JUMP_TO_FALLTHROUGH,
     BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL, format_flags_with_width)
 
 DOT_STYLE = """
@@ -86,6 +87,7 @@ class DotConverter(object):
       edge_port = ''
       source_port = ''
       dest_port = ''
+      weight = 1
 
       if edge.kind in ('fallthrough', 'no fallthrough',
                          'follow', 'exit edge', 'dom-edge', 'pdom-edge'):
@@ -138,7 +140,10 @@ class DotConverter(object):
             #     dest_port =':nw'
             #     pass
 
-            weight = 1
+            elif BB_JUMP_TO_FALLTHROUGH in edge.source.flags:
+                weight = 10
+            else:
+                weight = 1
             pass
 
       if BB_EXIT in edge.dest.flags:
