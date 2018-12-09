@@ -231,17 +231,18 @@ class DiGraph(object):
         self.add_edge(edge)
         return edge
 
+
 class TreeGraph(DiGraph):
     """
       A simple tree structure for basic blocks.
     """
 
-    def __init__(self):
+    def __init__(self, root):
         Node.reset()
         Edge.reset()
+        self.root = root
         self.nodes = []
         self.edges = set()
-
 
     def add_edge(self, edge):
         if edge in self.edges:

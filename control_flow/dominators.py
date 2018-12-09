@@ -127,7 +127,8 @@ class DominatorTree(object):
             edge_type = 'dom-edge'
             doms = self.doms
 
-        t = TreeGraph()
+        root = self.cfg.entry_node if do_pdoms else self.cfg.exit_node
+        t = TreeGraph(root)
 
         for node in doms:
             if node not in t_nodes:
@@ -148,8 +149,13 @@ class DominatorTree(object):
 
 def build_dom_set(t, do_pdoms):
     """Makes a the dominator set for each node in the tree"""
-    if t.nodes:
-            return build_dom_set1(t.nodes[0], do_pdoms)
+    seen = set()
+    for node in t.nodes:
+        if node not in seen:
+            seen.add(node)
+            build_dom_set1(node, do_pdoms)
+            pass
+        pass
 
 def build_dom_set1(node, do_pdoms):
     """Build dominator sets from dominator node"""

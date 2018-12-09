@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
@@ -80,7 +81,7 @@ class BasicBlock(object):
     self.edge_count = len(jump_offsets)
     if (follow_offset is not None and not
         BB_NOFOLLOW in self.flags):
-      self.edge_count += 1
+        self.edge_count += 1
 
     end_bb += 1
 
@@ -88,17 +89,17 @@ class BasicBlock(object):
   # A nice print routine for a Basic block
   def __repr__(self):
       if len(self.jump_offsets) > 0:
-        jump_text = ", jumps=%s" % sorted(self.jump_offsets)
+          jump_text = ", jumps=%s" % sorted(self.jump_offsets)
       else:
-        jump_text = ""
+          jump_text = ""
       if len(self.exception_offsets) > 0:
-        exception_text = ", exceptions=%s" % sorted(self.exception_offsets)
+          exception_text = ", exceptions=%s" % sorted(self.exception_offsets)
       else:
-        exception_text = ""
+          exception_text = ""
       if len(self.flags) > 0:
-        flag_text = ", flags=%s" % sorted(self.flags)
+          flag_text = ", flags=%s" % sorted(self.flags)
       else:
-        flag_text = ""
+          flag_text = ""
       return ('BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)'
               % (self.number, self.index, flag_text, self.follow_offset,
                  self.edge_count, jump_text, exception_text))
@@ -162,8 +163,8 @@ class BBMgr(object):
           # isolate us from instruction changes in Python.
           # The classifications are used in setting basic block flag bits
           self.POP_BLOCK_INSTRUCTIONS  = set([opcode.opmap['POP_BLOCK']])
-          self.EXCEPT_INSTRUCTIONS     = set([])
-          self.TRY_INSTRUCTIONS         = set([opcode.opmap['SETUP_EXCEPT']])
+          self.EXCEPT_INSTRUCTIONS     = set([opcode.opmap['POP_TOP']])
+          self.TRY_INSTRUCTIONS        = set([opcode.opmap['SETUP_EXCEPT']])
           self.FINALLY_INSTRUCTIONS    = set([opcode.opmap['SETUP_FINALLY']])
           self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap['END_FINALLY']])
           self.FOR_INSTRUCTIONS        = set([opcode.opmap['FOR_ITER']])
@@ -305,6 +306,11 @@ def basic_blocks(version, is_pypy, fn):
                 flags.add(BB_STARTS_POP_BLOCK)
                 flags.remove(BB_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
+            if (sys.version_info[0:2] <= (2, 7)):
+                # FIXME: for Python 2.7 we should check that there are 3 POP_TOPS
+                if len(try_stack) == 0 or start_offset != offset:
+                  continue
+                pass
             flags.add(BB_EXCEPT)
             try_stack[-1].exception_offsets.add(start_offset)
             pass

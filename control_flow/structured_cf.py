@@ -473,6 +473,8 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
                     if isinstance(last_child, list):
                         last_child = last_child[-1] if last_child[-1] else last_child[-2]
                     elif last_child.children:
+                        if len(last_child.children) == 1 and not last_child.children[0]:
+                            break
                         last_child = last_child.children
                     else:
                         break
