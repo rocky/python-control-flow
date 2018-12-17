@@ -18,8 +18,10 @@ def testing(self, edge, show_exit):
         self.buffer += "\n  # edges:\n"
         for edge in self.g.edges:
             self.add_edge(edge, show_exit)
+import sys
 def expect():
-    return """
+    if (sys.version_info[0:2] in ((3, 6), (3, 7))):
+        return """
 if BasicBlock(#0 range: (0, 38), flags=[0, 14], follow_offset=40, edge_count=2, jumps=[156])
   loop BasicBlock(#1 range: (40, 74), flags=[2], follow_offset=76, edge_count=2, jumps=[112])
     for BasicBlock(#2 range: (76, 76), flags=[9], follow_offset=78, edge_count=2, jumps=[110])
@@ -35,4 +37,21 @@ if BasicBlock(#0 range: (0, 38), flags=[0, 14], follow_offset=40, edge_count=2, 
   end loop
 end if
 sequence BasicBlock(#9 range: (156, 158), flags=[1], follow_offset=None, edge_count=0)
+"""
+    elif (sys.version_info[0:2] == (2, 7)):
+        return """
+if BasicBlock(#0 range: (0, 45), flags=[0, 14], follow_offset=48, edge_count=2, jumps=[194])
+  loop BasicBlock(#1 range: (48, 90), flags=[2], follow_offset=91, edge_count=2, jumps=[137])
+    for BasicBlock(#2 range: (91, 91), flags=[9], follow_offset=94, edge_count=2, jumps=[136])
+      continue BasicBlock(#3 range: (94, 133), flags=[8], follow_offset=136, edge_count=2, jumps=[91])
+    end for
+    pop block BasicBlock(#4 range: (136, 136), flags=[5], follow_offset=137, edge_count=1)
+  end loop
+  loop BasicBlock(#5 range: (137, 164), flags=[2], follow_offset=165, edge_count=2, jumps=[194])
+    for BasicBlock(#6 range: (165, 165), flags=[9], follow_offset=168, edge_count=2, jumps=[190])
+      continue BasicBlock(#7 range: (168, 187), flags=[8], follow_offset=190, edge_count=2, jumps=[165])
+    end for
+    sequence BasicBlock(#8 range: (190, 191), flags=[6, 8, 15], follow_offset=194, edge_count=2, jumps=[194])
+  end loop
+end if
 """

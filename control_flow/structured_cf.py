@@ -414,7 +414,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     return result, follow
 
 # FIXME: instead of or in additon to printing we need a structure
-# that can be used in a revised print_structued_flow.
+# that can be used in a revised print_structured_flow.
 def cs_tree_to_str(cs_list, cs_marks, indent=''):
 
     # pop(0), insert(0,x)
@@ -456,8 +456,10 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
                 result += cs_tree_to_str(child, cs_marks, indent)
                 pass
             pass
-        if cs.children and cs.block.start_offset != cs.block.end_offset:
-            assert cs.block.start_offset < cs.block.end_offset
+
+        if ((cs.children and cs.block.start_offset != cs.block.end_offset)
+            or cs.kind == 'for'):
+            assert cs.block.start_offset <= cs.block.end_offset
             result += "%send %s\n" % (indent, cs.kind)
             pass
         pass

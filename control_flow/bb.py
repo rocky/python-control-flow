@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
+from xdis.util import code2num
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
                                 BB_EXCEPT, BB_ENTRY, BB_TRY, BB_EXIT,
@@ -12,8 +13,8 @@ from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP
 PYTHON_VERSIONS = (# 1.5,
                    # 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
                    2.6, 2.7,
-                   # 3.0, 3.1, 3.2, 3.3, 3.4
-                   3.5, 3.6, 3.7)
+                   # 3.0, 3.1, 3.2, 3.3
+                   3.4, 3.5, 3.6, 3.7)
 
 end_bb = -1
 
@@ -116,8 +117,10 @@ class BBMgr(object):
     # Pick up appropriate version
     if version in PYTHON_VERSIONS:
       if PYTHON3:
-        if PYTHON_VERSION in (3.5, 3.6, 3.7):
-          if PYTHON_VERSION == 3.5:
+        if PYTHON_VERSION in (3.4, 3.5, 3.6, 3.7):
+          if PYTHON_VERSION == 3.4:
+            import xdis.opcodes.opcode_34 as opcode
+          elif PYTHON_VERSION == 3.5:
             import xdis.opcodes.opcode_35 as opcode
           elif PYTHON_VERSION == 3.6:
             import xdis.opcodes.opcode_36 as opcode
@@ -221,7 +224,8 @@ def basic_blocks(version, is_pypy, fn):
 
     # Get jump targets
     jump_targets = set()
-    for inst in get_instructions(fn):
+    instructions = list(get_instructions(fn))
+    for inst in instructions:
         op = inst.opcode
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
@@ -244,7 +248,7 @@ def basic_blocks(version, is_pypy, fn):
     end_try_offset = None
     loop_offset = None
 
-    for inst in get_instructions(fn):
+    for i, inst in enumerate(instructions):
         prev_offset = end_offset
         end_offset = inst.offset
         op = inst.opcode
@@ -307,10 +311,15 @@ def basic_blocks(version, is_pypy, fn):
                 flags.remove(BB_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
             if (sys.version_info[0:2] <= (2, 7)):
-                # FIXME: for Python 2.7 we should check that there are 3 POP_TOPS
+                # In Python up to 2.7, thre'POP_TOP'S at the beginning of a block
+                # indicate an exception handler. We also check
+                # that we are nested inside a "try".
                 if len(try_stack) == 0 or start_offset != offset:
                   continue
                 pass
+                if (instructions[i+1].opcode != BB.opcode.opmap['POP_TOP'] or
+                    instructions[i+2].opcode != BB.opcode.opmap['POP_TOP']):
+                  continue
             flags.add(BB_EXCEPT)
             try_stack[-1].exception_offsets.add(start_offset)
             pass
