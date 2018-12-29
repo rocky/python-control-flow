@@ -17,7 +17,6 @@ from control_flow.graph import (BB_EXCEPT,
 
 class ControlStructure(object):
     """Encapsulates basic blocks in a way that is is nested and captures
-
     better the higher level structure better.
 
     While in concept we are mirroring the Python control structures like
@@ -30,16 +29,15 @@ class ControlStructure(object):
     instruction has more instructions. Tracking whether a block that
     starts "POP_BLOCK" is useful in detecting the end of a structures
     that add scope, and checking whether there is one or more
-    instructions discriminates betweenn constructs with "else" clauses
+    instructions discriminates between constructs with "else" clauses
     like "while/for else".  Another example where there is a difference
     is that the instructoin that consists of the jump back to a loop is
     marked "continue" even though a Python "continue" instruction is
     generaly not explicitly coded at the end of a loop
 
-
-    What we are mostly concerned with here is detecting the idea going
-    on so that in Earley parsing we can detect the right structure
-    unambiguously.
+    What we are mostly concerned with here is being able to insert
+    instructions that an (Earley) parser can use to detect the right
+    high-level control structure unambiguously.
     """
 
     def __init__(self, block, kind, children):
