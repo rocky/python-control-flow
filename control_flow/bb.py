@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 from xdis import PYTHON_VERSION, PYTHON3, next_offset
-from xdis.util import code2num
 from xdis.std import get_instructions
 from control_flow.graph import (BB_POP_BLOCK, BB_SINGLE_POP_BLOCK, BB_STARTS_POP_BLOCK,
                                 BB_EXCEPT, BB_ENTRY, BB_TRY, BB_EXIT,

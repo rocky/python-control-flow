@@ -110,6 +110,12 @@ class TryElseControlStructure(ControlStructure):
         return
     pass
 
+class TryElseContinueControlStructure(ControlStructure):
+    def __init__(self, block, children):
+        super(TryElseContinueControlStructure, self).__init__(block, 'try_else_continue', children)
+        return
+    pass
+
 class FinallyControlStructure(ControlStructure):
     def __init__(self, block, children):
         super(FinallyControlStructure, self).__init__(block, 'finally', children)
@@ -230,7 +236,10 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         pass
     # FIXME: the min(list) is funky because jump_offsets is a set
     elif block.jump_offsets and block.index[1] > min(list(block.jump_offsets)):
-        kind = 'continue'
+        if parent_kind == 'try':
+            kind = 'try_else_continue'
+        else:
+            kind = 'continue'
     elif (parent_kind == 'loop' and loop_back(block) and ppb):
         if BB_SINGLE_POP_BLOCK in ppb.flags:
             kind = 'while'
@@ -280,19 +289,24 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         result.append(ForElseControlStructure(block, children, []))
         pass
     elif kind == 'try':
-        for except_offset in block.exception_offsets | set(block.jump_offsets):
+        for except_offset in sorted(block.exception_offsets | set(block.jump_offsets)):
             except_number = cfg.offset2block[except_offset].bb.number
             except_block = cfg.blocks[except_number]
             if except_block not in cfg.seen_blocks:
                 except_children, follow  = control_structure_iter(cfg, except_block, current, kind)
                 children.append(except_children)
             pass
-        result.append(TryControlStructure(block, children))
+        if children[-1] and children[-1][0] and children[-1][0].kind == 'try_else_continue':
+            result.append(TryElseControlStructure(block, children))
+        else:
+            result.append(TryControlStructure(block, children))
     elif kind == 'try_else':
         if follow:
             children.append(follow)
             pass
         result.append(TryElseControlStructure(block, children))
+    elif kind == 'try_else_continue':
+        result.append(TryElseContinueControlStructure(block, children))
     elif kind == 'try meet':
         follow = SequenceControlStructure(block, children)
     elif kind == 'finally':
@@ -428,7 +442,8 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
                        'while', 'while_else',
                        'for', 'for_else',
                        'else', 'then',
-                       'try', 'try_else', 'except',
+                       'try', 'try_else', 'try_else', 'try_else_continue',
+                       'except',
                        'sequence pop block "while_else"'):
             if cs.kind == 'loop':
                 offset = cs.block.loop_offset
@@ -465,7 +480,7 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
                        'while', 'while_else',
                        'for', 'for else',
                        'if', 'else', 'then',
-                       'try', 'try_else', 'except',
+                       'try', 'try_else', 'try_else_continue', 'except',
                        'continue'):
             if cs.children:
                 last_child = cs.children[-1] if cs.children[-1] else cs.children[0]
