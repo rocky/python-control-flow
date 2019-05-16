@@ -4,7 +4,8 @@ import os.path as osp
 from control_flow.main import doit
 from glob import glob
 
-
+def testing():
+    assert False, "This should have been replaced via read-in python script with a function called testing"
 
 if len(sys.argv) == 1:
     mydir = osp.dirname(osp.abspath(__file__))
@@ -24,10 +25,10 @@ for filename in files:
 
     cs = doit(testing, short)  # NOQA
     got = cs.strip()
-    want = expect().strip()  # NOQA
+    # want = expect().strip()  # NOQA
     print("filename %s fails" % filename)
-    if got != want:
-        print(want)
+    if False: # got != want:
+        # print(want)
         print('-' * 20)
         print(got)
         pass
