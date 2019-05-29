@@ -182,7 +182,6 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     follow = []
     follow_block = None
     children = []
-
     cfg.seen_blocks.add(current)
     block = cfg.blocks[current.number]
 
@@ -208,7 +207,10 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         children, follow = control_structure_iter(cfg, current, parent, 'sequence')
         kind = 'then'
     elif parent_kind == 'else':
-        kind = 'sequence'
+        if BB_JUMP_CONDITIONAL in current.flags:
+            kind = "if"
+        else:
+            kind = 'sequence'
     elif (parent_kind in ('sequence', 'while_else', 'for_else') and starts_pop_block):
         kind = 'sequence pop block "%s"' % parent_kind
     elif (parent_kind in ('sequence', 'while', 'for') and
@@ -260,7 +262,6 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     else:
         # FIXME: add others?
         kind = 'sequence'
-
 
     dominator_blocks = {n.bb for n in block.dom_set}
     if not children:
@@ -351,7 +352,9 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     for jump_offset in block.jump_offsets:
         jump_number = cfg.offset2block[jump_offset].bb.number
         jump_block = cfg.blocks[jump_number]
+        jump_pdominator_blocks = {n.bb for n in jump_block.pdom_set}
         # FIXME: may have to traverse in sequence, that is by dominator number or offset address?
+
         if jump_block in dominator_blocks and jump_block not in cfg.seen_blocks:
             if kind == 'if':
                 if follow:
@@ -422,6 +425,15 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                     pass
                 pass
             pass
+        elif block in jump_pdominator_blocks and jump_block not in cfg.seen_blocks:
+            if parent_kind == "else":
+                if kind == "sequence":
+                    assert len(jump_block.predecessors) != 0  # this would be dead code
+                    jump_kind = 'sequence'
+                    children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
+                    assert len(children) == 1
+                    result[-1].children.append(children[0])
+
         pass
     return result, follow
 
