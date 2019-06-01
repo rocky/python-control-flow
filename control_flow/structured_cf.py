@@ -374,7 +374,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
                         #   if x:
                         #      return 5
                         #   return 6
-                        # rathern than
+                        # rather than
                         #   if x:
                         #      return 5
                         #   else:
