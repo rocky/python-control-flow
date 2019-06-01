@@ -12,7 +12,9 @@ import dis
 import os
 import sys
 
-def doit(fn, name):
+def doit(fn, name=None):
+    if not name:
+        name = fn.__name__
     print(name)
 
     bb_mgr = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)

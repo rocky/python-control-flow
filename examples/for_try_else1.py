@@ -1,4 +1,6 @@
 # Bug found in 2.7 test_itertools.py
+
+# Note: driver assumes a functions named "testing" and "expect".
 def testing(self):
 
     # The bug was the except jumping back
