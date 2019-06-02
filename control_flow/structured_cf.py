@@ -84,6 +84,10 @@ class ElseControlStructure(ControlStructure):
     def __init__(self, block, else_children):
         super(ElseControlStructure, self).__init__(block, 'else', else_children)
 
+class ElIfControlStructure(ControlStructure):
+    def __init__(self, block, else_children):
+        super(ElIfControlStructure, self).__init__(block, 'elif', else_children)
+
 class PopBlockStructure(ControlStructure):
     def __init__(self, block):
         super(PopBlockStructure, self).__init__(block, 'pop block', [])
@@ -210,7 +214,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         if BB_JUMP_CONDITIONAL in current.flags:
             kind = "if"
         else:
-            kind = 'sequence'
+            kind = 'nop'
     elif (parent_kind in ('sequence', 'while_else', 'for_else') and starts_pop_block):
         kind = 'sequence pop block "%s"' % parent_kind
     elif (parent_kind in ('sequence', 'while', 'for') and
@@ -344,6 +348,8 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
     elif kind == 'sequence':
         result.append(SequenceControlStructure(block, children))
         pass
+    elif kind == 'nop':
+        pass
     pass
 
     # Traverse jump blocks, unless:
@@ -427,12 +433,15 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
             pass
         elif block in jump_pdominator_blocks and jump_block not in cfg.seen_blocks:
             if parent_kind == "else":
-                if kind == "sequence":
+                if kind in ("sequence", "nop"):
                     assert len(jump_block.predecessors) != 0  # this would be dead code
                     jump_kind = 'sequence'
                     children, follow  = control_structure_iter(cfg, jump_block, current, jump_kind)
                     assert len(children) == 1
-                    result[-1].children.append(children[0])
+                    if len(result):
+                        result[-1].children.append(children[0])
+                    else:
+                        result = [children[0]]
 
         pass
     return result, follow
@@ -453,7 +462,7 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
         if cs.kind in ('loop',
                        'while', 'while_else',
                        'for', 'for_else',
-                       'else', 'then',
+                       'else', 'elif', 'then',
                        'try', 'try_else', 'try_else', 'try_else_continue',
                        'except',
                        'sequence pop block "while_else"'):
@@ -510,7 +519,14 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
             else:
                 end_offset = cs.block.end_offset
             offset_marks = cs_marks.get(end_offset, [])
-            offset_marks.append('end_' + cs.kind)
+            if cs.kind in ('then', 'else'):
+                offset_marks.append(('end_' + cs.kind, cs.children[0].block.start_offset))
+            elif cs.kind == 'for':
+                offset_marks.append(('end_' + cs.kind, cs.block.start_offset))
+            elif cs.kind == 'continue':
+                offset_marks.append(('end_' + cs.kind, list(cs.block.jump_offsets)[0]))
+            else:
+                offset_marks.append('end_' + cs.kind)
             cs_marks[end_offset] = offset_marks
     return result
 
@@ -523,18 +539,27 @@ def print_structured_flow(fn, cfg, current, cs_marks):
         remain = []
         if offset in cs_marks:
             for item in cs_marks[offset]:
+                start_offset = None
+                if isinstance(item, tuple):
+                    item, start_offset = item
                 if not item.startswith('end'):
                     print(item.upper())
                 else:
                     if item == 'end_continue':
                         item = 'CONTINUE'
-                    remain.append(item)
+                    if start_offset:
+                        remain.append((item, start_offset))
+                    else:
+                        remain.append(item)
                     pass
                 pass
             pass
         print(inst.disassemble())
         for item in remain:
-            print(item.upper())
+            if isinstance(item, tuple):
+                print(f"{item[0].upper()} {item[1]}")
+            else:
+                print(item.upper())
             pass
         pass
     return
