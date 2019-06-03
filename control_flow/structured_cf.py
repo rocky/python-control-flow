@@ -457,7 +457,7 @@ def cs_tree_to_str(cs_list, cs_marks, indent=''):
         if cs.kind in ('loop',
                        'while', 'while_else',
                        'for', 'for_else',
-                       'else', 'elif', 'then',
+                       'else', 'then',
                        'try', 'try_else', 'try_else', 'try_else_continue',
                        'except',
                        'sequence pop block "while_else"'):
