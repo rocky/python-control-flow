@@ -1,5 +1,6 @@
-# Note: driver assumes functions with the name "testing" and "expect"
 # Compare with while-else3.py - the difference is a single jump location in bytecode.
+
+# Note: driver assumes functions named "testing" and "expect".
 def testing(a):
     while a:
         a += 2

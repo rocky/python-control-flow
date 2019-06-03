@@ -4,6 +4,7 @@ BB_NOFOLLOW = 3
 BB_JUMP_UNCONDITIONAL= 3
 DOT_STYLE = ""
 
+# Note: driver assumes functions named "testing" and "expect".
 def testing(self, edge, show_exit):
 
     self.buffer += 'digraph G {'
