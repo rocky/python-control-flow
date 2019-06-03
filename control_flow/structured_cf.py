@@ -132,11 +132,6 @@ class ContinueControlStructure(ControlStructure):
     def __init__(self, block):
         super(ContinueControlStructure, self).__init__(block, 'continue', [])
 
-# Don't know if we will do this here
-class Elif(ControlStructure):
-  def __init__(self, block, elif_children):
-      super(LoopControlStructure, self).__init__(block, 'elif', [elif_children])
-
 def build_control_structure(cfg, current):
     cfg.seen_blocks = set()
     cs, follow  = control_structure_iter(cfg, cfg.entry_node, None)
