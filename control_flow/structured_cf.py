@@ -420,7 +420,7 @@ def control_structure_iter(cfg, current, parent, parent_kind='sequence'):
         pass
     return result, follow
 
-# FIXME: instead of or in additon to printing we need a structure
+# FIXME: instead of printing we need a structure
 # that can be used in a revised print_structured_flow.
 def cs_tree_to_str(cs_list, cs_marks, indent=''):
 

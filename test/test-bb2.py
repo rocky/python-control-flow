@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.main import doit
+from control_flow.__main__ import doit
 
 def testing():
     assert False, "This should have been replaced via read-in python script with a function called testing"

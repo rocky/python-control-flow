@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.main import doit
+from control_flow.__main__ import doit
 from glob import glob
 
 def testing():

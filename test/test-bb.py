@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from control_flow.main import doit
+from control_flow.__main__ import doit
 
 def five():
     return 5
@@ -115,7 +115,7 @@ def try_no_finally():
 # doit(if_else)
 # doit(if_vs_and)
 # doit(if_then1)
-# doit(if_then2)
+doit(if_then2)
 # doit(if_then3)
 # doit(if_then4)
 # doit(foo)
@@ -123,7 +123,7 @@ def try_no_finally():
 # doit(foo2)
 # doit(while_if_continue)
 # doit(while_true_if_else)
-doit(while_else)
+# doit(while_else)
 # doit(while_if)
 # doit(for_break)
 # doit(try_finally)

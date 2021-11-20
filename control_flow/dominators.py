@@ -18,7 +18,7 @@ class DominatorTree(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.doms = {}  # map of note to its dominator
+        self.doms = {}  # map of node to its dominator
         self.pdoms = {} # map of node to its post-dominator
         self.df = {}    # dominator frontier
         self.build()

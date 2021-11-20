@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
+from xdis.std import opc
+
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
-from control_flow.structured_cf import (
-    print_structured_flow, build_control_structure, cs_tree_to_str
-)
+from control_flow.augment_disasm import augment_instructions
+from control_flow.structured_cf import build_control_structure
 
 import dis
 import os
@@ -49,11 +50,9 @@ def doit(fn, name=None):
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
 
         print('=' * 30)
-        cs  = build_control_structure(cfg, cfg.entry_node)
-        cs_marks = {}
-        cs_str = cs_tree_to_str(cs, cs_marks)
-        print(cs_str)
-        print('=' * 30)
+        augmented_instrs = augment_instructions(fn, cfg)
+        for inst in augmented_instrs:
+            print(inst.disassemble(opc))
         # print_structured_flow(fn, cfg, cfg.entry_node, cs_marks)
         # return cs_str
     except:

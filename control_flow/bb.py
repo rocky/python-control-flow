@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 from xdis import next_offset
-from xdis.version_info import PYTHON_VERSION_TRIPLE, PYTHON3, version_tuple_to_str
+from xdis.version_info import version_tuple_to_str, PYTHON3
 from xdis.std import get_instructions
 from control_flow.graph import (
     BB_POP_BLOCK,
