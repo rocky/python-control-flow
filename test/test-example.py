@@ -23,14 +23,15 @@ for filename in files:
 
     short = osp.basename(filename)[0:-3]
 
-    cs = doit(testing, short)  # NOQA
-    got = cs.strip()
+    doit(testing, short)  # NOQA
+    # cs.strip()
+    # got = cs.strip()
     # want = expect().strip()  # NOQA
     print("filename %s fails" % filename)
     if False: # got != want:
         # print(want)
         print('-' * 20)
-        print(got)
+        # print(got)
         pass
         sys.exit(1)
     else:
@@ -40,5 +41,6 @@ for filename in files:
     pass
 
 
-print("%d tests, %d passed." % (total, count))
+print(f"{total} tests")
+# print("%d tests, %d passed." % (total, count))
 assert count == total

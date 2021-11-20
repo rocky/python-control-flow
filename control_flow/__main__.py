@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from xdis import PYTHON_VERSION, IS_PYPY
+from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
@@ -17,7 +16,7 @@ def doit(fn, name=None):
         name = fn.__name__
     print(name)
 
-    bb_mgr = basic_blocks(PYTHON_VERSION, IS_PYPY, fn)
+    bb_mgr = basic_blocks(PYTHON_VERSION_TRIPLE, IS_PYPY, fn)
     for bb in bb_mgr.bb_list:
       print("\t", bb)
     dis.dis(fn)
@@ -40,8 +39,6 @@ def doit(fn, name=None):
         print("%s written" % dot_path)
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
 
-        print('*' * 30)
-
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
@@ -57,11 +54,18 @@ def doit(fn, name=None):
         cs_str = cs_tree_to_str(cs, cs_marks)
         print(cs_str)
         print('=' * 30)
-        print_structured_flow(fn, cfg, cfg.entry_node, cs_marks)
-        return cs_str
+        # print_structured_flow(fn, cfg, cfg.entry_node, cs_marks)
+        # return cs_str
     except:
         import traceback
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
         print("%s had an error" % name)
         return ''
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+        exec(open(filename).read())
+        short = os.path.basename(filename)[0:-3]
+        doit(filename, short)
