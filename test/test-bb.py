@@ -20,6 +20,10 @@ def if_vs_and(a, b):
     return c
 
 
+def if_then0(a):
+    if a:
+        a += 1
+
 def if_then1(a):
     if a:
         a += 1
@@ -114,6 +118,7 @@ def try_no_finally():
 # doit(five)
 # doit(if_else)
 # doit(if_vs_and)
+# doit(if_then0)
 # doit(if_then1)
 doit(if_then2)
 # doit(if_then3)

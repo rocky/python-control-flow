@@ -3,7 +3,7 @@
   Graph data structures
 
   Stripped down and modified from equip routine:
-  :copyright: (c) 2018 by Rocky Bernstein
+  :copyright: (c) 2018, 2021 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
@@ -74,6 +74,10 @@ BB_JUMP_CONDITIONAL = 14
 # sure the jump arrow points straight down.
 BB_JUMP_TO_FALLTHROUGH = 15
 
+# Basic block ends in a return or an raise that is not inside
+# a "try" block.
+BB_RETURN = 16
+
 FLAG2NAME = {
   BB_ENTRY:               'entry',
   BB_EXIT:                'exit',
@@ -91,6 +95,7 @@ FLAG2NAME = {
   BB_FINALLY:             'finally',
   BB_END_FINALLY:         'end finally',
   BB_TRY:                 'try',
+  BB_RETURN:              'return',
 }
 
 

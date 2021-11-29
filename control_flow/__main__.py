@@ -50,7 +50,7 @@ def doit(fn, name=None):
         os.system("dot -Tpng %s > %s" % (dot_path, png_path))
 
         print('=' * 30)
-        augmented_instrs = augment_instructions(fn, cfg)
+        augmented_instrs = augment_instructions(fn, cfg, opc.version_tuple)
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
         # print_structured_flow(fn, cfg, cfg.entry_node, cs_marks)

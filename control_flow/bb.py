@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import sys
 from xdis import next_offset
-from xdis.version_info import version_tuple_to_str, PYTHON3
+from xdis.version_info import PYTHON3
 from xdis.std import get_instructions
+from xdis.op_imports import get_opcode_module
 from control_flow.graph import (
     BB_POP_BLOCK,
     BB_SINGLE_POP_BLOCK,
@@ -20,6 +21,7 @@ from control_flow.graph import (
     BB_JUMP_TO_FALLTHROUGH,
     BB_LOOP,
     BB_NOFOLLOW,
+    BB_RETURN,
 )
 
 # The byte code versions we support
@@ -146,109 +148,58 @@ class BBMgr(object):
 
         version = version[:2]
 
-        # Pick up appropriate version
-        if version[:2] in PYTHON_VERSIONS:
-            if PYTHON3:
-                if version in ((3, 4), (3, 5), (3, 6), (3, 7), (3, 8), (3, 9), (3, 10)):
-                    if version == (3, 4):
-                        import xdis.opcodes.opcode_34 as opcode
-                    elif version == (3, 5):
-                        import xdis.opcodes.opcode_35 as opcode
-                    elif version == (3, 6):
-                        import xdis.opcodes.opcode_36 as opcode
-                    elif version == (3, 7):
-                        import xdis.opcodes.opcode_37 as opcode
-                    elif version == (3, 8):
-                        import xdis.opcodes.opcode_38 as opcode
-                    elif version == (3, 9):
-                        import xdis.opcodes.opcode_39 as opcode
-                    elif version == (3, 10):
-                        import xdis.opcodes.opcode_310 as opcode
-                    else:
-                        import xdis.opcodes.opcode_37 as opcode
-                    self.opcode = opcode
-                    # We classify intructions into various categories (even though
-                    # many of the below contain just one instruction). This can
-                    # isolate us from instruction changes in Python.
-                    # The classifications are used in setting basic block flag bits
-                    self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
-                    self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_EXCEPT"]])
-                    self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
-                    self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
-                    self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
-                    self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
-                    self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
-                    self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
-                    self.JUMP_INSTRUCTIONS = (
-                        self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-                    )
-                    self.JUMP_UNCONDITONAL = set(
-                        [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-                    )
-                    self.JUMP_CONDITONAL = set(
-                        [
-                            opcode.opmap["POP_JUMP_IF_FALSE"],
-                            opcode.opmap["POP_JUMP_IF_TRUE"],
-                            opcode.opmap["JUMP_IF_FALSE_OR_POP"],
-                            opcode.opmap["JUMP_IF_TRUE_OR_POP"],
-                        ]
-                    )
+        self.opcode = opcode = get_opcode_module(version)
 
-                    if version[:2] != (3, 10):
-                        self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
-                    # ??
-                    #                                   opcode.opmap['YIELD_VALUE'],
-                    #                                   opcode.opmap['RAISE_VARARGS']])
-                    self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
-                    self.NOFOLLOW_INSTRUCTIONS = opcode.NOFOLLOW
+        self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
+        self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
+        self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
+        self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
+        self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
+        self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
+        self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
+        self.JUMP_INSTRUCTIONS = (
+            self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
+            )
+        self.JUMP_UNCONDITONAL = set(
+            [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
+                    )
+        self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
+        self.RETURN_INSTRUCTIONS = set([opcode.opmap["RETURN_VALUE"]])
+        self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
 
-            else:
-                if version in ((2, 6), (2, 7)):
-                    if version == (2, 7):
-                        import xdis.opcodes.opcode_27 as opcode
-                    else:
-                        import xdis.opcodes.opcode_26 as opcode
-                    self.opcode = opcode
-                    # We classify intructions into various categories (even though
-                    # many of the below contain just one instruction). This can
-                    # isolate us from instruction changes in Python.
-                    # The classifications are used in setting basic block flag bits
-                    self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
-                    self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
-                    self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
-                    self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
-                    self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
-                    self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
-                    self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
-                    self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
-                    self.JUMP_INSTRUCTIONS = (
-                        self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-                    )
-                    self.JUMP_UNCONDITONAL = set(
-                        [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-                    )
-                    self.JUMP_CONDITONAL = set(
-                        [
-                            opcode.opmap["POP_JUMP_IF_FALSE"],
-                            opcode.opmap["POP_JUMP_IF_TRUE"],
-                            opcode.opmap["JUMP_IF_FALSE_OR_POP"],
-                            opcode.opmap["JUMP_IF_TRUE_OR_POP"],
-                        ]
-                    )
-                    self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
-                    # ??
-                    #                                   opcode.opmap['YIELD_VALUE'],
-                    #                                  opcode.opmap['RAISE_VARARGS']])
-                    self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
-                    self.NOFOLLOW_INSTRUCTIONS = set(
-                        [
-                            opcode.opmap["RETURN_VALUE"],
-                            opcode.opmap["YIELD_VALUE"],
-                            opcode.opmap["RAISE_VARARGS"],
-                        ]
-                    )
-        else:
-            raise RuntimeError(f"Version {version_tuple_to_str(version)} not supported yet")
+        if version != (3, 10):
+            self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
+
+        if version >= (2, 6):
+            self.JUMP_CONDITONAL = set(
+                [
+                    opcode.opmap["POP_JUMP_IF_FALSE"],
+                    opcode.opmap["POP_JUMP_IF_TRUE"],
+                    opcode.opmap["JUMP_IF_FALSE_OR_POP"],
+                    opcode.opmap["JUMP_IF_TRUE_OR_POP"],
+                ]
+            )
+            self.NOFOLLOW_INSTRUCTIONS = set(
+                [
+                    opcode.opmap["RETURN_VALUE"],
+                    opcode.opmap["YIELD_VALUE"],
+                    opcode.opmap["RAISE_VARARGS"],
+                ]
+            )
+
+        # ??
+        #                                   opcode.opmap['YIELD_VALUE'],
+        #                                   opcode.opmap['RAISE_VARARGS']])
+
+        if not PYTHON3:
+            if version in ((2, 6), (2, 7)):
+                # We classify intructions into various categories (even though
+                # many of the below contain just one instruction). This can
+                # isolate us from instruction changes in Python.
+                # The classifications are used in setting basic block flag bits
+                self.JUMP_UNCONDITONAL = set(
+                    [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
+                )
 
     def add_bb(
         self, start_offset, end_offset, loop_offset, follow_offset, flags, jump_offsets
@@ -308,6 +259,7 @@ def basic_blocks(version, is_pypy, fn):
     try_stack = []
     end_try_offset = None
     loop_offset = None
+    return_blocks = []
 
     for i, inst in enumerate(instructions):
         prev_offset = end_offset
@@ -424,8 +376,8 @@ def basic_blocks(version, is_pypy, fn):
                 jump_offset = inst.argval
 
             jump_offsets.add(jump_offset)
-            flags.add(BB_JUMP_UNCONDITIONAL)
             if op in BB.JUMP_UNCONDITONAL:
+                flags.add(BB_JUMP_UNCONDITIONAL)
                 if jump_offset == follow_offset:
                     flags.add(BB_JUMP_TO_FALLTHROUGH)
                     pass
@@ -463,6 +415,9 @@ def basic_blocks(version, is_pypy, fn):
                 pass
         elif op in BB.NOFOLLOW_INSTRUCTIONS:
             flags.add(BB_NOFOLLOW)
+            if op in BB.RETURN_INSTRUCTIONS:
+                flags.add(BB_RETURN)
+
             last_block, flags, jump_offsets = BB.add_bb(
                 start_offset,
                 end_offset,
@@ -473,8 +428,24 @@ def basic_blocks(version, is_pypy, fn):
             )
             loop_offset = None
             start_offset = follow_offset
+            if op in BB.RETURN_INSTRUCTIONS:
+                return_blocks.append(last_block)
             pass
         pass
+
+    # Add an artificial block where we can link the exits of other blocks
+    # to. This helps in computing reverse dominators.
+    if version >= (3, 6):
+        end_bb_offset = end_offset + 2
+    else:
+        end_bb_offset = end_offset + 1
+
+    BB.add_bb(end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), [])
+
+    # Hook RETURN_VALUE instructions to the exit block offset
+    for block in return_blocks:
+        block.jump_offsets.add(end_bb_offset)
+        block.edge_count += 1
 
     if len(BB.bb_list):
         BB.bb_list[-1].follow_offset = None
@@ -495,7 +466,4 @@ def basic_blocks(version, is_pypy, fn):
         loop_offset = None
         pass
 
-    # Add an artificial block where we can link the exits of other blocks
-    # to. This helps in computing reverse dominators.
-    BB.add_bb(end_offset + 1, end_offset + 1, None, None, set([BB_EXIT]), [])
     return BB
