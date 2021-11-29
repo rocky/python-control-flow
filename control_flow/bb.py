@@ -229,8 +229,12 @@ class BBMgr(object):
         return block, flags, jump_offsets
 
 
-def basic_blocks(version, is_pypy, fn):
-    """Create a list of basic blocks found in a code object"""
+def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
+    """Create a list of basic blocks found in a code object.
+    `more_precise_returns` indicates whether the RETURN_VALUE
+    should modeled as a jump to the end of the enclosing function
+    or not. See comment in code as to why this might be useful.
+    """
 
     BB = BBMgr(version, is_pypy)
 
@@ -442,10 +446,18 @@ def basic_blocks(version, is_pypy, fn):
 
     BB.add_bb(end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), [])
 
+    # If the bytecode comes from Python, then there is possibly an
+    # advantage in treating a return in a block as an instruction
+    # which flows to the next instruction, since that will treat
+    # blocks with unreachable instructions the way Python source
+    # does - the code after that exists.
+    #
+    # However if you care about analysis, then
     # Hook RETURN_VALUE instructions to the exit block offset
-    for block in return_blocks:
-        block.jump_offsets.add(end_bb_offset)
-        block.edge_count += 1
+    if more_precise_returns:
+        for block in return_blocks:
+            block.jump_offsets.add(end_bb_offset)
+            block.edge_count += 1
 
     if len(BB.bb_list):
         BB.bb_list[-1].follow_offset = None
