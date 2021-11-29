@@ -150,8 +150,6 @@ class BBMgr(object):
 
         self.opcode = opcode = get_opcode_module(version)
 
-        self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
-        self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
         self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
         self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
@@ -163,12 +161,27 @@ class BBMgr(object):
         self.JUMP_UNCONDITONAL = set(
             [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
                     )
+
         self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
         self.RETURN_INSTRUCTIONS = set([opcode.opmap["RETURN_VALUE"]])
-        self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
 
-        if version != (3, 10):
-            self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
+        # These instructions don't appear in all version of Python
+        self.BREAK_INSTRUCTIONS = set()
+        self.END_FINALLY_INSTRUCTIONS = set()
+        self.LOOP_INSTRUCTIONS = set()
+        self.TRY_INSTRUCTIONS = set()
+        self.END_FINALLY_INSTRUCTIONS = set()
+        self.LOOP_INSTRUCTIONS = set()
+        self.TRY_INSTRUCTIONS = set()
+
+        if version < (3, 10):
+            if version < (3, 8):
+                self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
+            elif version < (3, 9):
+                self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
+                self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
+                self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
+
 
         if version >= (2, 6):
             self.JUMP_CONDITONAL = set(
@@ -399,7 +412,7 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
                     pass
 
                 start_offset = follow_offset
-            elif op != BB.opcode.SETUP_LOOP:
+            elif version[:2] >= (3, 9) or op != BB.opcode.SETUP_LOOP:
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
