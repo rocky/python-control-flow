@@ -4,6 +4,9 @@ from control_flow.__main__ import doit
 def five():
     return 5
 
+def or1(a, b):
+    return a or b
+
 def if_else(a):
     if a:
         return 5
@@ -115,14 +118,15 @@ def try_no_finally():
         x = 3
     return x
 
+doit(or1)
+# doit(if_then0)
+# doit(if_then1)
+# doit(if_then2)
+# doit(if_then3)
+# doit(if_then4)
 # doit(five)
 # doit(if_else)
 # doit(if_vs_and)
-doit(if_then0)
-doit(if_then1)
-doit(if_then2)
-doit(if_then3)
-# doit(if_then4)
 # doit(foo)
 # doit(foo1)
 # doit(foo2)

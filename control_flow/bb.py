@@ -41,6 +41,9 @@ PYTHON_VERSIONS = (  # 1.5,
 
 end_bb = -1
 
+def get_jump_val(jump_arg: int, version: tuple) -> int:
+    return jump_arg * 2 if version[:2] >= (3, 10)  else jump_arg
+
 
 class BasicBlock(object):
     """Basic block from the bytecode.
@@ -259,10 +262,11 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
         if op in BB.JUMP_INSTRUCTIONS:
+            jump_value = get_jump_val(inst.arg, version)
             if op in BB.JABS_INSTRUCTIONS:
-                jump_offset = inst.arg
+                jump_offset = jump_value
             else:
-                jump_offset = follow_offset + inst.arg
+                jump_offset = follow_offset + jump_value
             jump_targets.add(jump_offset)
             pass
 
@@ -388,9 +392,10 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
             # Figure out where we jump to amd add it to this
             # basic block's jump offsets.
             if op in BB.JABS_INSTRUCTIONS:
-                jump_offset = inst.arg
+                jump_offset = get_jump_val(inst.arg, version)
+
             else:
-                jump_offset = inst.argval
+                jump_offset = get_jump_val(inst.argval, version)
 
             jump_offsets.add(jump_offset)
             if op in BB.JUMP_UNCONDITONAL:
