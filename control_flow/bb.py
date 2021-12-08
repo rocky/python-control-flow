@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 from xdis import next_offset
-from xdis.version_info import PYTHON3
+from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
 from xdis.std import get_instructions
 from xdis.op_imports import get_opcode_module
 from control_flow.graph import (
@@ -143,7 +143,7 @@ class BasicBlock(object):
 
 
 class BBMgr(object):
-    def __init__(self, version, is_pypy):
+    def __init__(self, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY):
         global end_bb
         end_bb = 0
         self.bb_list = []
@@ -153,7 +153,6 @@ class BBMgr(object):
 
         self.opcode = opcode = get_opcode_module(version)
 
-        self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
         self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
@@ -184,7 +183,10 @@ class BBMgr(object):
                 self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
                 self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
                 self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
+                pass
 
+        else:
+            self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["RAISE_VARARGS"]])
 
         if version >= (2, 6):
             self.JUMP_CONDITONAL = set(
@@ -245,7 +247,7 @@ class BBMgr(object):
         return block, flags, jump_offsets
 
 
-def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
+def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, more_precise_returns=False):
     """Create a list of basic blocks found in a code object.
     `more_precise_returns` indicates whether the RETURN_VALUE
     should modeled as a jump to the end of the enclosing function
@@ -256,7 +258,7 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
 
     # Get jump targets
     jump_targets = set()
-    instructions = list(get_instructions(fn))
+    instructions = list(get_instructions(fn_or_code))
     for inst in instructions:
         op = inst.opcode
         offset = inst.offset
@@ -283,6 +285,7 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
     return_blocks = []
 
     for i, inst in enumerate(instructions):
+        print(inst)
         prev_offset = end_offset
         end_offset = inst.offset
         op = inst.opcode
@@ -366,7 +369,10 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
                 ):
                     continue
             flags.add(BB_EXCEPT)
-            try_stack[-1].exception_offsets.add(start_offset)
+            try:
+                try_stack[-1].exception_offsets.add(start_offset)
+            except:
+                from trepan.api import debug; debug()
             pass
         elif op in BB.TRY_INSTRUCTIONS:
             end_try_offset_stack.append(inst.argval)
@@ -391,11 +397,7 @@ def basic_blocks(version, is_pypy, fn, more_precise_returns=False):
             # Some sort of jump instruction.
             # Figure out where we jump to amd add it to this
             # basic block's jump offsets.
-            if op in BB.JABS_INSTRUCTIONS:
-                jump_offset = get_jump_val(inst.arg, version)
-
-            else:
-                jump_offset = get_jump_val(inst.argval, version)
+            jump_offset = inst.argval
 
             jump_offsets.add(jump_offset)
             if op in BB.JUMP_UNCONDITONAL:

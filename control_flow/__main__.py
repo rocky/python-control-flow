@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
 from xdis.std import opc
 
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
 from control_flow.augment_disasm import augment_instructions
-from control_flow.structured_cf import build_control_structure
 
 import dis
 import os
@@ -17,7 +15,7 @@ def doit(fn, name=None):
         name = fn.__name__
     print(name)
 
-    bb_mgr = basic_blocks(PYTHON_VERSION_TRIPLE, IS_PYPY, fn)
+    bb_mgr = basic_blocks(fn)
     for bb in bb_mgr.bb_list:
       print("\t", bb)
     dis.dis(fn)

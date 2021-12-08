@@ -118,13 +118,24 @@ def try_no_finally():
         x = 3
     return x
 
-doit(or1)
+def while_true_break():
+    x = 0
+    while True:
+        try:
+            x += 1
+            break
+        except Exception:
+            pass
+
+
+# doit(or1)
 # doit(if_then0)
 # doit(if_then1)
 # doit(if_then2)
 # doit(if_then3)
 # doit(if_then4)
 # doit(five)
+# doit(for_break)
 # doit(if_else)
 # doit(if_vs_and)
 # doit(foo)
@@ -134,6 +145,6 @@ doit(or1)
 # doit(while_true_if_else)
 # doit(while_else)
 # doit(while_if)
-# doit(for_break)
+doit(while_true_break)
 # doit(try_finally)
 # doit(try_no_finally)
