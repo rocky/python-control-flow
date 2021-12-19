@@ -217,6 +217,10 @@ class DotConverter(object):
 
   def add_node(self, node, show_exit):
 
+      try:
+          not show_exit and BB_EXIT in node.bb.flags
+      except:
+          from trepan.api import debug; debug()
       if not show_exit and BB_EXIT in node.bb.flags:
           return
 

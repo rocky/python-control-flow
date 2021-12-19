@@ -50,17 +50,26 @@ class ControlFlowGraph(object):
     self.block_nodes = {}
 
     # Add nodes
+    exit_block = None
     for block in self.blocks:
         self.block_offsets[block.start_offset] = block
         block_node = g.make_add_node(block)
         self.block_nodes[block] = block_node
         self.offset2block[block.index[0]] = block_node
+
+        if BB_EXIT in block.flags:
+            assert exit_block is None, f"Already saw exit block at: {exit_block}"
+            exit_block = block
+            self.exit_block = block_node
+            continue
         pass
 
-    self.exit_block = block_node
     # Compute a block's immediate predecessors and successors
 
     for block in self.blocks:
+
+        if block == exit_block:
+            continue
 
         for jump_offset in set(block.jump_offsets) | block.exception_offsets:
             try:
@@ -130,12 +139,12 @@ class ControlFlowGraph(object):
               edge_type)
           pass
       for jump_index in block.exception_offsets:
-          target_block = self.block_offsets[jump_index]
-          assert jump_index >= block.start_offset
+          source_block = self.block_offsets[jump_index]
+          assert jump_index <= source_block.start_offset
           edge_type = 'exception'
           g.make_add_edge(
+              self.block_nodes[source_block],
               self.block_nodes[block],
-              self.block_nodes[target_block],
               edge_type)
           pass
       pass

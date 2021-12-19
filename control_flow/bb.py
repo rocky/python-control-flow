@@ -153,6 +153,7 @@ class BBMgr(object):
 
         self.opcode = opcode = get_opcode_module(version)
 
+        self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
         self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
@@ -179,10 +180,11 @@ class BBMgr(object):
         if version < (3, 10):
             if version < (3, 8):
                 self.BREAK_INSTRUCTIONS = set([opcode.opmap["BREAK_LOOP"]])
-            elif version < (3, 9):
-                self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
                 self.LOOP_INSTRUCTIONS = set([opcode.opmap["SETUP_LOOP"]])
                 self.TRY_INSTRUCTIONS = set([opcode.opmap["SETUP_EXCEPT"]])
+            elif version < (3, 9):
+                # FIXME: add WITH_EXCEPT_START
+                self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
                 pass
 
         else:
@@ -247,7 +249,8 @@ class BBMgr(object):
         return block, flags, jump_offsets
 
 
-def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, more_precise_returns=False):
+def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, more_precise_returns=False,
+                 print_instructions=False):
     """Create a list of basic blocks found in a code object.
     `more_precise_returns` indicates whether the RETURN_VALUE
     should modeled as a jump to the end of the enclosing function
@@ -272,6 +275,18 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
             jump_targets.add(jump_offset)
             pass
 
+
+    # Add an artificial block where we can link the exits of other blocks
+    # to. This helps when there is a "raise" not in any try block and
+    # in computing reverse dominators.
+    end_offset = instructions[-1].offset
+    if version >= (3, 6):
+        end_bb_offset = end_offset + 2
+    else:
+        end_bb_offset = end_offset + 1
+
+    end_block, _, _ = BB.add_bb(end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), [])
+
     start_offset = 0
     end_offset = -1
     jump_offsets = set()
@@ -279,13 +294,14 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
     endloop_offsets = [-1]
     flags = set([BB_ENTRY])
     end_try_offset_stack = []
-    try_stack = []
+    try_stack = [end_block]
     end_try_offset = None
     loop_offset = None
     return_blocks = []
 
     for i, inst in enumerate(instructions):
-        print(inst)
+        if print_instructions:
+            print(inst)
         prev_offset = end_offset
         end_offset = inst.offset
         op = inst.opcode
@@ -369,10 +385,7 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
                 ):
                     continue
             flags.add(BB_EXCEPT)
-            try:
-                try_stack[-1].exception_offsets.add(start_offset)
-            except:
-                from trepan.api import debug; debug()
+            try_stack[-1].exception_offsets.add(start_offset)
             pass
         elif op in BB.TRY_INSTRUCTIONS:
             end_try_offset_stack.append(inst.argval)
@@ -419,7 +432,7 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] >= (3, 9) or op != BB.opcode.SETUP_LOOP:
+            elif version[:2] >= (3, 9) or (version[:2] < (3, 8) and op != BB.opcode.SETUP_LOOP):
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
@@ -456,15 +469,6 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
                 return_blocks.append(last_block)
             pass
         pass
-
-    # Add an artificial block where we can link the exits of other blocks
-    # to. This helps in computing reverse dominators.
-    if version >= (3, 6):
-        end_bb_offset = end_offset + 2
-    else:
-        end_bb_offset = end_offset + 1
-
-    BB.add_bb(end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), [])
 
     # If the bytecode comes from Python, then there is possibly an
     # advantage in treating a return in a block as an instruction

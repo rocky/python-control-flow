@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from control_flow.__main__ import doit
 
+def err():
+    x = "Foo"
+    raise RuntimeError
+
 def five():
     return 5
 
@@ -128,6 +132,7 @@ def while_true_break():
             pass
 
 
+doit(err)
 # doit(or1)
 # doit(if_then0)
 # doit(if_then1)
@@ -145,6 +150,6 @@ def while_true_break():
 # doit(while_true_if_else)
 # doit(while_else)
 # doit(while_if)
-doit(while_true_break)
+# doit(while_true_break)
 # doit(try_finally)
 # doit(try_no_finally)
