@@ -40,7 +40,8 @@ class ControlFlowGraph(object):
       Performs the Control-Flow Analysis and stores the resulting
       Control-Flow Graph.
       """
-      self.entry = blocks[0]
+      assert len(blocks) >= 2
+      self.entry = blocks[1]
       self.build_flowgraph(blocks, exit_block)
 
   def build_flowgraph(self, blocks, exit_block):
@@ -61,15 +62,11 @@ class ControlFlowGraph(object):
             assert exit_block is None, f"Already saw exit block at: {exit_block}"
             exit_block = block
             self.exit_block = block_node
-            continue
         pass
 
     # Compute a block's immediate predecessors and successors
 
     for block in self.blocks:
-
-        if block == exit_block:
-            continue
 
         for jump_offset in set(block.jump_offsets) | block.exception_offsets:
             try:
@@ -91,8 +88,8 @@ class ControlFlowGraph(object):
             block.successors.add(successor_block)
         pass
 
-    assert(len(self.blocks) > 0)
-    self.entry_node = self.blocks[0]
+    assert(len(self.blocks) > 1)
+    self.entry_node = self.blocks[1]
 
     sorted_blocks = sorted(self.blocks, key=attrgetter('index'))
     for i, block in enumerate(sorted_blocks):

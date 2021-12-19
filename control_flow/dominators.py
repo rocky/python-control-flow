@@ -51,30 +51,33 @@ class DominatorTree(object):
             finger1 = b1
             finger2 = b2
             po_finger1 = post_order_number[finger1]
-            po_finger2 = post_order_number[finger2]
+            # FIXME: if finger2 isn't in post_order_number, why not?
+            if finger2 in post_order_number:
+                no_solution = True
+                po_finger2 = post_order_number[finger2]
 
-            while po_finger1 != po_finger2:
-                no_solution = False
-                while po_finger1 < po_finger2:
-                    finger1 = doms.get(finger1, None)
-                    if finger1 is None:
-                        no_solution = True
+                while po_finger1 != po_finger2:
+                    no_solution = False
+                    while po_finger1 < po_finger2:
+                        finger1 = doms.get(finger1, None)
+                        if finger1 is None:
+                            no_solution = True
+                            break
+                        po_finger1 = post_order_number[finger1]
+                        pass
+                    while po_finger2 < po_finger1:
+                        finger2 = doms.get(finger2, None)
+                        try:
+                            po_finger2 = post_order_number[finger2]
+                        except:
+                            no_solution = True
+                            break
+                        if finger2 is None:
+                            no_solution = True
+                            break
+                        pass
+                    if no_solution:
                         break
-                    po_finger1 = post_order_number[finger1]
-                    pass
-                while po_finger2 < po_finger1:
-                    finger2 = doms.get(finger2, None)
-                    try:
-                        po_finger2 = post_order_number[finger2]
-                    except:
-                        no_solution = True
-                        break
-                    if finger2 is None:
-                        no_solution = True
-                        break
-                    pass
-                if no_solution:
-                    break
 
             return finger1
 

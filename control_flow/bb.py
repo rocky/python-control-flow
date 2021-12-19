@@ -141,6 +141,9 @@ class BasicBlock(object):
             exception_text,
         )
 
+    # Define "<" so we can compare and sort basic blocks.
+    def __lt__(self, other):
+        self.number < other.number
 
 class BBMgr(object):
     def __init__(self, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY):
