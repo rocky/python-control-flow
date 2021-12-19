@@ -12,7 +12,11 @@ if len(sys.argv) == 1:
     pass
 
 filename = sys.argv[1]
-exec(open(filename).read())
-short = osp.basename(filename)[0:-3]
+if filename.endswith(".py"):
+    exec(open(filename).read())
+    short = osp.basename(filename)[0:-3]
+elif filename.endswith(".pyc"):
+    short = osp.basename(filename)[0:-4]
+
 
 doit(testing, short)  # NOQA

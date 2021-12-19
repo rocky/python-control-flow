@@ -1,6 +1,6 @@
+# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
-create a structured control flow graph.
 
 This code is ugly.
 
@@ -15,7 +15,7 @@ def augment_instructions(fn, cfg, version_tuple):
     current_block = cfg.entry_node
 
     dom_tree = cfg.dom_tree
-    bb2dom_node = {node.bb:node for node in dom_tree.nodes}
+    bb2dom_node = {node.bb: node for node in dom_tree.nodes}
     # block_stack = [current_block]
 
     starts = {current_block.start_offset: current_block}
@@ -36,14 +36,36 @@ def augment_instructions(fn, cfg, version_tuple):
                 reach_ends = dom_reach_ends.get(dom.reach_offset, [])
                 reach_ends.append(dom_number)
                 dom_reach_ends[dom.reach_offset] = reach_ends
-                pseudo_inst = Instruction("DOM_START", 1000, "pseudo", 0, dom_number,
-                                          dom_number, f"Dominator {dom_number}",
-                                          True, offset, None, False, False)
+                pseudo_inst = Instruction(
+                    "DOM_START",
+                    1000,
+                    "pseudo",
+                    0,
+                    dom_number,
+                    dom_number,
+                    f"Dominator {dom_number}",
+                    True,
+                    offset,
+                    None,
+                    False,
+                    False,
+                )
                 augmented_instrs.append(pseudo_inst)
 
-            pseudo_inst = Instruction("BB_START", 1001, "pseudo", 0, bb.number,
-                                      bb.number, f"Basic Block {bb.number}",
-                                      True, offset, None, False, False)
+            pseudo_inst = Instruction(
+                "BB_START",
+                1001,
+                "pseudo",
+                0,
+                bb.number,
+                bb.number,
+                f"Basic Block {bb.number}",
+                True,
+                offset,
+                None,
+                False,
+                False,
+            )
             augmented_instrs.append(pseudo_inst)
             if bb.follow_offset:
                 follow_bb = cfg.offset2block[bb.follow_offset].bb
@@ -55,16 +77,38 @@ def augment_instructions(fn, cfg, version_tuple):
         bb = ends.get(offset, None)
         augmented_instrs.append(inst)
         if bb:
-            pseudo_inst = Instruction("BB_END", 1002, "pseudo", 0, bb.number,
-                                      bb.number, f"Basic Block {bb.number}",
-                                      True, offset, None, False, False)
+            pseudo_inst = Instruction(
+                "BB_END",
+                1002,
+                "pseudo",
+                0,
+                bb.number,
+                bb.number,
+                f"Basic Block {bb.number}",
+                True,
+                offset,
+                None,
+                False,
+                False,
+            )
             augmented_instrs.append(pseudo_inst)
         dom_list = dom_reach_ends.get(offset, None)
         if dom_list is not None:
             for dom_number in reversed(dom_list):
-                pseudo_inst = Instruction("DOM_END", 1003, "pseudo", 0, dom_number,
-                                          dom_number, f"Basic Block {dom_number}",
-                                          True, offset, None, False, False)
+                pseudo_inst = Instruction(
+                    "DOM_END",
+                    1003,
+                    "pseudo",
+                    0,
+                    dom_number,
+                    dom_number,
+                    f"Basic Block {dom_number}",
+                    True,
+                    offset,
+                    None,
+                    False,
+                    False,
+                )
                 augmented_instrs.append(pseudo_inst)
             pass
         pass
@@ -79,9 +123,20 @@ def augment_instructions(fn, cfg, version_tuple):
     dom_list = dom_reach_ends.get(offset, None)
     if dom_list is not None:
         for dom_number in reversed(dom_list):
-            pseudo_inst = Instruction("DOM_END", 1003, "pseudo", 0, dom_number,
-                                      dom_number, f"Basic Block {dom_number}",
-                                      True, offset, None, False, False)
+            pseudo_inst = Instruction(
+                "DOM_END",
+                1003,
+                "pseudo",
+                0,
+                dom_number,
+                dom_number,
+                f"Basic Block {dom_number}",
+                True,
+                offset,
+                None,
+                False,
+                False,
+            )
             augmented_instrs.append(pseudo_inst)
         pass
 

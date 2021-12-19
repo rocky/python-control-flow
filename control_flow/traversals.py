@@ -14,67 +14,67 @@ from control_flow.graph import Edge
 
 
 class EdgeVisitor(object):
-  def __init__(self):
-    pass
+    def __init__(self):
+        pass
 
-  def visit(self, edge):
-    pass
+    def visit(self, edge):
+        pass
 
 
 class Walker(object):
-  """
+    """
     Traverses edges in the graph in DFS.
-  """
-  def __init__(self, graph, visitor):
-    self._graph = graph
-    self._visitor = visitor
-    self.worklist = None
+    """
 
-  @property
-  def graph(self):
-    return self._graph
+    def __init__(self, graph, visitor):
+        self._graph = graph
+        self._visitor = visitor
+        self.worklist = None
 
-  @graph.setter
-  def graph(self, value):
-    self._graph = value
+    @property
+    def graph(self):
+        return self._graph
 
-  @property
-  def visitor(self):
-      return self._visitor
+    @graph.setter
+    def graph(self, value):
+        self._graph = value
 
-  @visitor.setter
-  def visitor(self, value):
-      self._visitor = value
-      return
+    @property
+    def visitor(self):
+        return self._visitor
 
-  def traverse(self, root):
-      self.worklist = []
-      self.__run(root)
-      return
+    @visitor.setter
+    def visitor(self, value):
+        self._visitor = value
+        return
 
+    def traverse(self, root):
+        self.worklist = []
+        self.__run(root)
+        return
 
-  def __run(self, root=None):
-    visited = set()
-    if root is not None:
-      self.__process(root)
-    while self.worklist:
-      current = self.worklist.pop(0)
-      if current in visited:
-        continue
-      self.__process(current)
-      visited.add(current)
+    def __run(self, root=None):
+        visited = set()
+        if root is not None:
+            self.__process(root)
+        while self.worklist:
+            current = self.worklist.pop(0)
+            if current in visited:
+                continue
+            self.__process(current)
+            visited.add(current)
 
-  def __process(self, current):
-    cur_node = None
-    if isinstance(current, Edge):
-      cur_node = current.dest
-      self.visitor.visit(current)
-    else:
-      cur_node = current
+    def __process(self, current):
+        cur_node = None
+        if isinstance(current, Edge):
+            cur_node = current.dest
+            self.visitor.visit(current)
+        else:
+            cur_node = current
 
-    list_edges = cur_node.successors
-    for edge in list_edges:
-      self.worklist.insert(0, edge)
+        list_edges = cur_node.successors
+        for edge in list_edges:
+            self.worklist.insert(0, edge)
 
 
 # Recursive version of the post-order DFS, should only be used
@@ -84,6 +84,7 @@ class Walker(object):
 # handle if it is a not.
 def dfs_postorder_nodes(graph, root, post_dom):
     import sys
+
     sys.setrecursionlimit(5000)
     visited = set()
 

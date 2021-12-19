@@ -68,8 +68,9 @@ BB_JUMP_CONDITIONAL = 14
 # Jumps to what would be the fallthough.
 # If there were optimization, this instruction would be removed.
 # This crud though can be useful in determining control
-# structure is used in the same way junk DNA may be
+# structures that wereused in the same way junk DNA may be
 # useful in determining evolution history.
+
 # We mostly use it in drawing graphs to make
 # sure the jump arrow points straight down.
 BB_JUMP_TO_FALLTHROUGH = 15
@@ -79,36 +80,38 @@ BB_JUMP_TO_FALLTHROUGH = 15
 BB_RETURN = 16
 
 FLAG2NAME = {
-  BB_ENTRY:               'entry',
-  BB_EXIT:                'exit',
-  BB_NOFOLLOW:            'no fallthrough',
-  BB_LOOP:                'loop',
-  BB_BREAK:               'break',
-  BB_POP_BLOCK:           'block',
-  BB_SINGLE_POP_BLOCK:    'single pop block',
-  BB_STARTS_POP_BLOCK:    'starts with pop block',
-  BB_EXCEPT:              'except',
-  BB_JUMP_UNCONDITIONAL:  'unconditional',
-  BB_JUMP_CONDITIONAL:    'conditional jump',
-  BB_JUMP_TO_FALLTHROUGH: 'jump to fallthough',
-  BB_FOR:                 'for',
-  BB_FINALLY:             'finally',
-  BB_END_FINALLY:         'end finally',
-  BB_TRY:                 'try',
-  BB_RETURN:              'return',
+    BB_ENTRY: "entry",
+    BB_EXIT: "exit",
+    BB_NOFOLLOW: "no fallthrough",
+    BB_LOOP: "loop",
+    BB_BREAK: "break",
+    BB_POP_BLOCK: "block",
+    BB_SINGLE_POP_BLOCK: "single pop block",
+    BB_STARTS_POP_BLOCK: "starts with pop block",
+    BB_EXCEPT: "except",
+    BB_JUMP_UNCONDITIONAL: "unconditional",
+    BB_JUMP_CONDITIONAL: "conditional jump",
+    BB_JUMP_TO_FALLTHROUGH: "jump to fallthough",
+    BB_FOR: "for",
+    BB_FINALLY: "finally",
+    BB_END_FINALLY: "end finally",
+    BB_TRY: "try",
+    BB_RETURN: "return",
 }
 
 
 jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
 nofollow_flags = set([BB_NOFOLLOW])
 
+
 def format_flags(flags):
-    return ', '.join([FLAG2NAME[flag] for flag in FLAG2NAME if flag in flags])
+    return ", ".join([FLAG2NAME[flag] for flag in FLAG2NAME if flag in flags])
+
 
 def format_flags_with_width(flags, max_width, newline):
-    result = ''
+    result = ""
     r = 0
-    sep = ''
+    sep = ""
     remain = max_width
     for flag in FLAG2NAME:
         if flag in flags:
@@ -117,18 +120,18 @@ def format_flags_with_width(flags, max_width, newline):
             remain = max_width - (r + a)
             if remain <= 1:
                 if result:
-                    result += ',' + (' ' * (remain - 1))
+                    result += "," + (" " * (remain - 1))
                     add = FLAG2NAME[flag]
                     pass
                 result += newline
                 r = 0
             r += a
             result += add
-            sep = ', '
+            sep = ", "
             pass
         pass
 
-    return result + (' ' * remain)
+    return result + (" " * remain)
 
 
 class Node(object):
@@ -137,9 +140,9 @@ class Node(object):
     def __init__(self, bb):
         Node.GLOBAL_COUNTER += 1
         if bb.number is None:
-          self.number = Node.GLOBAL_COUNTER
+            self.number = Node.GLOBAL_COUNTER
         else:
-          self.number = bb.number
+            self.number = bb.number
         self.flags = bb.flags
         self.bb = bb
 
@@ -154,15 +157,18 @@ class Node(object):
         return isinstance(obj, Node) and obj.number == self.number
 
     def __hash__(self):
-        return hash('node-' + str(self.number))
+        return hash("node-" + str(self.number))
 
     def __repr__(self):
-        return 'Node%d(flags=%s, bb=%s)' % (self.number, repr(self.flags), repr(self.bb))
+        return "Node%d(flags=%s, bb=%s)" % (
+            self.number,
+            repr(self.flags),
+            repr(self.bb),
+        )
 
 
 class Edge(object):
     GLOBAL_COUNTER = 0
-
 
     def __init__(self, source, dest, kind, data):
         Edge.GLOBAL_COUNTER += 1
@@ -174,7 +180,7 @@ class Edge(object):
 
     @classmethod
     def reset(self):
-       self.GLOBAL_COUNTER = 0
+        self.GLOBAL_COUNTER = 0
 
     def __ne__(self, obj):
         return not self == obj
@@ -183,16 +189,21 @@ class Edge(object):
         return isinstance(obj, Edge) and obj.id == self.id
 
     def __hash__(self):
-        return hash('edge-' + str(self.id))
+        return hash("edge-" + str(self.id))
 
     def __repr__(self):
-        return 'Edge%d(source=%s, dest=%s, kind=%s, data=%s)' \
-               % (self.id, self.source, self.dest, repr(self.kind), repr(self.data))
+        return "Edge%d(source=%s, dest=%s, kind=%s, data=%s)" % (
+            self.id,
+            self.source,
+            self.dest,
+            repr(self.kind),
+            repr(self.data),
+        )
 
 
 class DiGraph(object):
     """
-      A simple directed-graph structure.
+    A simple directed-graph structure.
     """
 
     def __init__(self):
@@ -203,7 +214,7 @@ class DiGraph(object):
 
     def add_edge(self, edge):
         if edge in self.edges:
-          raise Exception('Edge already present')
+            raise Exception("Edge already present")
         source_node, dest_node = edge.source, edge.dest
 
         self.edges.add(edge)
@@ -215,6 +226,7 @@ class DiGraph(object):
 
     def to_dot(self, show_exit=False):
         from control_flow.dotio import DotConverter
+
         return DotConverter.process(self, show_exit)
 
     @staticmethod
@@ -239,7 +251,7 @@ class DiGraph(object):
 
 class TreeGraph(DiGraph):
     """
-      A simple tree structure for basic blocks.
+    A simple tree structure for basic blocks.
     """
 
     def __init__(self, root):
@@ -251,7 +263,7 @@ class TreeGraph(DiGraph):
 
     def add_edge(self, edge):
         if edge in self.edges:
-            raise Exception('Edge already present')
+            raise Exception("Edge already present")
         source_node, dest_node = edge.source, edge.dest
 
         self.add_node(source_node)
@@ -270,7 +282,6 @@ class TreeGraph(DiGraph):
         """Traverse the tree in preorder"""
         if self.nodes:
             return self.postorder_traverse1(self.nodes[0])
-
 
     def postorder_traverse1(self, node):
         """Traverse the tree in preorder"""
