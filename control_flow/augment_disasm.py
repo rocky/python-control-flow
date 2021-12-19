@@ -1,3 +1,4 @@
+# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 create a structured control flow graph.

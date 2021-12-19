@@ -1,8 +1,10 @@
+# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+#
 from operator import attrgetter
 from control_flow.dominators import DominatorTree
 from control_flow.graph import (
-  DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW, BB_TRY,
-  BB_EXIT, BB_END_FINALLY)
+  DiGraph, jump_flags, BB_LOOP, BB_NOFOLLOW,
+  BB_ENTRY, BB_EXIT)
 
 class ControlFlowGraph(object):
   """
@@ -40,7 +42,7 @@ class ControlFlowGraph(object):
       Performs the Control-Flow Analysis and stores the resulting
       Control-Flow Graph.
       """
-      assert len(blocks) >= 2
+      assert len(blocks) >= 2, "Should have at least a start block and an exception exit block"
       self.entry = blocks[1]
       self.build_flowgraph(blocks, exit_block)
 
@@ -88,7 +90,8 @@ class ControlFlowGraph(object):
             block.successors.add(successor_block)
         pass
 
-    assert(len(self.blocks) > 1)
+    assert len(self.blocks) > 1, "There should be at least a start and exception exit block"
+    assert BB_ENTRY in self.blocks[1].flags, "We assume block 1 is the entry block"
     self.entry_node = self.blocks[1]
 
     sorted_blocks = sorted(self.blocks, key=attrgetter('index'))

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from xdis import next_offset
 from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
@@ -142,8 +143,9 @@ class BasicBlock(object):
         )
 
     # Define "<" so we can compare and sort basic blocks.
+    # Define 0 (the exit block) as the largest/last block
     def __lt__(self, other):
-        self.number < other.number
+        self.number != 0 or self.number < other.number
 
 class BBMgr(object):
     def __init__(self, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY):
