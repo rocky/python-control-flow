@@ -42,8 +42,9 @@ PYTHON_VERSIONS = (  # 1.5,
 
 end_bb = -1
 
+
 def get_jump_val(jump_arg: int, version: tuple) -> int:
-    return jump_arg * 2 if version[:2] >= (3, 10)  else jump_arg
+    return jump_arg * 2 if version[:2] >= (3, 10) else jump_arg
 
 
 class BasicBlock(object):
@@ -147,6 +148,7 @@ class BasicBlock(object):
     def __lt__(self, other):
         self.number != 0 or self.number < other.number
 
+
 class BBMgr(object):
     def __init__(self, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY):
         global end_bb
@@ -163,12 +165,10 @@ class BBMgr(object):
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
         self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
-        self.JUMP_INSTRUCTIONS = (
-            self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-            )
+        self.JUMP_INSTRUCTIONS = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
         self.JUMP_UNCONDITONAL = set(
             [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-                    )
+        )
 
         self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
         self.RETURN_INSTRUCTIONS = set([opcode.opmap["RETURN_VALUE"]])
@@ -254,8 +254,13 @@ class BBMgr(object):
         return block, flags, jump_offsets
 
 
-def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, more_precise_returns=False,
-                 print_instructions=False):
+def basic_blocks(
+    fn_or_code,
+    version=PYTHON_VERSION_TRIPLE,
+    is_pypy=IS_PYPY,
+    more_precise_returns=False,
+    print_instructions=False,
+):
     """Create a list of basic blocks found in a code object.
     `more_precise_returns` indicates whether the RETURN_VALUE
     should modeled as a jump to the end of the enclosing function
@@ -280,7 +285,6 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
             jump_targets.add(jump_offset)
             pass
 
-
     # Add an artificial block where we can link the exits of other blocks
     # to. This helps when there is a "raise" not in any try block and
     # in computing reverse dominators.
@@ -290,7 +294,9 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
     else:
         end_bb_offset = end_offset + 1
 
-    end_block, _, _ = BB.add_bb(end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), [])
+    end_block, _, _ = BB.add_bb(
+        end_bb_offset, end_bb_offset, None, None, set([BB_EXIT]), []
+    )
 
     start_offset = 0
     end_offset = -1
@@ -437,7 +443,9 @@ def basic_blocks(fn_or_code, version=PYTHON_VERSION_TRIPLE, is_pypy=IS_PYPY, mor
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] >= (3, 9) or (version[:2] < (3, 8) and op != BB.opcode.SETUP_LOOP):
+            elif version[:2] >= (3, 9) or (
+                version[:2] < (3, 8) and op != BB.opcode.SETUP_LOOP
+            ):
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 

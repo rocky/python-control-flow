@@ -1,8 +1,9 @@
-1# -*- coding: utf-8 -*-
+1  # -*- coding: utf-8 -*-
+# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 """
   Dominator tree
 
-  Copyright (c) 2017-2018 by Rocky Bernstein
+  Copyright (c) 2017-2018, 2021 by Rocky Bernstein
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
@@ -12,17 +13,16 @@ from control_flow.traversals import dfs_postorder_nodes
 
 class DominatorTree(object):
     """
-      Handles the dominator trees (dominator/post-dominator), and the
-      computation of the dominance/post-dominance frontier.
+    Handles the dominator trees (dominator/post-dominator), and the
+    computation of the dominance/post-dominance frontier.
     """
 
     def __init__(self, cfg):
         self.cfg = cfg
         self.doms = {}  # map of node to its dominator
-        self.pdoms = {} # map of node to its post-dominator
-        self.df = {}    # dominator frontier
+        self.pdoms = {}  # map of node to its post-dominator
+        self.df = {}  # dominator frontier
         self.build()
-
 
     def build(self):
         graph = self.cfg.graph
@@ -31,13 +31,12 @@ class DominatorTree(object):
         entry = self.cfg.exit_node
         self.build_dominators(graph, entry, post_dom=True)
 
-
     def build_dominators(self, graph, entry, post_dom=False):
         """
-          Builds the dominator tree based on:
-            http://www.cs.rice.edu/~keith/Embed/dom.pdf
+        Builds the dominator tree based on:
+          http://www.cs.rice.edu/~keith/Embed/dom.pdf
 
-          Also used to build the post-dominator tree.
+        Also used to build the post-dominator tree.
         """
         doms = self.doms if not post_dom else self.pdoms
         doms[entry] = entry
@@ -97,8 +96,11 @@ class DominatorTree(object):
                 if post_dom:
                     predecessors = list(b.successors)
                 else:
-                    predecessors = [p for p in b.predecessors
-                                    if post_order_number.get(p, -1) > post_order_number[b]]
+                    predecessors = [
+                        p
+                        for p in b.predecessors
+                        if post_order_number.get(p, -1) > post_order_number[b]
+                    ]
                 if len(predecessors) == 0:
                     continue
 
@@ -124,10 +126,10 @@ class DominatorTree(object):
         t_nodes = {}
 
         if do_pdoms:
-            edge_type = 'pdom-edge'
+            edge_type = "pdom-edge"
             doms = self.pdoms
         else:
-            edge_type = 'dom-edge'
+            edge_type = "dom-edge"
             doms = self.doms
 
         root = self.cfg.entry_node if do_pdoms else self.cfg.exit_node
@@ -150,6 +152,7 @@ class DominatorTree(object):
             pass
         return t
 
+
 def build_dom_set(t, do_pdoms):
     """Makes a the dominator set for each node in the tree"""
     seen = set()
@@ -159,6 +162,7 @@ def build_dom_set(t, do_pdoms):
             build_dom_set1(node, do_pdoms)
             pass
         pass
+
 
 def build_dom_set1(node, do_pdoms):
     """Build dominator sets from dominator node"""
@@ -175,6 +179,7 @@ def build_dom_set1(node, do_pdoms):
             node.bb.pdom_set |= child.bb.pdom_set
         else:
             node.bb.dom_set |= child.bb.dom_set
+
 
 # Note: this has to be done after calling tree
 def dfs_forest(t, do_pdoms):
