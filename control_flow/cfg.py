@@ -79,7 +79,21 @@ class ControlFlowGraph(object):
         for block in self.blocks:
 
             for jump_offset in set(block.jump_offsets) | block.exception_offsets:
-                assert jump_offset in self.block_offsets
+                # We need to guard against jumps to wild offsets.
+                # This was seen in fontTools/ttLib/tables/ttProgram.cpython-310.pyc line 359:
+                # 358        542 ...
+                # 357        550 ...
+                #            596 JUMP_FORWARD             5 (to 608)
+                #        >>  598 POP_TOP
+                #            600 EXTENDED_ARG           255
+                #            602 EXTENDED_ARG         65535
+                #            604 EXTENDED_ARG         16777215
+                #            606 JUMP_FORWARD         4294967263 (to 8589935134)
+                # 359    >>  608 ...
+                # The presumption is that some sort of optimization is munging instructions above
+                # in code that is now dead.
+                if jump_offset not in self.block_offsets:
+                    continue
                 successor_block = self.block_offsets[jump_offset]
                 successor_block.predecessors.add(block)
                 block.successors.add(successor_block)
@@ -127,22 +141,27 @@ class ControlFlowGraph(object):
 
             # Connect the current block to its jump targets
             for jump_index in block.jump_offsets:
-                target_block = self.block_offsets[jump_index]
-                if jump_index > block.start_offset:
-                    if BB_LOOP in block.flags:
-                        edge_type = "forward_scope"
+                # We need to guard against jumps to wild offsets. See comment about this above.
+                if jump_index in self.block_offsets:
+                    target_block = self.block_offsets[jump_index]
+                    if jump_index > block.start_offset:
+                        if BB_LOOP in block.flags:
+                            edge_type = "forward_scope"
+                        else:
+                            edge_type = "forward"
                     else:
-                        edge_type = "forward"
-                else:
-                    edge_type = "backward"
+                        edge_type = "backward"
+                        pass
+
+                    if self.block_nodes[target_block] == self.block_nodes[block]:
+                        edge_type = "self-loop"
+
+                    g.make_add_edge(
+                        self.block_nodes[block],
+                        self.block_nodes[target_block],
+                        edge_type,
+                    )
                     pass
-
-                if self.block_nodes[target_block] == self.block_nodes[block]:
-                    edge_type = "self-loop"
-
-                g.make_add_edge(
-                    self.block_nodes[block], self.block_nodes[target_block], edge_type
-                )
                 pass
             for jump_index in block.exception_offsets:
                 source_block = self.block_offsets[jump_index]

@@ -68,7 +68,7 @@ BB_JUMP_CONDITIONAL = 14
 # Jumps to what would be the fallthough.
 # If there were optimization, this instruction would be removed.
 # This crud though can be useful in determining control
-# structures that wereused in the same way junk DNA may be
+# structures that were used in the same way junk DNA may be
 # useful in determining evolution history.
 
 # We mostly use it in drawing graphs to make

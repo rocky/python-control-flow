@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 from control_flow.__main__ import doit
 
+
 def err():
     x = "Foo"
-    raise RuntimeError
+    raise RuntimeError(x)
+
 
 def five():
     return 5
 
+
 def or1(a, b):
     return a or b
+
 
 def if_else(a):
     if a:
@@ -17,9 +21,9 @@ def if_else(a):
     else:
         return 6
 
+
 def if_vs_and(a, b):
-    if a \
-       and b:
+    if a and b:
         c = 1
     if a:
         if b:
@@ -31,14 +35,17 @@ def if_then0(a):
     if a:
         a += 1
 
+
 def if_then1(a):
     if a:
         a += 1
     return a
 
+
 def if_then2(a):
     if a:
         return 5
+
 
 # We can't distinguish between if_then3
 # and if_then4
@@ -48,10 +55,12 @@ def if_then3(a):
     else:
         return 6
 
+
 def if_then4(a):
     if a:
         return 5
     return 6
+
 
 def foo1(a):
     if a:
@@ -60,10 +69,12 @@ def foo1(a):
         a += 2
     return a
 
+
 def foo2(a):
     if a:
         a = 10
     return a
+
 
 def while_if_continue(a):
     a += 1
@@ -73,12 +84,14 @@ def while_if_continue(a):
             continue
         a -= 1
 
+
 def while_true_if_else(a):
     while True:
         if a:
             a -= 1
         else:
             return 6
+
 
 def while_else(a):
     while a:
@@ -87,13 +100,15 @@ def while_else(a):
         a = 5
     return a
 
+
 def while_if(a):
     b = 0
     while a > 0:
         if a % 2:
-          b += 1
+            b += 1
         a >> 1
     return b
+
 
 def for_break():
     for i in range(3):
@@ -101,6 +116,7 @@ def for_break():
             break
         else:
             continue
+
 
 def try_finally():
     try:
@@ -113,6 +129,7 @@ def try_finally():
         x = 4
     return x
 
+
 def try_no_finally():
     try:
         x = 1
@@ -121,6 +138,7 @@ def try_no_finally():
     except:
         x = 3
     return x
+
 
 def while_true_break():
     x = 0
@@ -132,8 +150,8 @@ def while_true_break():
             pass
 
 
-doit(err)
-# doit(or1)
+# doit(err)
+doit(or1)
 # doit(if_then0)
 # doit(if_then1)
 # doit(if_then2)
