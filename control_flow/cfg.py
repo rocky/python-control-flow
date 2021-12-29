@@ -1,9 +1,9 @@
 # Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
-from control_flow.bb import BasicBlock
 from control_flow.graph import (
     DiGraph,
+    Node,
     jump_flags,
     BB_LOOP,
     BB_NOFOLLOW,
@@ -67,8 +67,8 @@ class ControlFlowGraph(object):
         # The only offsets here are the ones that start a dominator region.
         # Sorting then is useful when to find out dominator region an arbitrary
         # offset lies in.
-        self.offset2block_sorted = (
-            (offset, offset2block[offset].bb) for offset in sorted(offset2block.keys())
+        self.offset2block_sorted = tuple(
+            (offset, offset2block[offset]) for offset in sorted(offset2block.keys())
         )
 
         # Compute a block's immediate predecessors and successors
@@ -173,7 +173,7 @@ class ControlFlowGraph(object):
         self.graph = g
         return
 
-    def get_block(self, offset: int) -> BasicBlock:
+    def get_node(self, offset: int) -> Node:
         block = self.offset2block.get(offset, None)
         if block is not None:
             return block
@@ -182,7 +182,7 @@ class ControlFlowGraph(object):
 
         # FIXME: use binary search
         for next_offset, block in self.offset2block_sorted:
-            if next_offset > offset:
+            if block.bb.start_offset <= offset <= block.bb.end_offset:
                 break
             pass
         # Cache result computed

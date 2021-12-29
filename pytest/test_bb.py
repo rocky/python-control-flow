@@ -35,8 +35,10 @@ def test_basic():
 
     for fn in (two_basic_blocks, if_else_blocks):
         if debug:
+            print(fn.__name__)
             dis.dis(fn)
-        bb_mgr = basic_blocks(two_basic_blocks)
+            print()
+        bb_mgr = basic_blocks(fn)
         check_blocks(bb_mgr.bb_list)
 
 
