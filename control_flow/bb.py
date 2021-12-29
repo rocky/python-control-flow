@@ -49,9 +49,14 @@ def get_jump_val(jump_arg: int, version: tuple) -> int:
 
 
 class BasicBlock(object):
-    """Basic block from the bytecode.
+    """Extended Basic block from the bytecode.
 
-    It's a bit more than just the a continuous range of the bytecode offsets.
+    An extended basic block is has a single entry. It can have multiple exits though,
+    so it forms a tree with one one main trunk and jumps off of only this main trunk.
+    A classic basic block ends in a single jump, conditional jump.
+
+    The information in a basic block is a bit more than just the a
+    continuous range of the bytecode offsets.
 
     It also contains:
       * jump-targets offsets,
@@ -517,3 +522,9 @@ def basic_blocks(
         pass
 
     return BB
+
+
+if __name__ == "__main__":
+    bb_mgr = basic_blocks(basic_blocks)
+    for bb in bb_mgr.bb_list:
+        print(bb)
