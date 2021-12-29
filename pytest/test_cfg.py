@@ -4,9 +4,10 @@ from xdis.bytecode import get_instructions_bytes
 from xdis.std import opc
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
+from control_flow.graph import write_dot
 from example_fns import two_basic_blocks, if_else_blocks
 
-debug = False
+debug = True
 if debug:
     import dis
 
@@ -56,6 +57,8 @@ def test_basic():
             print()
         bb_mgr = basic_blocks(fn)
         cfg = ControlFlowGraph(bb_mgr)
+        if debug:
+            write_dot(fn.__name__, "/tmp/test_cfg-", cfg.graph, write_png=True)
         check_cfg(fn, cfg)
 
 

@@ -13,7 +13,7 @@ check-pytest:
 	pytest pytest
 
 #: Run all tests, pytest and integration examples
-check: check-pytest check_examples
+check: check-pytest check-examples
 
 #: Run integration test examples
 check-examples:

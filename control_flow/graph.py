@@ -290,3 +290,21 @@ class TreeGraph(DiGraph):
             self.postorder_traverse1(child)
             yield child
         yield node
+
+
+def write_dot(name: str, prefix: str, graph, write_png: bool = False, debug=True):
+    """Produce and write dot and png files for control-flow graph `cfg`;
+    `name` is the name of the code and `prefix` indicates the file prefix to use.
+    dot is converted to PNG and dumped if `write_bool` is True.
+    """
+    dot_path = f"{prefix}{name}.dot"
+    open(dot_path, "w").write(graph.to_dot(False))
+    if debug:
+        print(f"{dot_path} written")
+    if write_png:
+        import os
+
+        png_path = f"{prefix}{name}.png"
+        os.system(f"dot -Tpng {dot_path} > {png_path}")
+        if debug:
+            print(f"{png_path} written")
