@@ -19,15 +19,18 @@ class DominatorTree(object):
 
     def __init__(self, cfg):
         self.cfg = cfg
-        self.doms = {}  # map of node to its dominator
-        self.pdoms = {}  # map of node to its post-dominator
-        self.df = {}  # dominator frontier
         self.build()
 
     def build(self):
         graph = self.cfg.graph
         entry = self.cfg.entry_node
+
+        self.doms = {}  # map of node to its dominator
+        self.df = {}  # dominator frontier
+
         self.build_dominators(graph, entry)
+
+        self.pdoms = {}  # map of node to its post-dominator
         entry = self.cfg.exit_node
         self.build_dominators(graph, entry, post_dom=True)
 
@@ -151,6 +154,13 @@ class DominatorTree(object):
                 pass
             pass
         return t
+
+    def offset_dominates(self, start_offset: int, end_offset: int) -> bool:
+        cfg = self.cfg
+        start_block = cfg.get_block(start_offset)
+        end_block = cfg.get_block(start_offset)
+        # FIXME: is this right
+        return start_block in end_block.doms
 
 
 def build_dom_set(t, do_pdoms):

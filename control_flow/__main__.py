@@ -18,8 +18,8 @@ def doit(fn, name=None):
     print(name)
 
     bb_mgr = basic_blocks(fn)
-    for bb in bb_mgr.bb_list:
-        print("\t", bb)
+    # for bb in bb_mgr.bb_list:
+    #     print("\t", bb)
     dis.dis(fn)
     cfg = ControlFlowGraph(bb_mgr)
     dot_path = "/tmp/flow-%s.dot" % name

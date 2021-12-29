@@ -1,7 +1,7 @@
 # Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
-from control_flow.dominators import DominatorTree
+from control_flow.bb import BasicBlock
 from control_flow.graph import (
     DiGraph,
     jump_flags,
@@ -31,18 +31,6 @@ class ControlFlowGraph(object):
         self.dom = None
         self.analyze(self.blocks, bb_mgr.exit_block)
 
-    def dominators(self, blocks):
-        """
-        Returns the ``DominatorTree`` that contains:
-        - Dominator tree (dict of IDom)
-        - Dominance frontier (dict of CFG node -> set CFG nodes)
-        This is lazily computed.
-        """
-        if self.dom is None:
-            self.dom = DominatorTree(self)
-            pass
-        return self.dom
-
     def analyze(self, blocks, exit_block):
         """
         Performs the Control-Flow Analysis and stores the resulting
@@ -62,17 +50,26 @@ class ControlFlowGraph(object):
 
         # Add nodes
         exit_block = None
+        offset2block = self.offset2block
         for block in self.blocks:
             self.block_offsets[block.start_offset] = block
             block_node = g.make_add_node(block)
             self.block_nodes[block] = block_node
-            self.offset2block[block.index[0]] = block_node
+            offset2block[block.index[0]] = block_node
 
             if BB_EXIT in block.flags:
                 assert exit_block is None, f"Already saw exit block at: {exit_block}"
                 exit_block = block
                 self.exit_block = block_node
             pass
+
+        # List of offset to dominator infomation sorted by offset.
+        # The only offsets here are the ones that start a dominator region.
+        # Sorting then is useful when to find out dominator region an arbitrary
+        # offset lies in.
+        self.offset2block_sorted = (
+            (offset, offset2block[offset].bb) for offset in sorted(offset2block.keys())
+        )
 
         # Compute a block's immediate predecessors and successors
 
@@ -175,3 +172,19 @@ class ControlFlowGraph(object):
 
         self.graph = g
         return
+
+    def get_block(self, offset: int) -> BasicBlock:
+        block = self.offset2block.get(offset, None)
+        if block is not None:
+            return block
+
+        block = self.offset2block_sorted[0]
+
+        # FIXME: use binary search
+        for next_offset, block in self.offset2block_sorted:
+            if next_offset > offset:
+                break
+            pass
+        # Cache result computed
+        self.offset2block[offset] = block
+        return block

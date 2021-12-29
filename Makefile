@@ -1,4 +1,4 @@
 .PHONY: check
 
 check:
-	python test/test-example.py
+	python test/test-all-examples.py

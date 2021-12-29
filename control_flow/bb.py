@@ -43,6 +43,7 @@ PYTHON_VERSIONS = (  # 1.5,
 end_bb = -1
 
 
+# FIXME: The next version of xdis should include this. Use that.
 def get_jump_val(jump_arg: int, version: tuple) -> int:
     return jump_arg * 2 if version[:2] >= (3, 10) else jump_arg
 
