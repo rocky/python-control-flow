@@ -32,12 +32,12 @@ def doit(fn, name=None):
         cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree, False)
         build_dom_set(cfg.dom_tree, False)
-        write_dot(name, "/tmp/flow-dom", cfg.dom_tree, write_png=True)
+        write_dot(name, "/tmp/flow-dom-", cfg.dom_tree, write_png=True)
 
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
-        write_dot(name, "/tmp/flow-pdom", cfg.pdom_tree, write_png=True)
+        write_dot(name, "/tmp/flow-pdom-", cfg.pdom_tree, write_png=True)
 
         print("=" * 30)
         augmented_instrs = augment_instructions(fn, cfg, opc.version_tuple)

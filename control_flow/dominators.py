@@ -7,6 +7,7 @@
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
+from control_flow.bb import BasicBlock
 from control_flow.graph import TreeGraph
 from control_flow.traversals import dfs_postorder_nodes
 
@@ -227,3 +228,10 @@ def dfs_forest(t, do_pdoms):
         if node not in seen:
             dfs(seen, node, do_pdoms)
     return
+
+
+def dominates(bb1: BasicBlock, bb2: BasicBlock) -> bool:
+    """Return true if bb1 dominates bb2. In other words,
+    bb2 is in bb1's dominator set.
+    """
+    return bb2 in bb1.dom_set
