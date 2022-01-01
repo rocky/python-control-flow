@@ -173,31 +173,28 @@ def augment_instructions(fn, cfg, version_tuple):
                 ends[successor_bb.end_offset] = successor_bb
                 pass
             pass
-        else:
-            # Extend existing instruction
-
+        elif bb is None:
             # FIXME: this shouldn't be needed
-            if bb is None:
-                bb = dom.bb
+            bb = dom.bb
 
-            extended_inst = ExtendedInstruction(
-                inst.opname,
-                inst.opcode,
-                inst.optype,
-                inst.inst_size,
-                inst.arg,
-                inst.argval,
-                inst.argrepr,
-                inst.has_arg,
-                inst.offset,
-                inst.starts_line,
-                inst.is_jump_target,
-                inst.has_extended_arg,
-                bb,
-                dom,
-            )
-            augmented_instrs.append(extended_inst)
-            pass
+        extended_inst = ExtendedInstruction(
+            inst.opname,
+            inst.opcode,
+            inst.optype,
+            inst.inst_size,
+            inst.arg,
+            inst.argval,
+            inst.argrepr,
+            inst.has_arg,
+            inst.offset,
+            inst.starts_line,
+            inst.is_jump_target,
+            inst.has_extended_arg,
+            bb,
+            dom,
+        )
+        augmented_instrs.append(extended_inst)
+        pass
 
         bb = ends.get(offset, None)
         if bb:
