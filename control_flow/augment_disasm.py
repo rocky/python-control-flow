@@ -5,7 +5,7 @@ Augment assembler instructions to include basic block and dominator information.
 This code is ugly.
 
 """
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 
 from collections import namedtuple
 
@@ -240,7 +240,11 @@ def augment_instructions(
                 # Not backward jump, Note: if jump == offset, then we have an
                 # infinite loop. We won't check for that here though.
                 # Check for jump break out of a loop
+                loop_related_jump = False
                 if len(loop_stack) > 0:
+                    # Check for loop-related jumps such as  those that can occur from break, continue.
+                    # Note: we also add instructions for normal loop iteration jump and
+                    # jump-termination jump
                     loop_dom, loop_block_dom_set, loop_inst = loop_stack[-1]
                     if jump_target >= max(loop_dom.bb.__dict__["jump_offsets"]):
                         if loop_inst.opcode in bb_mgr.FOR_INSTRUCTIONS:
@@ -264,7 +268,33 @@ def augment_instructions(
                             dom,
                         )
                         augmented_instrs.append(pseudo_inst)
+                        loop_related_jump = True
                         pass
+                if not loop_related_jump:
+                    # Classify jumps that jump to the join of some
+                    # high-level Python block
+                    # We find the join offset using reverse dominators?
+                    # FIXME: complete...
+
+                    # if jump_target == follow_bb_offset:
+                    #     pseudo_inst = ExtendedInstruction(
+                    #         "JUMP_END_BLOCK",
+                    #         1002,
+                    #         "pseudo",
+                    #         0,
+                    #         target_dom_set,
+                    #         target_dom_set,
+                    #         f"{target_dom_set}",
+                    #         True,
+                    #         offset,
+                    #         None,
+                    #         False,
+                    #         False,
+                    #         bb,
+                    #         dom,
+                    #     )
+                    #     augmented_instrs.append(pseudo_inst)
+                    pass
 
         extended_inst = ExtendedInstruction(
             inst.opname,
@@ -364,3 +394,16 @@ def augment_instructions(
     # for inst in augmented_instrs:
     #     print(inst)
     return augmented_instrs
+
+
+def next_offset(offset: int, instructions: tuple, offset2inst_index: list):
+    """
+    Given an offset, a list of instructions, the basic block it is in,
+    and a mapping of offsets to instructions,
+    return the offset of the offset after instruction.
+
+    For Python 3 this could be done by adding 2, for Python 2 it is either +1 or +3.
+    However by using instructions instead of bytecode, we eliminate Python version differences.
+    """
+    next_inst_index = offset2inst_index[offset] + 1
+    return instructions[next_inst_index].offset
