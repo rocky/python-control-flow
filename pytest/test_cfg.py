@@ -50,12 +50,13 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph):
 
 
 def test_basic():
+    offset2inst_index = {}
     for fn in (two_basic_blocks, if_else_blocks):
         if debug:
             print(fn.__name__)
             dis.dis(fn)
             print()
-        bb_mgr = basic_blocks(fn)
+        bb_mgr = basic_blocks(fn, offset2inst_index)
         cfg = ControlFlowGraph(bb_mgr)
         if debug:
             write_dot(fn.__name__, "/tmp/test_cfg-", cfg.graph, write_png=True)

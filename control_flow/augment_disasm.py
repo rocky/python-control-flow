@@ -1,14 +1,20 @@
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2022 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 
 This code is ugly.
 
 """
+from typing import Callable, Dict, List, Optional
+
 from collections import namedtuple
 
 from xdis.std import get_instructions
 from xdis.instruction import Instruction
+
+from control_flow.bb import BBMgr
+from control_flow.cfg import ControlFlowGraph
+from control_flow.graph import Node, BB_FOR, BB_LOOP
 
 _ExtendedInstruction = namedtuple(
     "_Instruction",
@@ -100,12 +106,19 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
 
 
 # FIXME: this will be redone to use the result of cs_tree_to_str
-def augment_instructions(fn, cfg, version_tuple):
+def augment_instructions(
+    fn: Callable,
+    cfg: ControlFlowGraph,
+    opc,
+    offset2inst_index: Dict[int, int],
+    bb_mgr: BBMgr,
+):
     """Augment instructions in fn with dominator information"""
     current_block = cfg.entry_node
 
     dom_tree = cfg.dom_tree
     bb2dom_node = {node.bb: node for node in dom_tree.nodes}
+    version_tuple = opc.version_tuple
     # block_stack = [current_block]
 
     starts = {current_block.start_offset: current_block}
@@ -113,10 +126,20 @@ def augment_instructions(fn, cfg, version_tuple):
     ends = {current_block.end_offset: current_block}
     augmented_instrs = []
     bb = None
-    dom = None
+    dom: Node = Optional[Node]
     offset = 0
-    for inst in get_instructions(fn):
+    loop_stack = []
+    instructions = tuple(get_instructions(fn))
+
+    # Compute offset2dom
+    offset2bb: Dict[int, Node] = {bb.start_offset: bb for bb in bb_mgr.bb_list}
+
+    for inst in instructions:
+        # Go through instructions inserting pseudo ops.
+        # These are done for basic blocks, dominators,
+        # and jump target locations.
         offset = inst.offset
+
         new_bb = starts.get(offset, None)
         if new_bb:
             bb = new_bb
@@ -129,6 +152,13 @@ def augment_instructions(fn, cfg, version_tuple):
             reach_ends = dom_reach_ends.get(dom.reach_offset, [])
             reach_ends.append(dom)
             dom_reach_ends[dom.reach_offset] = reach_ends
+
+            if inst.opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
+                # Use the basic block of the block loop successor, this is the main body of the loop,
+                # as the block to check for leaving the loop.
+                loop_block_dom_set = tuple(dom.bb.successors)[0].doms
+                loop_stack.append((dom, loop_block_dom_set, inst))
+
             pseudo_inst = ExtendedInstruction(
                 "DOM_START",
                 1000,
@@ -177,6 +207,65 @@ def augment_instructions(fn, cfg, version_tuple):
             # FIXME: this shouldn't be needed
             bb = dom.bb
 
+        if inst.opcode in opc.JUMP_OPS:
+            jump_target = inst.argval
+            target_inst = instructions[offset2inst_index[jump_target]]
+            target_bb = offset2bb[target_inst.offset]
+            target_dom_set = target_bb.dom_set
+            if inst.argval < offset:
+                # Classify backward loop jumps
+                pseudo_op_name = (
+                    "JUMP_FOR"
+                    if target_inst.opcode in bb_mgr.FOR_INSTRUCTIONS
+                    else "JUMP_LOOP"
+                )
+                pseudo_inst = ExtendedInstruction(
+                    pseudo_op_name,
+                    1001,
+                    "pseudo",
+                    0,
+                    target_dom_set,
+                    target_dom_set,
+                    f"{target_dom_set}",
+                    True,
+                    offset,
+                    None,
+                    False,
+                    False,
+                    bb,
+                    dom,
+                )
+                augmented_instrs.append(pseudo_inst)
+            else:
+                # Not backward jump, Note: if jump == offset, then we have an
+                # infinite loop. We won't check for that here though.
+                # Check for jump break out of a loop
+                if len(loop_stack) > 0:
+                    loop_dom, loop_block_dom_set, loop_inst = loop_stack[-1]
+                    if jump_target >= max(loop_dom.bb.__dict__["jump_offsets"]):
+                        if loop_inst.opcode in bb_mgr.FOR_INSTRUCTIONS:
+                            pseudo_op_name = "BREAK_FOR"
+                        else:
+                            pseudo_op_name = "BREAK_LOOP"
+                        pseudo_inst = ExtendedInstruction(
+                            pseudo_op_name,
+                            1002,
+                            "pseudo",
+                            0,
+                            target_dom_set,
+                            target_dom_set,
+                            f"{target_dom_set}",
+                            True,
+                            offset,
+                            None,
+                            False,
+                            False,
+                            bb,
+                            dom,
+                        )
+                        augmented_instrs.append(pseudo_inst)
+                        pass
+
         extended_inst = ExtendedInstruction(
             inst.opname,
             inst.opcode,
@@ -215,6 +304,9 @@ def augment_instructions(fn, cfg, version_tuple):
                 dom,
             )
             augmented_instrs.append(pseudo_inst)
+            if bb.flags in [BB_FOR, BB_LOOP]:
+                loop_stack.pop()
+
         dom_list = dom_reach_ends.get(offset, None)
         if dom_list is not None:
             for dom in reversed(dom_list):

@@ -18,7 +18,8 @@ def doit(fn, name=None):
         name = fn.__name__
     print(name)
 
-    bb_mgr = basic_blocks(fn)
+    offset2inst_index = {}
+    bb_mgr = basic_blocks(fn, offset2inst_index)
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
     dis.dis(fn)
@@ -40,7 +41,7 @@ def doit(fn, name=None):
         write_dot(name, "/tmp/flow-pdom-", cfg.pdom_tree, write_png=True)
 
         print("=" * 30)
-        augmented_instrs = augment_instructions(fn, cfg, opc.version_tuple)
+        augmented_instrs = augment_instructions(fn, cfg, opc, offset2inst_index, bb_mgr)
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
         # return cs_str

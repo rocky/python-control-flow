@@ -65,6 +65,7 @@ class BasicBlock(object):
       * a graph node,
       * predecessor and successor sets, filled in a later phase
       * some layout information for dot graphing
+      * a list of jump instructions that jump outside of loops
     """
 
     def __init__(
@@ -122,6 +123,10 @@ class BasicBlock(object):
         self.edge_count = len(jump_offsets)
         if follow_offset is not None and not BB_NOFOLLOW in self.flags:
             self.edge_count += 1
+
+        # List of instructions that break out of loops.
+        # Of course, this is non-empty only when the basic block is inside a loop
+        self.break_instructions = []
 
         end_bb += 1
 
@@ -262,6 +267,7 @@ class BBMgr(object):
 
 def basic_blocks(
     fn_or_code,
+    offset2inst_index,
     version=PYTHON_VERSION_TRIPLE,
     is_pypy=IS_PYPY,
     more_precise_returns=False,
@@ -277,8 +283,10 @@ def basic_blocks(
 
     # Get jump targets
     jump_targets = set()
+    loop_targets = set()
     instructions = list(get_instructions(fn_or_code))
-    for inst in instructions:
+    for i, inst in enumerate(instructions):
+        offset2inst_index[inst.offset] = i
         op = inst.opcode
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
@@ -288,6 +296,12 @@ def basic_blocks(
                 jump_offset = jump_value
             else:
                 jump_offset = follow_offset + jump_value
+
+            # For Python so far, a loop jump always goes from a
+            # larger offset to a smaller one
+            is_loop = jump_offset <= inst.offset
+            if is_loop:
+                loop_targets.add(jump_offset)
             jump_targets.add(jump_offset)
             pass
 
@@ -378,6 +392,8 @@ def basic_blocks(
 
                 start_offset = end_offset
                 pass
+            if offset in loop_targets:
+                flags.add(BB_LOOP)
 
         # Add block flags for certain classes of instructions
         if op in BB.JUMP_CONDITONAL:
@@ -525,6 +541,10 @@ def basic_blocks(
 
 
 if __name__ == "__main__":
-    bb_mgr = basic_blocks(basic_blocks)
+    offset2inst_index = {}
+    bb_mgr = basic_blocks(basic_blocks, offset2inst_index)
+    from pprint import pprint
+
+    pprint(offset2inst_index)
     for bb in bb_mgr.bb_list:
         print(bb)

@@ -150,14 +150,17 @@ class Node(object):
     def reset(self):
         self.GLOBAL_COUNTER = 0
 
-    def __ne__(self, obj):
-        return not self == obj
-
-    def __eq__(self, obj):
+    def __eq__(self, obj) -> bool:
         return isinstance(obj, Node) and obj.number == self.number
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash("node-" + str(self.number))
+
+    def __lt__(self, obj) -> bool:
+        return not self.number < obj.number
+
+    def __ne__(self, obj):
+        return not self == obj
 
     def __repr__(self):
         return "Node%d(flags=%s, bb=%s)" % (
