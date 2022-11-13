@@ -33,12 +33,13 @@ def check_blocks(bb_list: list):
 
 def test_basic():
 
+    offset2inst_index = {}
     for fn in (two_basic_blocks, if_else_blocks):
         if debug:
             print(fn.__name__)
             dis.dis(fn)
             print()
-        bb_mgr = basic_blocks(fn)
+        bb_mgr = basic_blocks(fn, offset2inst_index)
         check_blocks(bb_mgr.bb_list)
 
 

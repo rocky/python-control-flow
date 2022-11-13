@@ -12,6 +12,12 @@ from control_flow.graph import TreeGraph
 from control_flow.traversals import dfs_postorder_nodes
 
 
+class DominatorSet(set):
+    def __str__(self) -> str:
+        sorted_set = {dom.bb.number for dom in sorted(self)}
+        return f"DominatorSet<{sorted_set}>"
+
+
 class DominatorTree(object):
     """
     Handles the dominator trees (dominator/post-dominator), and the
@@ -166,7 +172,7 @@ class DominatorTree(object):
 
 def build_dom_set(t, do_pdoms):
     """Makes a the dominator set for each node in the tree"""
-    seen = set()
+    seen = DominatorSet()
     for node in t.nodes:
         if node not in seen:
             seen.add(node)
@@ -179,9 +185,9 @@ def build_dom_set1(node, do_pdoms):
     """Build dominator sets from dominator node"""
 
     if do_pdoms:
-        node.bb.pdom_set = set(node.bb.pdoms)
+        node.bb.pdom_set = DominatorSet(node.bb.pdoms)
     else:
-        node.bb.dom_set = set(node.bb.doms)
+        node.bb.dom_set = DominatorSet(node.bb.doms)
         pass
 
     for child in node.children:
@@ -203,9 +209,9 @@ def dfs_forest(t, do_pdoms):
             return
         seen.add(node)
         if do_pdoms:
-            node.bb.pdoms = node.pdoms = set([node])
+            node.bb.pdoms = node.pdoms = DominatorSet([node])
         else:
-            node.bb.doms = node.doms = set([node])
+            node.bb.doms = node.doms = DominatorSet([node])
             node.bb.reach_offset = node.reach_offset = node.bb.end_offset
 
         for n in node.children:
