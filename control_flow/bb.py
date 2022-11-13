@@ -167,7 +167,7 @@ class BBMgr(object):
         self.bb_list = []
         self.exit_block = None
 
-        version = version[:2]
+        version = tuple(version[:2])
 
         self.opcode = opcode = get_opcode_module(version)
 

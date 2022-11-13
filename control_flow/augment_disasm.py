@@ -5,12 +5,14 @@ Augment assembler instructions to include basic block and dominator information.
 This code is ugly.
 
 """
-from typing import Callable, Dict, Optional
+from types import CodeType
+from typing import Callable, Dict, Optional, Union
 
 from collections import namedtuple
 
-from xdis.std import get_instructions
+from xdis.bytecode import Bytecode
 from xdis.instruction import Instruction
+from xdis.codetype.base import CodeBase
 
 from control_flow.bb import BBMgr
 from control_flow.cfg import ControlFlowGraph
@@ -107,13 +109,13 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
 
 # FIXME: this will be redone to use the result of cs_tree_to_str
 def augment_instructions(
-    fn: Callable,
+    fn_or_code: Union[Callable, CodeBase, CodeType],
     cfg: ControlFlowGraph,
     opc,
     offset2inst_index: Dict[int, int],
     bb_mgr: BBMgr,
 ):
-    """Augment instructions in fn with dominator information"""
+    """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
 
     dom_tree = cfg.dom_tree
@@ -129,7 +131,7 @@ def augment_instructions(
     dom: Node = Optional[Node]
     offset = 0
     loop_stack = []
-    instructions = tuple(get_instructions(fn))
+    instructions = tuple(Bytecode(fn_or_code, opc).get_instructions(fn_or_code))
 
     # Compute offset2dom
     offset2bb: Dict[int, Node] = {bb.start_offset: bb for bb in bb_mgr.bb_list}
