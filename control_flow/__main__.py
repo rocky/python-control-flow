@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2022 by Rocky Bernstein <rb@dustyfeet.com>
 from xdis.std import opc
 
 from control_flow.augment_disasm import augment_instructions
@@ -25,7 +25,8 @@ def doit(fn, name=None):
     dis.dis(fn)
     cfg = ControlFlowGraph(bb_mgr)
 
-    write_dot(name, "/tmp/flow-", cfg.graph, write_png=True)
+    version = ".".join((str(n) for n in sys.version_info[:2]))
+    write_dot(name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
 
     try:
         dt = DominatorTree(cfg)
@@ -33,12 +34,12 @@ def doit(fn, name=None):
         cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree, False)
         build_dom_set(cfg.dom_tree, False)
-        write_dot(name, "/tmp/flow-dom-", cfg.dom_tree, write_png=True)
+        write_dot(name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True)
 
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
-        write_dot(name, "/tmp/flow-pdom-", cfg.pdom_tree, write_png=True)
+        write_dot(name, f"/tmp/flow-pdom-{version}-", cfg.pdom_tree, write_png=True)
 
         print("=" * 30)
         augmented_instrs = augment_instructions(fn, cfg, opc, offset2inst_index, bb_mgr)
@@ -50,7 +51,7 @@ def doit(fn, name=None):
 
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
-        print("%s had an error" % name)
+        print(f"{name} had an error")
         return ""
 
 

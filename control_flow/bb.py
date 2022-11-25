@@ -465,9 +465,7 @@ def basic_blocks(
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] >= (3, 9) or (
-                version[:2] < (3, 8) and op != BB.opcode.SETUP_LOOP
-            ):
+            elif version[:2] < (3, 10) or op != BB.opcode.SETUP_LOOP:
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
