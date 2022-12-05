@@ -177,7 +177,7 @@ class BBMgr(object):
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
         self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
         self.JUMP_INSTRUCTIONS = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-        self.JUMP_UNCONDITONAL = set(
+        self.JUMP_UNCONDITIONAL = set(
             [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
         )
 
@@ -207,7 +207,7 @@ class BBMgr(object):
             self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["RAISE_VARARGS"]])
 
         if version >= (2, 6):
-            self.JUMP_CONDITONAL = set(
+            self.JUMP_CONDITIONAL = set(
                 [
                     opcode.opmap["POP_JUMP_IF_FALSE"],
                     opcode.opmap["POP_JUMP_IF_TRUE"],
@@ -233,7 +233,7 @@ class BBMgr(object):
                 # many of the below contain just one instruction). This can
                 # isolate us from instruction changes in Python.
                 # The classifications are used in setting basic block flag bits
-                self.JUMP_UNCONDITONAL = set(
+                self.JUMP_UNCONDITIONAL = set(
                     [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
                 )
 
@@ -396,7 +396,7 @@ def basic_blocks(
                 flags.add(BB_LOOP)
 
         # Add block flags for certain classes of instructions
-        if op in BB.JUMP_CONDITONAL:
+        if op in BB.JUMP_CONDITIONAL:
             flags.add(BB_JUMP_CONDITIONAL)
 
         if op in BB.POP_BLOCK_INSTRUCTIONS:
@@ -446,7 +446,7 @@ def basic_blocks(
             jump_offset = inst.argval
 
             jump_offsets.add(jump_offset)
-            if op in BB.JUMP_UNCONDITONAL:
+            if op in BB.JUMP_UNCONDITIONAL:
                 flags.add(BB_JUMP_UNCONDITIONAL)
                 if jump_offset == follow_offset:
                     flags.add(BB_JUMP_TO_FALLTHROUGH)

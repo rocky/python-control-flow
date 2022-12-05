@@ -8,7 +8,7 @@ This code is ugly.
 from types import CodeType
 from typing import Callable, Dict, Optional, Union
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 from xdis.bytecode import Bytecode
 from xdis.instruction import Instruction
@@ -135,6 +135,16 @@ def augment_instructions(
 
     # Compute offset2dom
     offset2bb: Dict[int, Node] = {bb.start_offset: bb for bb in bb_mgr.bb_list}
+
+    # These are the kinds of jump instructions that we need to check
+    # for non-end jump targets. It is basically an instruction with an
+    # explicit jump target it in. (There are further conditions but those
+    # are tested below when needed.)
+    jump_instructions = bb_mgr.JUMP_INSTRUCTIONS | bb_mgr.JUMP_UNCONDITIONAL
+
+    jump_target2offsets, jump_targets_is_end = find_jump_targets(
+        opc, instructions, offset2inst_index, jump_instructions
+    )
 
     for inst in instructions:
         # Go through instructions inserting pseudo ops.
@@ -396,6 +406,49 @@ def augment_instructions(
     # for inst in augmented_instrs:
     #     print(inst)
     return augmented_instrs
+
+
+def find_jump_targets(
+    opc, instructions, offset2inst_index: Dict[int, int], jump_instructions, debug=True
+) -> Dict[int, list]:
+    """
+    Return a dictionary mapping jump-target offsets instruction offsets that
+    jump to that target or precede it. We include fallthrough instructions
+    Return the list of offsets.
+    """
+
+    jump_target2offsets: Dict[int, list] = defaultdict(list)
+    for i, inst in enumerate(instructions):
+        offset = inst.offset
+        if inst.opcode in opc.JUMP_OPS:
+            jump_target_offset = inst.argval
+            jump_target2offsets[jump_target_offset].append(offset)
+
+    jump_targets_is_end: Dict[int, bool] = {}
+    for jump_target_offset, sources in jump_target2offsets.items():
+        # Check if jump_target is in a loop
+        if all(jump_target_offset < offset for offset in sources):
+            jump_targets_is_end[jump_target_offset] = False
+            continue
+
+        inst_index = offset2inst_index[jump_target_offset]
+        jump_target_is_end = True
+        if inst_index > 0:
+            prev_instruction = instructions[inst_index - 1]
+            if (
+                prev_instruction.opcode in jump_instructions
+                and prev_instruction.argval > jump_target_offset
+            ):
+                jump_target_is_end = False
+        jump_targets_is_end[jump_target_offset] = jump_target_is_end
+
+    if debug:
+        import pprint as pp
+
+        pp.pprint(dict(jump_target2offsets))
+        pp.pprint(jump_targets_is_end)
+
+    return jump_target2offsets, jump_targets_is_end
 
 
 def next_offset(offset: int, instructions: tuple, offset2inst_index: list):
