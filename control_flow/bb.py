@@ -222,6 +222,8 @@ class BBMgr(object):
                     opcode.opmap["RAISE_VARARGS"],
                 ]
             )
+            if "RERAISE" in opcode.opmap:
+                self.NOFOLLOW_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
         # ??
         #                                   opcode.opmap['YIELD_VALUE'],
@@ -236,6 +238,10 @@ class BBMgr(object):
                 self.JUMP_UNCONDITIONAL = set(
                     [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
                 )
+        else:
+            self.JUMP_UNCONDITIONAL = set(
+                [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
+            )
 
     def add_bb(
         self, start_offset, end_offset, loop_offset, follow_offset, flags, jump_offsets

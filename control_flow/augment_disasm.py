@@ -5,6 +5,7 @@ Augment assembler instructions to include basic block and dominator information.
 This code is ugly.
 
 """
+from enum import IntEnum
 from types import CodeType
 from typing import Callable, Dict, Optional, Union
 
@@ -17,6 +18,60 @@ from xdis.codetype.base import CodeBase
 from control_flow.bb import BBMgr
 from control_flow.cfg import ControlFlowGraph
 from control_flow.graph import Node, BB_FOR, BB_LOOP
+
+
+class JumpTarget(IntEnum):
+    """
+    Classifications of jump targets, which are used to create pseudo-ops before some
+    (but not all) jump targets.
+
+    This kind of classification simpilifies control flow parser matching.
+    In theory, it is not needed because we could either match on a set of previous instructions
+    e.g. the set of RAISE, RETURN, YIELD instructions, or because we could create grammar
+    for special kinds of statements that include the above, e.g. "no_follow_stmt" as a special kind of
+    stmt.
+
+    This was tried in uncompyle2, see "lastl_stmt".
+    The problem with this, is that the grammar then becomes more cumbersome and hard to understand,
+    a lot of rules have to be duplicated: one contains "stmt" and one contains "lastl_stmt".
+    Or if "stmt ::= lastl_stmt", then a reduction rule needs to check when this isn't appropriate.
+    And there are many more grammar reductions for the additional but equivalent rules.
+
+    So instead, by adding this as a pseudo op before parsing, parsing can make use of this without
+    such additional rules for "lastl_stmt".
+
+    Note: We don't mark explicitly fallthgough jump targets, or jump-back-to-loop-top targets.
+
+    Here, the previous instructions are typically easy enough to match on via their instructions
+    or a rule that groups together these instructions.
+
+    The problems with doing this kind of thing for nofollow instructions like
+    RETURN or RAISE is that these are more naturally part of a "stmt" rule
+    so the single instruction isn't available for matching as part of control flow.
+    But, again, if we add a pseudo op for these instructions, then that can be used
+    in parse-based control-flow matching.
+    """
+
+    # The start of a loop
+    LOOP = 2001
+
+    # Comes after a NOFOLLOW_INSTRUCTIONS like a "return", "yield", "raise".
+    # This does *not* include unconditional jumps as you would find in SIBLING,
+    # or a jump to a loop.
+    NOT_FALLEN_INTO = 2002
+
+    # A siblng of the code bock that precedes this. You find this in alternate
+    # code blocks. For example "if/else" where the target is the beginning of the
+    # "else" that is jumped to after the end of an unconditional jump at the end of the
+    # "then" the logical "end"
+    SIBLING = 2003
+
+
+block_kind2pseudo_op_name = {
+    JumpTarget.LOOP: "LOOP",
+    JumpTarget.NOT_FALLEN_INTO: "NOT_FALLEN_INTO_BLOCK",
+    JumpTarget.SIBLING: "SIBLING_BLOCK",
+}
 
 _ExtendedInstruction = namedtuple(
     "_Instruction",
@@ -142,8 +197,8 @@ def augment_instructions(
     # are tested below when needed.)
     jump_instructions = bb_mgr.JUMP_INSTRUCTIONS | bb_mgr.JUMP_UNCONDITIONAL
 
-    jump_target2offsets, jump_targets_is_end = find_jump_targets(
-        opc, instructions, offset2inst_index, jump_instructions
+    jump_target2offsets, jump_target_kind = find_jump_targets(
+        opc, instructions, offset2inst_index, jump_instructions, bb_mgr
     )
 
     for inst in instructions:
@@ -308,6 +363,27 @@ def augment_instructions(
                     #     augmented_instrs.append(pseudo_inst)
                     pass
 
+        block_kind = jump_target_kind.get(offset)
+        if block_kind is not None:
+            pseudo_op_name = block_kind2pseudo_op_name[block_kind]
+            pseudo_inst = ExtendedInstruction(
+                pseudo_op_name,
+                int(block_kind),
+                "pseudo",
+                0,
+                None,
+                None,
+                False,
+                False,
+                offset,
+                None,
+                False,
+                False,
+                bb,
+                dom,
+            )
+            augmented_instrs.append(pseudo_inst)
+
         extended_inst = ExtendedInstruction(
             inst.opname,
             inst.opcode,
@@ -392,7 +468,7 @@ def augment_instructions(
                 dom_number,
                 dom_number,
                 f"Basic Block {dom_number}",
-                True,
+                False,
                 offset,
                 None,
                 False,
@@ -409,7 +485,12 @@ def augment_instructions(
 
 
 def find_jump_targets(
-    opc, instructions, offset2inst_index: Dict[int, int], jump_instructions, debug=True
+    opc,
+    instructions,
+    offset2inst_index: Dict[int, int],
+    jump_instructions,
+    bb_mgr,
+    debug=True,
 ) -> Dict[int, list]:
     """
     Return a dictionary mapping jump-target offsets instruction offsets that
@@ -424,31 +505,40 @@ def find_jump_targets(
             jump_target_offset = inst.argval
             jump_target2offsets[jump_target_offset].append(offset)
 
-    jump_targets_is_end: Dict[int, bool] = {}
+    jump_target_kind: Dict[int, bool] = {}
+    # populate jump_target_kind based on the instruction and
+    # possibly the previous instruction - the instruction whose offset comes just
+    # before the instruction.
     for jump_target_offset, sources in jump_target2offsets.items():
         # Check if jump_target is in a loop
         if all(jump_target_offset < offset for offset in sources):
-            jump_targets_is_end[jump_target_offset] = False
+            jump_target_kind[jump_target_offset] = JumpTarget.LOOP
             continue
 
         inst_index = offset2inst_index[jump_target_offset]
-        jump_target_is_end = True
+        jump_target_sibling = True
         if inst_index > 0:
             prev_instruction = instructions[inst_index - 1]
+            if prev_instruction.opcode in bb_mgr.NOFOLLOW_INSTRUCTIONS:
+                jump_target_kind[jump_target_offset] = JumpTarget.NOT_FALLEN_INTO
+                continue
+            if prev_instruction.opcode not in bb_mgr.JUMP_UNCONDITIONAL:
+                continue
             if (
                 prev_instruction.opcode in jump_instructions
-                and prev_instruction.argval > jump_target_offset
+                and prev_instruction.argval < jump_target_offset
             ):
-                jump_target_is_end = False
-        jump_targets_is_end[jump_target_offset] = jump_target_is_end
+                continue
+        if jump_target_sibling:
+            jump_target_kind[jump_target_offset] = JumpTarget.SIBLING
 
     if debug:
         import pprint as pp
 
         pp.pprint(dict(jump_target2offsets))
-        pp.pprint(jump_targets_is_end)
+        pp.pprint(jump_target_kind)
 
-    return jump_target2offsets, jump_targets_is_end
+    return jump_target2offsets, jump_target_kind
 
 
 def next_offset(offset: int, instructions: tuple, offset2inst_index: list):
