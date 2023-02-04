@@ -150,6 +150,28 @@ def while_true_break():
             pass
 
 
+def and_or():
+    return (a and b and c and d) or (e or f or g or h)
+
+
+def or_and():
+    return (a or b or c or d) and (e and f and g and h)
+
+
+def ifelif():
+    if a:
+        x = 1
+    elif b:
+        x = 2
+    elif c:
+        x = 3
+    else:
+        x = 4
+
+
+# doit(ifelif)
+# doit(or_and)
+# doit(and_or)
 # doit(err)
 # doit(or1)
 # doit(if_then0)
@@ -170,4 +192,4 @@ def while_true_break():
 # doit(while_if)
 # doit(while_true_break)
 doit(try_finally)
-doit(try_no_finally)
+# doit(try_no_finally)

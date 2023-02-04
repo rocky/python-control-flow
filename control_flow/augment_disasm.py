@@ -162,6 +162,58 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
         return str
 
 
+def post_ends(dom) -> set:
+    """
+    We only want to mark dominators that appear
+    after some sort of "end" blocks or join condition.
+
+    Why? In decompilation we are trying to distinguish blocks that can
+    start after an end of some compound, like "if", "try" or "for",
+    from those blocks that are sibling or alternative blocks.
+
+    Some examples:
+        if b:
+          sibling block
+        elif
+          sibling block
+        else
+          sibling block
+        end
+        post-end block
+
+        try:
+          sibling block
+        except:
+          sibling block
+        else:
+          sibling block
+        end
+        post-end block
+
+        for ..
+          sibling block
+        else:
+          sibling block
+        end
+        post-end block
+
+        (condition and
+            sibling condition and
+            sibling condition or
+            sibling condition)
+        post-end block
+
+    """
+    my_dom_set = dom.pdom_set
+    for prior_node in my_dom_set:
+        prior_bb = prior_node.bb
+        if prior_bb == dom:
+            continue
+        if prior_bb.dom_set - my_dom_set:
+            return {}
+    return my_dom_set
+
+
 # FIXME: this will be redone to use the result of cs_tree_to_str
 def augment_instructions(
     fn_or_code: Union[Callable, CodeBase, CodeType],
@@ -225,24 +277,6 @@ def augment_instructions(
                 # as the block to check for leaving the loop.
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
-
-            pseudo_inst = ExtendedInstruction(
-                "DOM_START",
-                1000,
-                "pseudo",
-                0,
-                dom_number,
-                dom_number,
-                f"Dominator {dom_number}",
-                True,
-                offset,
-                None,
-                False,
-                False,
-                bb,
-                dom,
-            )
-            augmented_instrs.append(pseudo_inst)
 
             pseudo_inst = ExtendedInstruction(
                 "BB_START",
@@ -429,23 +463,25 @@ def augment_instructions(
         if dom_list is not None:
             for dom in reversed(dom_list):
                 dom_number = dom.bb.number
-                pseudo_inst = ExtendedInstruction(
-                    "DOM_END",
-                    1003,
-                    "pseudo",
-                    0,
-                    dom_number,
-                    dom_number,
-                    f"Basic Block {dom_number}",
-                    True,
-                    offset,
-                    None,
-                    False,
-                    False,
-                    dom.bb,
-                    dom,
-                )
-                augmented_instrs.append(pseudo_inst)
+                post_end_set = post_ends(dom.bb)
+                if post_end_set:
+                    pseudo_inst = ExtendedInstruction(
+                        "BLOCK_END_JOIN",
+                        1003,
+                        "pseudo",
+                        0,
+                        dom_number,
+                        dom_number,
+                        f"Basic Block {post_end_set}",
+                        True,
+                        offset,
+                        None,
+                        False,
+                        False,
+                        dom.bb,
+                        dom,
+                    )
+                    augmented_instrs.append(pseudo_inst)
             pass
         pass
 
@@ -460,23 +496,25 @@ def augment_instructions(
     if dom_list is not None:
         for dom in reversed(dom_list):
             dom_number = dom.bb.number
-            pseudo_inst = ExtendedInstruction(
-                "DOM_END",
-                1003,
-                "pseudo",
-                0,
-                dom_number,
-                dom_number,
-                f"Basic Block {dom_number}",
-                False,
-                offset,
-                None,
-                False,
-                False,
-                dom.bb,
-                dom,
-            )
-            augmented_instrs.append(pseudo_inst)
+            post_end_set = post_ends(dom.bb)
+            if post_end_set:
+                pseudo_inst = ExtendedInstruction(
+                    "BLOCK_END_JOIN2",
+                    1003,
+                    "pseudo",
+                    0,
+                    dom_number,
+                    dom_number,
+                    f"Basic Block {post_end_set}",
+                    False,
+                    offset,
+                    None,
+                    False,
+                    False,
+                    dom.bb,
+                    dom,
+                )
+                augmented_instrs.append(pseudo_inst)
         pass
 
     # for inst in augmented_instrs:
@@ -490,7 +528,7 @@ def find_jump_targets(
     offset2inst_index: Dict[int, int],
     jump_instructions,
     bb_mgr,
-    debug=True,
+    debug=False,
 ) -> Dict[int, list]:
     """
     Return a dictionary mapping jump-target offsets instruction offsets that
