@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2022 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 
@@ -499,7 +499,7 @@ def augment_instructions(
             post_end_set = post_ends(dom.bb)
             if post_end_set:
                 pseudo_inst = ExtendedInstruction(
-                    "BLOCK_END_JOIN2",
+                    "BLOCK_END_JOIN_NO_ARG",
                     1003,
                     "pseudo",
                     0,
