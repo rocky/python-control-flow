@@ -25,31 +25,38 @@ class JumpTarget(IntEnum):
     Classifications of jump targets, which are used to create pseudo-ops before some
     (but not all) jump targets.
 
-    This kind of classification simpilifies control flow parser matching.
-    In theory, it is not needed because we could either match on a set of previous instructions
-    e.g. the set of RAISE, RETURN, YIELD instructions, or because we could create grammar
-    for special kinds of statements that include the above, e.g. "no_follow_stmt" as a special kind of
-    stmt.
+    This kind of classification simpilifies control flow parser
+    matching.  In theory, it is not needed because we could either
+    match on a set of previous instructions e.g. the set of RAISE,
+    RETURN, YIELD instructions, or because we could create grammar for
+    special kinds of statements that include the above,
+    e.g. "no_follow_stmt" as a special kind of stmt.
 
-    This was tried in uncompyle2, see "lastl_stmt".
-    The problem with this, is that the grammar then becomes more cumbersome and hard to understand,
-    a lot of rules have to be duplicated: one contains "stmt" and one contains "lastl_stmt".
-    Or if "stmt ::= lastl_stmt", then a reduction rule needs to check when this isn't appropriate.
-    And there are many more grammar reductions for the additional but equivalent rules.
+    This was tried in uncompyle2, see "lastl_stmt".  The problem with
+    this, is that the grammar then becomes more cumbersome and hard to
+    understand, a lot of rules have to be duplicated: one contains
+    "stmt" and one contains "lastl_stmt".  Or if "stmt ::=
+    lastl_stmt", then a reduction rule needs to check when this isn't
+    appropriate.  And there are many more grammar reductions for the
+    additional but equivalent rules.
 
-    So instead, by adding this as a pseudo op before parsing, parsing can make use of this without
-    such additional rules for "lastl_stmt".
+    So instead, by adding this as a pseudo op before parsing, parsing
+    can make use of this without such additional rules for
+    "lastl_stmt".
 
-    Note: We don't mark explicitly fallthgough jump targets, or jump-back-to-loop-top targets.
+    Note: We don't mark explicitly fallthgough jump targets, or
+    jump-back-to-loop-top targets.
 
-    Here, the previous instructions are typically easy enough to match on via their instructions
-    or a rule that groups together these instructions.
+    Here, the previous instructions are typically easy enough to match
+    on via their instructions or a rule that groups together these
+    instructions.
 
     The problems with doing this kind of thing for nofollow instructions like
     RETURN or RAISE is that these are more naturally part of a "stmt" rule
     so the single instruction isn't available for matching as part of control flow.
     But, again, if we add a pseudo op for these instructions, then that can be used
     in parse-based control-flow matching.
+
     """
 
     # The start of a loop
