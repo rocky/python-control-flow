@@ -471,7 +471,7 @@ def basic_blocks(
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] < (3, 10) or op != BB.opcode.SETUP_LOOP:
+            elif version[:2] < (3, 10):
                 if op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
