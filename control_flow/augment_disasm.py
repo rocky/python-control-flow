@@ -280,8 +280,9 @@ def augment_instructions(
             dom_reach_ends[dom.reach_offset] = reach_ends
 
             if inst.opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
-                # Use the basic block of the block loop successor, this is the main body of the loop,
-                # as the block to check for leaving the loop.
+                # Use the basic block of the block loop successor,
+                # this is the main body of the loop, as the block to
+                # check for leaving the loop.
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
 

@@ -471,8 +471,8 @@ def basic_blocks(
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] < (3, 10):
-                if op in BB.FINALLY_INSTRUCTIONS:
+            else:
+                if version[:2] < (3, 10) and op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
                 block, flags, jump_offsets = BB.add_bb(
@@ -487,8 +487,7 @@ def basic_blocks(
                 if BB_TRY in block.flags:
                     try_stack.append(block)
                 start_offset = follow_offset
-
-                pass
+            pass
         elif op in BB.NOFOLLOW_INSTRUCTIONS:
             flags.add(BB_NOFOLLOW)
             if op in BB.RETURN_INSTRUCTIONS:
