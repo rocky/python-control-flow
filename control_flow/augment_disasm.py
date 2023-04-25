@@ -502,10 +502,11 @@ def augment_instructions(
     # FIXME: DRY with above
     dom_list = dom_reach_ends.get(offset, None)
     if dom_list is not None:
+        block_end_join_added = False
         for dom in reversed(dom_list):
             dom_number = dom.bb.number
             post_end_set = post_ends(dom.bb)
-            if post_end_set:
+            if post_end_set and not block_end_join_added:
                 pseudo_inst = ExtendedInstruction(
                     "BLOCK_END_JOIN_NO_ARG",
                     1003,
@@ -523,6 +524,7 @@ def augment_instructions(
                     dom,
                 )
                 augmented_instrs.append(pseudo_inst)
+                block_end_join_added = True
         pass
 
     # for inst in augmented_instrs:
