@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2021-2022 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
 from xdis.std import opc
 
 from control_flow.augment_disasm import augment_instructions
@@ -13,7 +13,7 @@ import os
 import sys
 
 
-def doit(fn, name=None):
+def main(fn, name=None):
     if not name:
         name = fn.__name__
     print(name)
@@ -60,4 +60,4 @@ if __name__ == "__main__":
         filename = sys.argv[1]
         exec(open(filename).read())
         short = os.path.basename(filename)[0:-3]
-        doit(filename, short)
+        main(filename, short)

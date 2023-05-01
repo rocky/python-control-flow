@@ -211,7 +211,12 @@ def post_ends(dom) -> set:
         post-end block
 
     """
-    my_dom_set = dom.pdom_set
+    try:
+        my_dom_set = dom.pdom_set
+    except:
+        from trepan.api import debug
+
+        debug()
     for prior_node in my_dom_set:
         prior_bb = prior_node.bb
         if prior_bb == dom:
