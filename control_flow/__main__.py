@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
-from xdis.std import opc
+import os
+import sys
+
+from xdis.std import dis, opc
 
 from control_flow.augment_disasm import augment_instructions
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
-from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
+from control_flow.dominators import DominatorTree, build_dom_set, dfs_forest
 from control_flow.graph import write_dot
-
-import dis
-import os
-import sys
 
 
 def main(fn, name=None):
@@ -22,7 +21,7 @@ def main(fn, name=None):
     bb_mgr = basic_blocks(fn, offset2inst_index)
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
-    dis.dis(fn)
+    dis(fn)
     cfg = ControlFlowGraph(bb_mgr)
 
     version = ".".join((str(n) for n in sys.version_info[:2]))
@@ -46,7 +45,7 @@ def main(fn, name=None):
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
         # return cs_str
-    except:
+    except Exception:
         import traceback
 
         traceback.print_exc()
