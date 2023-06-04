@@ -3,7 +3,7 @@
 import sys
 from xdis import next_offset
 from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
-from xdis.std import get_instructions
+from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
 from control_flow.graph import (
     BB_POP_BLOCK,
@@ -157,7 +157,7 @@ class BasicBlock(object):
     # Define "<" so we can compare and sort basic blocks.
     # Define 0 (the exit block) as the largest/last block
     def __lt__(self, other):
-        self.number != 0 or self.number < other.number
+        return self.number != 0 or self.number < other.number
 
 
 class BBMgr(object):
@@ -272,7 +272,7 @@ class BBMgr(object):
 
 
 def basic_blocks(
-    fn_or_code,
+    code,
     offset2inst_index,
     version=PYTHON_VERSION_TRIPLE,
     is_pypy=IS_PYPY,
@@ -290,7 +290,16 @@ def basic_blocks(
     # Get jump targets
     jump_targets = set()
     loop_targets = set()
-    instructions = list(get_instructions(fn_or_code))
+    instructions = list(
+        get_instructions_bytes(
+            code.co_code,
+            BB.opcode,
+            code.co_varnames,
+            code.co_names,
+            code.co_consts,
+            code.co_cellvars,
+        )
+    )
     for i, inst in enumerate(instructions):
         offset2inst_index[inst.offset] = i
         op = inst.opcode

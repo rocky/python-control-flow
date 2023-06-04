@@ -39,7 +39,7 @@ def test_basic():
             print(fn.__name__)
             dis.dis(fn)
             print()
-        bb_mgr = basic_blocks(fn, offset2inst_index)
+        bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
         check_blocks(bb_mgr.bb_list)
 
 

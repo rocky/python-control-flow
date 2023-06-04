@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
 
-from typing import Optional
 import os
 import sys
 
+from xdis.codetype.base import iscode
+from xdis.disasm import disco
 from xdis.load import check_object_path, load_module
 from xdis.magics import PYTHON_MAGIC_INT
-from xdis.std import dis, opc
+from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
 from control_flow.augment_disasm import augment_instructions
@@ -17,19 +18,28 @@ from control_flow.dominators import DominatorTree, build_dom_set, dfs_forest
 from control_flow.graph import write_dot
 
 
-def main(func_or_code, name: str = ""):
+VARIANT = "pypy" if IS_PYPY else None
+
+
+def main(
+    func_or_code,
+    opc=None,
+    version_tuple=PYTHON_VERSION_TRIPLE[:2],
+    timestamp=None,
+    name: str = "",
+):
     """
     Compute control-flow graph, dominator information, and
     assembly instructions augmented with control flow for
     function "func".
     """
-    if name == "":
-        if hasattr(func_or_code, "__name__"):
+
+    if iscode(func_or_code):
+        code = func_or_code
+    else:
+        code = func_or_code.__code__
+        if name == "":
             name = func_or_code.__name__
-        elif hasattr(func_or_code, "co_name"):
-            name = func_or_code.co_name
-        else:
-            name = "unknown"
     if name.startswith("<"):
         name = name[1:]
     if name.endswith(">"):
@@ -37,12 +47,17 @@ def main(func_or_code, name: str = ""):
 
     print(name)
 
+    disco(version_tuple, code, timestamp)
+
+    if opc is None:
+        opc = get_opcode_module(version_tuple, VARIANT)
+
     offset2inst_index = {}
-    bb_mgr = basic_blocks(func_or_code, offset2inst_index)
+    bb_mgr = basic_blocks(code, offset2inst_index)
+
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
 
-    dis(func_or_code)
     cfg = ControlFlowGraph(bb_mgr)
 
     version = ".".join((str(n) for n in sys.version_info[:2]))
@@ -107,4 +122,10 @@ if __name__ == "__main__":
         else:
             filename = pyc_filename
 
-        main(co)
+        name = co.co_name
+        if name.startswith("<"):
+            name = name[1:]
+        if name.endswith(">"):
+            name = name[:-1]
+
+        main(co, version_tuple=version_tuple, timestamp=timestamp, name=name)
