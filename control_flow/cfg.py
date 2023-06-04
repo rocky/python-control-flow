@@ -28,7 +28,7 @@ class ControlFlowGraph(object):
         self.graph = None
         self.entry_node = None
         self.exit_node = bb_mgr.exit_block
-        self.dom = None
+        self.dom_tree = None
         self.analyze(self.blocks, bb_mgr.exit_block)
 
     def analyze(self, blocks, exit_block):

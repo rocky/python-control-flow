@@ -1,4 +1,4 @@
-1  # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
 """
   Dominator tree
