@@ -53,14 +53,14 @@ def main(
         opc = get_opcode_module(version_tuple, VARIANT)
 
     offset2inst_index = {}
-    bb_mgr = basic_blocks(code, offset2inst_index)
+    bb_mgr = basic_blocks(code, offset2inst_index, version_tuple)
 
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
 
     cfg = ControlFlowGraph(bb_mgr)
 
-    version = ".".join((str(n) for n in sys.version_info[:2]))
+    version = ".".join((str(n) for n in version_tuple[:2]))
     write_dot(name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
 
     try:

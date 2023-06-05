@@ -274,7 +274,7 @@ class BBMgr(object):
 def basic_blocks(
     code,
     offset2inst_index,
-    version=PYTHON_VERSION_TRIPLE,
+    version_tuple=PYTHON_VERSION_TRIPLE,
     is_pypy=IS_PYPY,
     more_precise_returns=False,
     print_instructions=False,
@@ -285,7 +285,7 @@ def basic_blocks(
     or not. See comment in code as to why this might be useful.
     """
 
-    BB = BBMgr(version, is_pypy)
+    BB = BBMgr(version_tuple, is_pypy)
 
     # Get jump targets
     jump_targets = set()
@@ -306,7 +306,7 @@ def basic_blocks(
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
         if op in BB.JUMP_INSTRUCTIONS:
-            jump_value = get_jump_val(inst.arg, version)
+            jump_value = get_jump_val(inst.arg, version_tuple)
             if op in BB.JABS_INSTRUCTIONS:
                 jump_offset = jump_value
             else:
@@ -324,7 +324,7 @@ def basic_blocks(
     # to. This helps when there is a "raise" not in any try block and
     # in computing reverse dominators.
     end_offset = instructions[-1].offset
-    if version >= (3, 6):
+    if version_tuple >= (3, 6):
         end_bb_offset = end_offset + 2
     else:
         end_bb_offset = end_offset + 1
@@ -481,7 +481,7 @@ def basic_blocks(
 
                 start_offset = follow_offset
             else:
-                if version[:2] < (3, 10) and op in BB.FINALLY_INSTRUCTIONS:
+                if version_tuple[:2] < (3, 10) and op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
                 block, flags, jump_offsets = BB.add_bb(
@@ -554,7 +554,7 @@ def basic_blocks(
 
 if __name__ == "__main__":
     offset2inst_index = {}
-    bb_mgr = basic_blocks(basic_blocks, offset2inst_index)
+    bb_mgr = basic_blocks(basic_blocks.__code__, offset2inst_index)
     from pprint import pprint
 
     pprint(offset2inst_index)
