@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from xdis import next_offset
 from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
@@ -121,7 +121,7 @@ class BasicBlock(object):
         self.unreachable = False
         self.number = end_bb
         self.edge_count = len(jump_offsets)
-        if follow_offset is not None and not BB_NOFOLLOW in self.flags:
+        if follow_offset is not None and BB_NOFOLLOW not in self.flags:
             self.edge_count += 1
 
         # List of instructions that break out of loops.
@@ -204,7 +204,7 @@ class BBMgr(object):
                 pass
 
         else:
-            self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["RAISE_VARARGS"]])
+            self.EXCEPT_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
         if version >= (2, 6):
             self.JUMP_CONDITIONAL = set(
