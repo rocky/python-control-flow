@@ -5,6 +5,7 @@ Augment assembler instructions to include basic block and dominator information.
 This code is ugly.
 
 """
+from copy import copy
 from enum import IntEnum
 from types import CodeType
 from typing import Callable, Dict, Optional, Union
@@ -17,7 +18,7 @@ from xdis.codetype.base import CodeBase
 
 from control_flow.bb import BBMgr
 from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import Node, BB_FOR, BB_LOOP
+from control_flow.graph import Node, BB_FOR, BB_LOOP, BB_NOFOLLOW
 
 
 class JumpTarget(IntEnum):
@@ -217,12 +218,25 @@ def post_ends(dom) -> set:
         from trepan.api import debug
 
         debug()
-    for prior_node in my_dom_set:
+    for prior_node in copy(my_dom_set):
         prior_bb = prior_node.bb
         if prior_bb == dom:
+            # Don't list ourself in the prior_bb set that we dominate
+            # ourselves if we don't fall through to the next block.
+            # The grammar then will have to accommodate that we can
+            # "if"s that have return blocks in in the "then" part and
+            # it will have to decide how to treat what follows:
+            # is this an "else" or not.  (Both are correct).
+            # For chained assignments return (10 < b < 20) if feels
+            # wrong to say that there is a block join after 10 < b as
+            # opposed to a sibling kind of thing. This is I suppose
+            # though a matter of taste.  Note that grammar has to
+            # match what we do here in either case.
+            if BB_NOFOLLOW in prior_node.flags:
+                my_dom_set.remove(prior_node)
             continue
         if prior_bb.dom_set - my_dom_set:
-            return {}
+            return set()
     return my_dom_set
 
 
