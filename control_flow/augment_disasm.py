@@ -1,14 +1,16 @@
-# Copyright (c) 2021-2022 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 
 This code is ugly.
 
 """
+from copy import copy
+from enum import IntEnum
 from types import CodeType
 from typing import Callable, Dict, Optional, Union
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 from xdis.bytecode import Bytecode
 from xdis.instruction import Instruction
@@ -16,7 +18,68 @@ from xdis.codetype.base import CodeBase
 
 from control_flow.bb import BBMgr
 from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import Node, BB_FOR, BB_LOOP
+from control_flow.graph import Node, BB_FOR, BB_LOOP, BB_NOFOLLOW
+
+
+class JumpTarget(IntEnum):
+    """
+    Classifications of jump targets, which are used to create pseudo-ops before some
+    (but not all) jump targets.
+
+    This kind of classification simpilifies control flow parser
+    matching.  In theory, it is not needed because we could either
+    match on a set of previous instructions e.g. the set of RAISE,
+    RETURN, YIELD instructions, or because we could create grammar for
+    special kinds of statements that include the above,
+    e.g. "no_follow_stmt" as a special kind of stmt.
+
+    This was tried in uncompyle2, see "lastl_stmt".  The problem with
+    this, is that the grammar then becomes more cumbersome and hard to
+    understand, a lot of rules have to be duplicated: one contains
+    "stmt" and one contains "lastl_stmt".  Or if "stmt ::=
+    lastl_stmt", then a reduction rule needs to check when this isn't
+    appropriate.  And there are many more grammar reductions for the
+    additional but equivalent rules.
+
+    So instead, by adding this as a pseudo op before parsing, parsing
+    can make use of this without such additional rules for
+    "lastl_stmt".
+
+    Note: We don't mark explicitly fallthgough jump targets, or
+    jump-back-to-loop-top targets.
+
+    Here, the previous instructions are typically easy enough to match
+    on via their instructions or a rule that groups together these
+    instructions.
+
+    The problems with doing this kind of thing for nofollow instructions like
+    RETURN or RAISE is that these are more naturally part of a "stmt" rule
+    so the single instruction isn't available for matching as part of control flow.
+    But, again, if we add a pseudo op for these instructions, then that can be used
+    in parse-based control-flow matching.
+
+    """
+
+    # The start of a loop
+    LOOP = 2001
+
+    # Comes after a NOFOLLOW_INSTRUCTIONS like a "return", "yield", "raise".
+    # This does *not* include unconditional jumps as you would find in SIBLING,
+    # or a jump to a loop.
+    NOT_FALLEN_INTO = 2002
+
+    # A siblng of the code bock that precedes this. You find this in alternate
+    # code blocks. For example "if/else" where the target is the beginning of the
+    # "else" that is jumped to after the end of an unconditional jump at the end of the
+    # "then" the logical "end"
+    SIBLING = 2003
+
+
+block_kind2pseudo_op_name = {
+    JumpTarget.LOOP: "LOOP",
+    JumpTarget.NOT_FALLEN_INTO: "NOT_FALLEN_INTO_BLOCK",
+    JumpTarget.SIBLING: "SIBLING_BLOCK",
+}
 
 _ExtendedInstruction = namedtuple(
     "_Instruction",
@@ -107,6 +170,76 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
         return str
 
 
+def post_ends(dom) -> set:
+    """
+    We only want to mark dominators that appear
+    after some sort of "end" blocks or join condition.
+
+    Why? In decompilation we are trying to distinguish blocks that can
+    start after an end of some compound, like "if", "try" or "for",
+    from those blocks that are sibling or alternative blocks.
+
+    Some examples:
+        if b:
+          sibling block
+        elif
+          sibling block
+        else
+          sibling block
+        end
+        post-end block
+
+        try:
+          sibling block
+        except:
+          sibling block
+        else:
+          sibling block
+        end
+        post-end block
+
+        for ..
+          sibling block
+        else:
+          sibling block
+        end
+        post-end block
+
+        (condition and
+            sibling condition and
+            sibling condition or
+            sibling condition)
+        post-end block
+
+    """
+    try:
+        my_dom_set = dom.pdom_set
+    except:
+        from trepan.api import debug
+
+        debug()
+    for prior_node in copy(my_dom_set):
+        prior_bb = prior_node.bb
+        if prior_bb == dom:
+            # Don't list ourself in the prior_bb set that we dominate
+            # ourselves if we don't fall through to the next block.
+            # The grammar then will have to accommodate that we can
+            # "if"s that have return blocks in in the "then" part and
+            # it will have to decide how to treat what follows:
+            # is this an "else" or not.  (Both are correct).
+            # For chained assignments return (10 < b < 20) if feels
+            # wrong to say that there is a block join after 10 < b as
+            # opposed to a sibling kind of thing. This is I suppose
+            # though a matter of taste.  Note that grammar has to
+            # match what we do here in either case.
+            if BB_NOFOLLOW in prior_node.flags:
+                my_dom_set.remove(prior_node)
+            continue
+        if prior_bb.dom_set - my_dom_set:
+            return set()
+    return my_dom_set
+
+
 # FIXME: this will be redone to use the result of cs_tree_to_str
 def augment_instructions(
     fn_or_code: Union[Callable, CodeBase, CodeType],
@@ -136,6 +269,16 @@ def augment_instructions(
     # Compute offset2dom
     offset2bb: Dict[int, Node] = {bb.start_offset: bb for bb in bb_mgr.bb_list}
 
+    # These are the kinds of jump instructions that we need to check
+    # for non-end jump targets. It is basically an instruction with an
+    # explicit jump target it in. (There are further conditions but those
+    # are tested below when needed.)
+    jump_instructions = bb_mgr.JUMP_INSTRUCTIONS | bb_mgr.JUMP_UNCONDITIONAL
+
+    jump_target2offsets, jump_target_kind = find_jump_targets(
+        opc, instructions, offset2inst_index, jump_instructions, bb_mgr
+    )
+
     for inst in instructions:
         # Go through instructions inserting pseudo ops.
         # These are done for basic blocks, dominators,
@@ -156,28 +299,11 @@ def augment_instructions(
             dom_reach_ends[dom.reach_offset] = reach_ends
 
             if inst.opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
-                # Use the basic block of the block loop successor, this is the main body of the loop,
-                # as the block to check for leaving the loop.
+                # Use the basic block of the block loop successor,
+                # this is the main body of the loop, as the block to
+                # check for leaving the loop.
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
-
-            pseudo_inst = ExtendedInstruction(
-                "DOM_START",
-                1000,
-                "pseudo",
-                0,
-                dom_number,
-                dom_number,
-                f"Dominator {dom_number}",
-                True,
-                offset,
-                None,
-                False,
-                False,
-                bb,
-                dom,
-            )
-            augmented_instrs.append(pseudo_inst)
 
             pseudo_inst = ExtendedInstruction(
                 "BB_START",
@@ -298,6 +424,27 @@ def augment_instructions(
                     #     augmented_instrs.append(pseudo_inst)
                     pass
 
+        block_kind = jump_target_kind.get(offset)
+        if block_kind is not None:
+            pseudo_op_name = block_kind2pseudo_op_name[block_kind]
+            pseudo_inst = ExtendedInstruction(
+                pseudo_op_name,
+                int(block_kind),
+                "pseudo",
+                0,
+                None,
+                None,
+                False,
+                False,
+                offset,
+                None,
+                False,
+                False,
+                bb,
+                dom,
+            )
+            augmented_instrs.append(pseudo_inst)
+
         extended_inst = ExtendedInstruction(
             inst.opname,
             inst.opcode,
@@ -343,23 +490,25 @@ def augment_instructions(
         if dom_list is not None:
             for dom in reversed(dom_list):
                 dom_number = dom.bb.number
-                pseudo_inst = ExtendedInstruction(
-                    "DOM_END",
-                    1003,
-                    "pseudo",
-                    0,
-                    dom_number,
-                    dom_number,
-                    f"Basic Block {dom_number}",
-                    True,
-                    offset,
-                    None,
-                    False,
-                    False,
-                    dom.bb,
-                    dom,
-                )
-                augmented_instrs.append(pseudo_inst)
+                post_end_set = post_ends(dom.bb)
+                if post_end_set:
+                    pseudo_inst = ExtendedInstruction(
+                        "BLOCK_END_JOIN",
+                        1003,
+                        "pseudo",
+                        0,
+                        dom_number,
+                        dom_number,
+                        f"Basic Block {post_end_set}",
+                        True,
+                        offset,
+                        None,
+                        False,
+                        False,
+                        dom.bb,
+                        dom,
+                    )
+                    augmented_instrs.append(pseudo_inst)
             pass
         pass
 
@@ -372,30 +521,91 @@ def augment_instructions(
     # FIXME: DRY with above
     dom_list = dom_reach_ends.get(offset, None)
     if dom_list is not None:
+        block_end_join_added = False
         for dom in reversed(dom_list):
             dom_number = dom.bb.number
-            pseudo_inst = ExtendedInstruction(
-                "DOM_END",
-                1003,
-                "pseudo",
-                0,
-                dom_number,
-                dom_number,
-                f"Basic Block {dom_number}",
-                True,
-                offset,
-                None,
-                False,
-                False,
-                dom.bb,
-                dom,
-            )
-            augmented_instrs.append(pseudo_inst)
+            post_end_set = post_ends(dom.bb)
+            if post_end_set and not block_end_join_added:
+                pseudo_inst = ExtendedInstruction(
+                    "BLOCK_END_JOIN_NO_ARG",
+                    1003,
+                    "pseudo",
+                    0,
+                    dom_number,
+                    dom_number,
+                    f"Basic Block {post_end_set}",
+                    False,
+                    offset,
+                    None,
+                    False,
+                    False,
+                    dom.bb,
+                    dom,
+                )
+                augmented_instrs.append(pseudo_inst)
+                block_end_join_added = True
         pass
 
     # for inst in augmented_instrs:
     #     print(inst)
     return augmented_instrs
+
+
+def find_jump_targets(
+    opc,
+    instructions,
+    offset2inst_index: Dict[int, int],
+    jump_instructions,
+    bb_mgr,
+    debug=False,
+) -> Dict[int, list]:
+    """
+    Return a dictionary mapping jump-target offsets instruction offsets that
+    jump to that target or precede it. We include fallthrough instructions
+    Return the list of offsets.
+    """
+
+    jump_target2offsets: Dict[int, list] = defaultdict(list)
+    for i, inst in enumerate(instructions):
+        offset = inst.offset
+        if inst.opcode in opc.JUMP_OPS:
+            jump_target_offset = inst.argval
+            jump_target2offsets[jump_target_offset].append(offset)
+
+    jump_target_kind: Dict[int, bool] = {}
+    # populate jump_target_kind based on the instruction and
+    # possibly the previous instruction - the instruction whose offset comes just
+    # before the instruction.
+    for jump_target_offset, sources in jump_target2offsets.items():
+        # Check if jump_target is in a loop
+        if all(jump_target_offset < offset for offset in sources):
+            jump_target_kind[jump_target_offset] = JumpTarget.LOOP
+            continue
+
+        inst_index = offset2inst_index[jump_target_offset]
+        jump_target_sibling = True
+        if inst_index > 0:
+            prev_instruction = instructions[inst_index - 1]
+            if prev_instruction.opcode in bb_mgr.NOFOLLOW_INSTRUCTIONS:
+                jump_target_kind[jump_target_offset] = JumpTarget.NOT_FALLEN_INTO
+                continue
+            if prev_instruction.opcode not in bb_mgr.JUMP_UNCONDITIONAL:
+                continue
+            if (
+                prev_instruction.opcode in jump_instructions
+                and prev_instruction.argval < jump_target_offset
+            ):
+                continue
+        if jump_target_sibling:
+            jump_target_kind[jump_target_offset] = JumpTarget.SIBLING
+
+    if debug:
+        import pprint as pp
+
+        pp.pprint(dict(jump_target2offsets))
+        pp.pprint(jump_target_kind)
+
+    return jump_target2offsets, jump_target_kind
 
 
 def next_offset(offset: int, instructions: tuple, offset2inst_index: list):

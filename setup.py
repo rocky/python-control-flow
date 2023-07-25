@@ -2,6 +2,9 @@
 
 """Setup script for the 'control_flow' distribution."""
 
+import os
+from setuptools import setup, find_packages
+
 classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
@@ -10,6 +13,7 @@ classifiers = [
 ]
 
 # The rest in alphabetic order
+entry_points = {"console_scripts": ["python-cfg=control_flow.__main__:main"]}
 ftp_url = None
 license = "GPL2"
 maintainer = "Rocky Bernstein"
@@ -19,8 +23,6 @@ name = "control_flow"
 py_modules = "control_flow"
 short_desc = "Control Flow Toolkit"
 web = "https://github.com/rocky/python-control_flow/"
-
-import os
 
 
 def get_srcdir():
@@ -39,11 +41,11 @@ def read(*rnames):
 long_description = read("README.rst") + "\n"
 exec(read("control_flow/version.py"))
 
-from setuptools import setup, find_packages
 
 setup(
     classifiers=classifiers,
     description=short_desc,
+    entry_points=entry_points,
     install_requires=["click", "xdis >= 6.0.3"],
     license=license,
     long_description=long_description,

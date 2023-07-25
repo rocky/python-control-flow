@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from control_flow.__main__ import doit
+from control_flow.__main__ import main
 
 
 def err():
@@ -150,24 +150,46 @@ def while_true_break():
             pass
 
 
-# doit(err)
-doit(or1)
-# doit(if_then0)
-# doit(if_then1)
-# doit(if_then2)
-# doit(if_then3)
-# doit(if_then4)
-# doit(five)
-# doit(for_break)
-# doit(if_else)
-# doit(if_vs_and)
-# doit(foo)
-# doit(foo1)
-# doit(foo2)
-# doit(while_if_continue)
-# doit(while_true_if_else)
-# doit(while_else)
-# doit(while_if)
-# doit(while_true_break)
-# doit(try_finally)
-# doit(try_no_finally)
+def and_or():
+    return (a and b and c and d) or (e or f or g or h)
+
+
+def or_and():
+    return (a or b or c or d) and (e and f and g and h)
+
+
+def ifelif():
+    if a:
+        x = 1
+    elif b:
+        x = 2
+    elif c:
+        x = 3
+    else:
+        x = 4
+
+
+# main(ifelif)
+# main(or_and)
+# main(and_or)
+# main(err)
+# main(or1)
+# main(if_then0)
+# main(if_then1)
+# main(if_then2)
+# main(if_then3)
+# main(if_then4)
+# main(five)
+# main(for_break)
+# main(if_else)
+# main(if_vs_and)
+# main(foo)
+# main(foo1)
+# main(foo2)
+# main(while_if_continue)
+# main(while_true_if_else)
+# main(while_else)
+# main(while_if)
+# main(while_true_break)
+main(try_finally)
+# main(try_no_finally)

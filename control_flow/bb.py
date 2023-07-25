@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from xdis import next_offset
 from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
-from xdis.std import get_instructions
+from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
 from control_flow.graph import (
     BB_POP_BLOCK,
@@ -121,7 +121,7 @@ class BasicBlock(object):
         self.unreachable = False
         self.number = end_bb
         self.edge_count = len(jump_offsets)
-        if follow_offset is not None and not BB_NOFOLLOW in self.flags:
+        if follow_offset is not None and BB_NOFOLLOW not in self.flags:
             self.edge_count += 1
 
         # List of instructions that break out of loops.
@@ -157,7 +157,7 @@ class BasicBlock(object):
     # Define "<" so we can compare and sort basic blocks.
     # Define 0 (the exit block) as the largest/last block
     def __lt__(self, other):
-        self.number != 0 or self.number < other.number
+        return self.number != 0 or self.number < other.number
 
 
 class BBMgr(object):
@@ -177,7 +177,7 @@ class BBMgr(object):
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
         self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
         self.JUMP_INSTRUCTIONS = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-        self.JUMP_UNCONDITONAL = set(
+        self.JUMP_UNCONDITIONAL = set(
             [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
         )
 
@@ -204,10 +204,10 @@ class BBMgr(object):
                 pass
 
         else:
-            self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["RAISE_VARARGS"]])
+            self.EXCEPT_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
         if version >= (2, 6):
-            self.JUMP_CONDITONAL = set(
+            self.JUMP_CONDITIONAL = set(
                 [
                     opcode.opmap["POP_JUMP_IF_FALSE"],
                     opcode.opmap["POP_JUMP_IF_TRUE"],
@@ -222,6 +222,8 @@ class BBMgr(object):
                     opcode.opmap["RAISE_VARARGS"],
                 ]
             )
+            if "RERAISE" in opcode.opmap:
+                self.NOFOLLOW_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
         # ??
         #                                   opcode.opmap['YIELD_VALUE'],
@@ -233,9 +235,13 @@ class BBMgr(object):
                 # many of the below contain just one instruction). This can
                 # isolate us from instruction changes in Python.
                 # The classifications are used in setting basic block flag bits
-                self.JUMP_UNCONDITONAL = set(
+                self.JUMP_UNCONDITIONAL = set(
                     [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
                 )
+        else:
+            self.JUMP_UNCONDITIONAL = set(
+                [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
+            )
 
     def add_bb(
         self, start_offset, end_offset, loop_offset, follow_offset, flags, jump_offsets
@@ -266,9 +272,9 @@ class BBMgr(object):
 
 
 def basic_blocks(
-    fn_or_code,
+    code,
     offset2inst_index,
-    version=PYTHON_VERSION_TRIPLE,
+    version_tuple=PYTHON_VERSION_TRIPLE,
     is_pypy=IS_PYPY,
     more_precise_returns=False,
     print_instructions=False,
@@ -279,19 +285,28 @@ def basic_blocks(
     or not. See comment in code as to why this might be useful.
     """
 
-    BB = BBMgr(version, is_pypy)
+    BB = BBMgr(version_tuple, is_pypy)
 
     # Get jump targets
     jump_targets = set()
     loop_targets = set()
-    instructions = list(get_instructions(fn_or_code))
+    instructions = list(
+        get_instructions_bytes(
+            code.co_code,
+            BB.opcode,
+            code.co_varnames,
+            code.co_names,
+            code.co_consts,
+            code.co_cellvars,
+        )
+    )
     for i, inst in enumerate(instructions):
         offset2inst_index[inst.offset] = i
         op = inst.opcode
         offset = inst.offset
         follow_offset = next_offset(op, BB.opcode, offset)
         if op in BB.JUMP_INSTRUCTIONS:
-            jump_value = get_jump_val(inst.arg, version)
+            jump_value = get_jump_val(inst.arg, version_tuple)
             if op in BB.JABS_INSTRUCTIONS:
                 jump_offset = jump_value
             else:
@@ -309,7 +324,7 @@ def basic_blocks(
     # to. This helps when there is a "raise" not in any try block and
     # in computing reverse dominators.
     end_offset = instructions[-1].offset
-    if version >= (3, 6):
+    if version_tuple >= (3, 6):
         end_bb_offset = end_offset + 2
     else:
         end_bb_offset = end_offset + 1
@@ -396,7 +411,7 @@ def basic_blocks(
                 flags.add(BB_LOOP)
 
         # Add block flags for certain classes of instructions
-        if op in BB.JUMP_CONDITONAL:
+        if op in BB.JUMP_CONDITIONAL:
             flags.add(BB_JUMP_CONDITIONAL)
 
         if op in BB.POP_BLOCK_INSTRUCTIONS:
@@ -446,7 +461,7 @@ def basic_blocks(
             jump_offset = inst.argval
 
             jump_offsets.add(jump_offset)
-            if op in BB.JUMP_UNCONDITONAL:
+            if op in BB.JUMP_UNCONDITIONAL:
                 flags.add(BB_JUMP_UNCONDITIONAL)
                 if jump_offset == follow_offset:
                     flags.add(BB_JUMP_TO_FALLTHROUGH)
@@ -465,8 +480,8 @@ def basic_blocks(
                     pass
 
                 start_offset = follow_offset
-            elif version[:2] < (3, 10) or op != BB.opcode.SETUP_LOOP:
-                if op in BB.FINALLY_INSTRUCTIONS:
+            else:
+                if version_tuple[:2] < (3, 10) and op in BB.FINALLY_INSTRUCTIONS:
                     flags.add(BB_FINALLY)
 
                 block, flags, jump_offsets = BB.add_bb(
@@ -481,8 +496,7 @@ def basic_blocks(
                 if BB_TRY in block.flags:
                     try_stack.append(block)
                 start_offset = follow_offset
-
-                pass
+            pass
         elif op in BB.NOFOLLOW_INSTRUCTIONS:
             flags.add(BB_NOFOLLOW)
             if op in BB.RETURN_INSTRUCTIONS:
@@ -540,7 +554,7 @@ def basic_blocks(
 
 if __name__ == "__main__":
     offset2inst_index = {}
-    bb_mgr = basic_blocks(basic_blocks, offset2inst_index)
+    bb_mgr = basic_blocks(basic_blocks.__code__, offset2inst_index)
     from pprint import pprint
 
     pprint(offset2inst_index)

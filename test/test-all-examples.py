@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.__main__ import doit
+from control_flow.__main__ import main
 from glob import glob
 
 
@@ -27,7 +27,7 @@ for filename in files:
 
     short = osp.basename(filename)[0:-3]
 
-    doit(testing, short)  # NOQA
+    main(testing, name=short)  # NOQA
     # cs.strip()
     # got = cs.strip()
     # want = expect().strip()  # NOQA
