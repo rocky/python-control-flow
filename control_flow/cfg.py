@@ -21,9 +21,11 @@ class ControlFlowGraph(object):
     """
 
     def __init__(self, bb_mgr):
+        self.block_offsets = {}
         self.seen_blocks = set()
         self.blocks = bb_mgr.bb_list
         self.offset2block = {}
+        self.offset2block_sorted = {}
         self.block_nodes = {}
         self.graph = None
         self.entry_node = None
@@ -45,7 +47,6 @@ class ControlFlowGraph(object):
     def build_flowgraph(self, blocks, exit_block):
         g = DiGraph()
 
-        self.block_offsets = {}
         self.block_nodes = {}
 
         # Add nodes
@@ -63,7 +64,7 @@ class ControlFlowGraph(object):
                 self.exit_block = block_node
             pass
 
-        # List of offset to dominator infomation sorted by offset.
+        # List of offset to dominator information sorted by offset.
         # The only offsets here are the ones that start a dominator region.
         # Sorting then is useful when to find out dominator region an arbitrary
         # offset lies in.
@@ -114,9 +115,9 @@ class ControlFlowGraph(object):
         sorted_blocks = sorted(self.blocks, key=attrgetter("index"))
         for i, block in enumerate(sorted_blocks):
 
-            # Is this this dead code? (Remove self loops in calculation)
+            # Is this dead code? (Remove self loops in calculation)
             # Entry node, blocks[0] is never unreachable
-            if not block.predecessors - set([block]) and block != blocks[0]:
+            if not block.predecessors - {block} and block != blocks[0]:
                 block.unreachable = True
 
             block = sorted_blocks[i]
