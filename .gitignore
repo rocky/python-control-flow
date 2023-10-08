@@ -6,4 +6,5 @@
 /__pycache__
 /build
 /control_flow.egg-info
+/dist
 /tmp
