@@ -172,16 +172,20 @@ class BBMgr(object):
         self.opcode = opcode = get_opcode_module(version)
 
         self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
-        self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
+        if "SETUP_FINALLY" in opcode.opmap:
+            self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
         self.JABS_INSTRUCTIONS = set(opcode.hasjabs)
         self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
         self.JUMP_INSTRUCTIONS = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
-        self.JUMP_UNCONDITIONAL = set(
-            [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-        )
+        if "JUMP_ABSOLUTE" in opcode.opmap:
+            self.JUMP_UNCONDITIONAL = set(
+                [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
+            )
 
-        self.POP_BLOCK_INSTRUCTIONS = set([opcode.opmap["POP_BLOCK"]])
+        self.POP_BLOCK_INSTRUCTIONS = set()
+        if "POP_BLOCK" in opcode.opmap:
+            self.POP_BLOCK_INSTRUCTIONS.add(opcode.opmap["POP_BLOCK"])
         self.RETURN_INSTRUCTIONS = set([opcode.opmap["RETURN_VALUE"]])
 
         # These instructions don't appear in all version of Python
@@ -206,42 +210,37 @@ class BBMgr(object):
         else:
             self.EXCEPT_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
-        if version >= (2, 6):
-            self.JUMP_CONDITIONAL = set(
-                [
-                    opcode.opmap["POP_JUMP_IF_FALSE"],
-                    opcode.opmap["POP_JUMP_IF_TRUE"],
-                    opcode.opmap["JUMP_IF_FALSE_OR_POP"],
-                    opcode.opmap["JUMP_IF_TRUE_OR_POP"],
-                ]
-            )
-            self.NOFOLLOW_INSTRUCTIONS = set(
-                [
-                    opcode.opmap["RETURN_VALUE"],
-                    opcode.opmap["YIELD_VALUE"],
-                    opcode.opmap["RAISE_VARARGS"],
-                ]
-            )
-            if "RERAISE" in opcode.opmap:
-                self.NOFOLLOW_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
+        self.JUMP_CONDITIONAL = set()
+        for opname in (
+            "POP_JUMP_IF_FALSE",
+            "POP_JUMP_IF_TRUE",
+            "JUMP_IF_FALSE_OR_POP",
+            "JUMP_IF_TRUE_OR_POP",
+        ):
+            if opname in opcode.opmap:
+                self.JUMP_CONDITIONAL.add(opcode.opmap[opname])
+
+        self.NOFOLLOW_INSTRUCTIONS = set(
+            [
+                opcode.opmap["RETURN_VALUE"],
+                opcode.opmap["YIELD_VALUE"],
+                opcode.opmap["RAISE_VARARGS"],
+            ]
+        )
+        if "RERAISE" in opcode.opmap:
+            self.NOFOLLOW_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
         # ??
         #                                   opcode.opmap['YIELD_VALUE'],
         #                                   opcode.opmap['RAISE_VARARGS']])
 
-        if not PYTHON3:
-            if version in ((2, 6), (2, 7)):
-                # We classify intructions into various categories (even though
-                # many of the below contain just one instruction). This can
-                # isolate us from instruction changes in Python.
-                # The classifications are used in setting basic block flag bits
-                self.JUMP_UNCONDITIONAL = set(
-                    [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-                )
-        else:
-            self.JUMP_UNCONDITIONAL = set(
-                [opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]]
-            )
+        self.JUMP_UNCONDITIONAL = set()
+        for opname in (
+            "JUMP_ABSOLUTE",
+            "JUMP_FORWARD",
+        ):
+            if opname in opcode.opmap:
+                self.JUMP_UNCONDITIONAL.add(opcode.opmap[opname])
 
     def add_bb(
         self, start_offset, end_offset, loop_offset, follow_offset, flags, jump_offsets

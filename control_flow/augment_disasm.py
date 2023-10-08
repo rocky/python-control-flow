@@ -214,7 +214,8 @@ def post_ends(dom) -> set:
     """
     try:
         my_dom_set = dom.pdom_set
-    except Exception:
+    except Exception as e:
+        print(e)
         from trepan.api import debug
 
         debug()

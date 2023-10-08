@@ -1,6 +1,9 @@
 *.pyc
 *~
+/.hypothesis
 /.pre-commit-config.yaml
 /.python-version
 /__pycache__
+/build
 /control_flow.egg-info
+/tmp
