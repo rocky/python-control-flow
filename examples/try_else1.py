@@ -1,4 +1,4 @@
-# Note: driver assumes a function with the same name as the file basename
+# Note: driver assumes a function with the same func_or_code_name as the file basename
 
 # Note: driver assumes functions named "testing" and "expect".
 def testing(a):

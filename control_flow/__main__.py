@@ -24,9 +24,9 @@ VARIANT = "pypy" if IS_PYPY else None
 def main(
     func_or_code,
     opc=None,
-    version_tuple=PYTHON_VERSION_TRIPLE[:2],
-    timestamp=None,
-    name: str = "",
+    code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
+    func_or_code_timestamp=None,
+    func_or_code_name: str = "",
 ):
     """
     Compute control-flow graph, dominator information, and
@@ -38,30 +38,30 @@ def main(
         code = func_or_code
     else:
         code = func_or_code.__code__
-        if name == "":
-            name = func_or_code.__name__
-    if name.startswith("<"):
-        name = name[1:]
-    if name.endswith(">"):
-        name = name[:-1]
+        if func_or_code_name == "":
+            func_or_code_name = func_or_code.__name__
+    if func_or_code_name.startswith("<"):
+        func_or_code_name = func_or_code_name[1:]
+    if func_or_code_name.endswith(">"):
+        func_or_code_name = func_or_code_name[:-1]
 
-    print(name)
+    print(func_or_code_name)
 
-    disco(version_tuple, code, timestamp)
+    disco(code_version_tuple, code, func_or_code_timestamp)
 
     if opc is None:
-        opc = get_opcode_module(version_tuple, VARIANT)
+        opc = get_opcode_module(code_version_tuple, VARIANT)
 
     offset2inst_index = {}
-    bb_mgr = basic_blocks(code, offset2inst_index, version_tuple)
+    bb_mgr = basic_blocks(code, offset2inst_index, code_version_tuple)
 
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
 
     cfg = ControlFlowGraph(bb_mgr)
 
-    version = ".".join((str(n) for n in version_tuple[:2]))
-    write_dot(name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
+    version = ".".join((str(n) for n in code_version_tuple[:2]))
+    write_dot(func_or_code_name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
 
     try:
         dt = DominatorTree(cfg)
@@ -69,12 +69,12 @@ def main(
         cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree, False)
         build_dom_set(cfg.dom_tree, False)
-        write_dot(name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True)
+        write_dot(func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True)
 
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
-        write_dot(name, f"/tmp/flow-pdom-{version}-", cfg.pdom_tree, write_png=True)
+        write_dot(func_or_code_name, f"/tmp/flow-pdom-{version}-", cfg.pdom_tree, write_png=True)
 
         print("=" * 30)
         augmented_instrs = augment_instructions(
@@ -88,7 +88,7 @@ def main(
 
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
-        print(f"{name} had an error")
+        print(f"{func_or_code_name} had an error")
 
 
 if __name__ == "__main__":
@@ -128,4 +128,4 @@ if __name__ == "__main__":
         if name.endswith(">"):
             name = name[:-1]
 
-        main(co, version_tuple=version_tuple, timestamp=timestamp, name=name)
+        main(co, code_version_tuple=version_tuple, func_or_code_timestamp=timestamp, func_or_code_name=name)

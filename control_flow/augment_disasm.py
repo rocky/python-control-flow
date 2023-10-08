@@ -68,7 +68,7 @@ class JumpTarget(IntEnum):
     # or a jump to a loop.
     NOT_FALLEN_INTO = 2002
 
-    # A siblng of the code bock that precedes this. You find this in alternate
+    # A sibling of the code bock that precedes this. You find this in alternate
     # code blocks. For example "if/else" where the target is the beginning of the
     # "else" that is jumped to after the end of an unconditional jump at the end of the
     # "then" the logical "end"
@@ -85,7 +85,7 @@ _ExtendedInstruction = namedtuple(
     "_Instruction",
     "opname opcode optype inst_size arg argval argrepr has_arg offset starts_line is_jump_target has_extended_arg basic_block dominator",
 )
-_ExtendedInstruction.opname.__doc__ = "Human readable name for operation"
+_ExtendedInstruction.opname.__doc__ = "Human readable func_or_code_name for operation"
 _ExtendedInstruction.opcode.__doc__ = "Numeric code for operation"
 _ExtendedInstruction.arg.__doc__ = (
     "Numeric argument to operation (if any), otherwise None"
@@ -117,14 +117,14 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
     """Details for a bytecode operation
 
     Defined fields:
-      opname - human readable name for operation
+      opname - human-readable func_or_code_name for operation
       opcode - numeric code for operation
       optype - opcode classification. One of
-         compare, const, free, jabs, jrel, local, name, nargs
+         compare, const, free, jabs, jrel, local, func_or_code_name, nargs
       inst_size - number of bytes the instruction occupies
       arg - numeric argument to operation (if any), otherwise None
       argval - resolved arg value (if known), otherwise same as arg
-      argrepr - human readable description of operation argument
+      argrepr - human-readable description of operation argument
       has_arg - True opcode takes an argument. In that case,
                 argval and argepr will have that value. False
                 if this opcode doesn't take an argument. In that case,
@@ -134,7 +134,7 @@ class ExtendedInstruction(_ExtendedInstruction, Instruction):
       is_jump_target - True if other code jumps to here,
                        'loop' if this is a loop beginning, which
                        in Python can be determined jump to an earlier offset.
-                       Otherwise False
+                       Otherwise, False
       has_extended_arg - True if the instruction was built from EXTENDED_ARG
                          opcodes
       fallthrough - True if the instruction can (not must) fall through to the next
@@ -175,7 +175,7 @@ def post_ends(dom) -> set:
     We only want to mark dominators that appear
     after some sort of "end" blocks or join condition.
 
-    Why? In decompilation we are trying to distinguish blocks that can
+    Why? In decompilation, we are trying to distinguish blocks that can
     start after an end of some compound, like "if", "try" or "for",
     from those blocks that are sibling or alternative blocks.
 
@@ -198,7 +198,7 @@ def post_ends(dom) -> set:
         end
         post-end block
 
-        for ..
+        for ...
           sibling block
         else:
           sibling block
@@ -214,20 +214,21 @@ def post_ends(dom) -> set:
     """
     try:
         my_dom_set = dom.pdom_set
-    except:
+    except Exception:
         from trepan.api import debug
 
         debug()
+        my_dom_set = set()
     for prior_node in copy(my_dom_set):
         prior_bb = prior_node.bb
         if prior_bb == dom:
             # Don't list ourself in the prior_bb set that we dominate
             # ourselves if we don't fall through to the next block.
             # The grammar then will have to accommodate that we can
-            # "if"s that have return blocks in in the "then" part and
+            # "if"s that have return blocks in the "then" part, and
             # it will have to decide how to treat what follows:
             # is this an "else" or not.  (Both are correct).
-            # For chained assignments return (10 < b < 20) if feels
+            # For chained assignments return (10 < b < 20) it feels
             # wrong to say that there is a block join after 10 < b as
             # opposed to a sibling kind of thing. This is I suppose
             # though a matter of taste.  Note that grammar has to
@@ -615,7 +616,7 @@ def next_offset(offset: int, instructions: tuple, offset2inst_index: list):
     return the offset of the offset after instruction.
 
     For Python 3 this could be done by adding 2, for Python 2 it is either +1 or +3.
-    However by using instructions instead of bytecode, we eliminate Python version differences.
+    However, by using instructions instead of bytecode, we eliminate Python version differences.
     """
     next_inst_index = offset2inst_index[offset] + 1
     return instructions[next_inst_index].offset

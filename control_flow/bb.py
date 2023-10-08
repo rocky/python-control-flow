@@ -86,7 +86,7 @@ class BasicBlock(object):
 
         # The follow offset is just the offset that follows the last
         # offset of this basic block. It is None in the very last
-        # basic block. Note that the the block that follows isn't
+        # basic block. Note that the block that follows isn't
         # and "edge" from this basic block if the last instruction was
         # an unconditional jump or a return.
         # It is however useful to record this so that when we print
@@ -109,15 +109,15 @@ class BasicBlock(object):
         self.flags = flags
         self.index = (start_offset, end_offset)
 
-        # Lists of predecessor and successor bacic blocks
+        # Lists of predecessor and successor basic blocks.
         # This is computed in cfg.
         self.predecessors = set()
         self.successors = set()
 
-        # List of blocks we dominiate is empty
+        # The list of blocks we dominate is empty.
         self.dom_set = set()
 
-        # Set true if this is dead code, or unreachable
+        # Set true if this is dead code, or unreachable.
         self.unreachable = False
         self.number = end_bb
         self.edge_count = len(jump_offsets)
@@ -281,7 +281,7 @@ def basic_blocks(
 ):
     """Create a list of basic blocks found in a code object.
     `more_precise_returns` indicates whether the RETURN_VALUE
-    should modeled as a jump to the end of the enclosing function
+    should be modeled as a jump to the end of the enclosing function
     or not. See comment in code as to why this might be useful.
     """
 
@@ -421,7 +421,7 @@ def basic_blocks(
                 flags.remove(BB_POP_BLOCK)
         elif op in BB.EXCEPT_INSTRUCTIONS:
             if sys.version_info[0:2] <= (2, 7):
-                # In Python up to 2.7, thre'POP_TOP'S at the beginning of a block
+                # In Python up to 2.7, three 'POP_TOP'S at the beginning of a block
                 # indicate an exception handler. We also check
                 # that we are nested inside a "try".
                 if len(try_stack) == 0 or start_offset != offset:
@@ -523,7 +523,7 @@ def basic_blocks(
     # blocks with unreachable instructions the way Python source
     # does - the code after that exists.
     #
-    # However if you care about analysis, then
+    # However, if you care about analysis, then
     # Hook RETURN_VALUE instructions to the exit block offset
     if more_precise_returns:
         for block in return_blocks:

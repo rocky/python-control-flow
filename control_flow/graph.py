@@ -297,7 +297,7 @@ class TreeGraph(DiGraph):
 
 def write_dot(name: str, prefix: str, graph, write_png: bool = False, debug=True):
     """Produce and write dot and png files for control-flow graph `cfg`;
-    `name` is the name of the code and `prefix` indicates the file prefix to use.
+    `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the file prefix to use.
     dot is converted to PNG and dumped if `write_bool` is True.
     """
     dot_path = f"{prefix}{name}.dot"

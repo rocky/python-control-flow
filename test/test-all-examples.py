@@ -27,7 +27,7 @@ for filename in files:
 
     short = osp.basename(filename)[0:-3]
 
-    main(testing, name=short)  # NOQA
+    main(testing, func_or_code_name=short)  # NOQA
     # cs.strip()
     # got = cs.strip()
     # want = expect().strip()  # NOQA

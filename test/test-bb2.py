@@ -12,7 +12,7 @@ def testing():
 
 
 if len(sys.argv) == 1:
-    print("You need to give a file name")
+    print("You need to give a file func_or_code_name")
     sys.exit(1)
     pass
 
