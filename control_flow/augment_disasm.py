@@ -216,9 +216,6 @@ def post_ends(dom) -> set:
         my_dom_set = dom.pdom_set
     except Exception as e:
         print(e)
-        from trepan.api import debug
-
-        debug()
         my_dom_set = set()
     for prior_node in copy(my_dom_set):
         prior_bb = prior_node.bb

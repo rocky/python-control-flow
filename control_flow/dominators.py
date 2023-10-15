@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
 """
   Dominator tree
 
-  Copyright (c) 2017-2018, 2021 by Rocky Bernstein
+  Copyright (c) 2017-2018, 2021, 2023 by Rocky Bernstein
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
@@ -78,7 +78,7 @@ class DominatorTree(object):
                         finger2 = doms.get(finger2, None)
                         try:
                             po_finger2 = post_order_number[finger2]
-                        except:
+                        except Exception:
                             no_solution = True
                             break
                         if finger2 is None:
@@ -94,23 +94,45 @@ class DominatorTree(object):
 
         while changed:
             changed = False
-            for b in reversed(post_order):
-
+            order = post_order if reversed(post_order) else post_order
+            for b in order:
                 # Skip start node which doesn't have a predecessor
                 # and was initialized above.
                 if b == entry:
                     continue
 
                 new_idom = None
-                # Find a processed predecessor
+                # Find a processed predecessor.
+                # We want to order predecessors by closeness to
+                # "b" the node we are computing a dominator from.
+                # For dominators this is the number that is closest
+                # and less than b.number.
+                # For post dominators  it is the number that is closest
+                # and greater than b.number.
+                # Sorting also gives deterministic results.
                 if post_dom:
-                    predecessors = list(b.successors)
+                    n = len(b.predecessors)
+                    predecessors = sorted(
+                        [
+                            p
+                            for p in b.predecessors
+                            if post_order_number.get(p, n) < post_order_number[b]
+                        ],
+                        key=lambda p: p.number,
+                        reverse=False,
+                    )
                 else:
-                    predecessors = [
-                        p
-                        for p in b.predecessors
-                        if post_order_number.get(p, -1) > post_order_number[b]
-                    ]
+                    predecessors = sorted(
+                        [
+                            p
+                            for p in b.predecessors
+                            if post_order_number.get(p, -1) > post_order_number[b]
+                        ],
+                        key=lambda p: p.number,
+                        reverse=True,
+                    )
+
+                # If no predcessros, then nothing to do here.
                 if len(predecessors) == 0:
                     continue
 
@@ -120,32 +142,56 @@ class DominatorTree(object):
                         continue
                     if p in doms:
                         new_idom = intersec(p, new_idom)
-                        pass
+                        if new_idom is not None:
+                            # We found the closest predecessor
+                            break
                     pass
 
                 if b not in doms or doms[b] != new_idom:
-                    doms[b] = new_idom
-                    changed = True
+                    if b in doms:
+                        b_number = doms[b].number
+                        new_idom_number = new_idom.number
+                        do_update = (
+                            new_idom_number > b_number
+                            if post_dom
+                            else b_number > new_idom_number
+                        )
+                    else:
+                        do_update = True
+                    if do_update:
+                        # # debug:
+                        # name = "reverse dominator" if post_dom else "dominator"
+                        # print(
+                        #   f"{name}[{b.number}] is "
+                        #     "{None if new_idom is None else new_idom.number}"
+                        # )
+
+                        doms[b] = new_idom
+                        changed = True
+                        pass
                     pass
                 pass
             pass
         return
 
     def tree(self, do_pdoms=False):
-        """Makes a the dominator tree"""
+        """Makes the dominator tree"""
         t_nodes = {}
 
+        # We sort dominators to give deterministic results.
         if do_pdoms:
             edge_type = "pdom-edge"
+            doms_list = sorted(self.pdoms, key=lambda x: x.number, reverse=False)
             doms = self.pdoms
         else:
             edge_type = "dom-edge"
+            doms_list = sorted(self.doms, key=lambda x: x.number, reverse=True)
             doms = self.doms
 
         root = self.cfg.entry_node if do_pdoms else self.cfg.exit_node
         t = TreeGraph(root)
 
-        for node in doms:
+        for node in doms_list:
             if node not in t_nodes:
                 cur_node = t.make_add_node(node)
                 t_nodes[node] = cur_node
@@ -217,10 +263,10 @@ def dfs_forest(t, do_pdoms):
         for n in node.children:
             dfs(seen, n, do_pdoms)
             if do_pdoms:
-                node.pdoms |= node.pdoms
+                node.pdoms |= n.pdoms
                 node.bb.pdoms |= node.pdoms
             else:
-                node.doms |= node.doms
+                node.doms |= n.doms
                 node.bb.doms |= node.doms
                 if node.reach_offset < n.reach_offset:
                     node.bb.reach_offset = node.reach_offset = n.reach_offset
