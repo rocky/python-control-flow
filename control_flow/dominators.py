@@ -62,9 +62,7 @@ class DominatorTree(object):
             po_finger1 = post_order_number[finger1]
             # FIXME: if finger2 isn't in post_order_number, why not?
             if finger2 in post_order_number:
-                no_solution = True
                 po_finger2 = post_order_number[finger2]
-
                 while po_finger1 != po_finger2:
                     no_solution = False
                     while po_finger1 < po_finger2:
@@ -132,7 +130,7 @@ class DominatorTree(object):
                         reverse=True,
                     )
 
-                # If no predcessros, then nothing to do here.
+                # If no predecessors, then nothing to do here.
                 if len(predecessors) == 0:
                     continue
 
@@ -208,7 +206,7 @@ class DominatorTree(object):
             pass
         return t
 
-    def offset_dominates(self, start_offset: int, end_offset: int) -> bool:
+    def offset_dominates(self, start_offset: int) -> bool:
         cfg = self.cfg
         start_block = cfg.get_block(start_offset)
         end_block = cfg.get_block(start_offset)
@@ -217,7 +215,7 @@ class DominatorTree(object):
 
 
 def build_dom_set(t, do_pdoms):
-    """Makes a the dominator set for each node in the tree"""
+    """Makes the dominator set for each node in the tree"""
     seen = DominatorSet()
     for node in t.nodes:
         if node not in seen:
