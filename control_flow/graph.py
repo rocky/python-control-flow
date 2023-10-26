@@ -3,7 +3,7 @@
   Graph data structures
 
   Stripped down and modified from equip routine:
-  :copyright: (c) 2018, 2021 by Rocky Bernstein
+  :copyright: (c) 2018, 2021, 2023 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
@@ -276,7 +276,7 @@ class TreeGraph(DiGraph):
         dest_node.parent = set([source_node])
 
     def add_node(self, node):
-        if not node.bb in [n.bb for n in self.nodes]:
+        if node.bb not in [n.bb for n in self.nodes]:
             node.children = set([])
             node.parent = None
             self.nodes.append(node)
@@ -294,20 +294,22 @@ class TreeGraph(DiGraph):
             yield child
         yield node
 
-
 def write_dot(name: str, prefix: str, graph, write_png: bool = False, debug=True):
     """Produce and write dot and png files for control-flow graph `cfg`;
-    `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the file prefix to use.
-    dot is converted to PNG and dumped if `write_bool` is True.
+    `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the
+    file prefix to use.
+
+      dot is converted to PNG and dumped if `write_bool` is True.
     """
-    dot_path = f"{prefix}{name}.dot"
+    path_safe = name.translate(name.maketrans(" <>", "_[]"))
+    dot_path = f"{prefix}{path_safe}.dot"
     open(dot_path, "w").write(graph.to_dot(False))
     if debug:
         print(f"{dot_path} written")
     if write_png:
         import os
 
-        png_path = f"{prefix}{name}.png"
+        png_path = f"{prefix}{path_safe}.png"
         os.system(f"dot -Tpng {dot_path} > {png_path}")
         if debug:
             print(f"{png_path} written")
