@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
 
+import click
 import os
 import sys
 
 from xdis.codetype.base import iscode
 from xdis.disasm import disco
 from xdis.load import check_object_path, load_module
-from xdis.magics import PYTHON_MAGIC_INT
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
@@ -16,12 +16,12 @@ from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, build_dom_set, dfs_forest
 from control_flow.graph import write_dot
-
+from control_flow.version import __version__
 
 VARIANT = "pypy" if IS_PYPY else None
 
 
-def main(
+def control_flow(
     func_or_code,
     opc=None,
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
@@ -90,42 +90,45 @@ def main(
         print("Unexpected error:", sys.exc_info()[0])
         print(f"{func_or_code_name} had an error")
 
+@click.command()
+@click.version_option(version=__version__)
+@click.argument("filename", type=click.Path(readable=True), required=True)
+def main(filename):
+    try:
+        # FIXME: add whether we want PyPy
+        pyc_filename = check_object_path(filename)
+        (
+            version_tuple,
+            timestamp,
+            _,  # magic_int,
+            co,
+            _,  # is_pypy,
+            _,  # source_size,
+            _,  # sip_hash,
+        ) = load_module(pyc_filename)
+
+    except Exception:
+        # Hack alert: we're using pyc_filename set as a proxy for whether the filename
+        # exists.
+        # check_object_path() will succeed if the file exists.
+        stat = os.stat(filename)
+        source = open(filename, "r").read()
+        co = compile(source, filename, "exec")
+        timestamp = stat.st_mtime
+        version_tuple = PYTHON_VERSION_TRIPLE
+    else:
+        filename = pyc_filename
+
+    name = co.co_name
+    if name.startswith("<"):
+        name = name[1:]
+    if name.endswith(">"):
+        name = name[:-1]
+
+    control_flow(co, code_version_tuple=version_tuple, func_or_code_timestamp=timestamp,
+                 func_or_code_name=name)
+
+
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
-        try:
-            # FIXME: add whether we want PyPy
-            pyc_filename = check_object_path(filename)
-            (
-                version_tuple,
-                timestamp,
-                magic_int,
-                co,
-                is_pypy,
-                source_size,
-                sip_hash,
-            ) = load_module(pyc_filename)
-
-        except Exception:
-            # Hack alert: we're using pyc_filename set as a proxy for whether the filename exists.
-            # check_object_path() will succeed if the file exists.
-            stat = os.stat(filename)
-            source = open(filename, "r").read()
-            co = compile(source, filename, "exec")
-            is_pypy = IS_PYPY
-            magic_int = PYTHON_MAGIC_INT
-            sip_hash = 0
-            source_size = stat.st_size
-            timestamp = stat.st_mtime
-            version_tuple = PYTHON_VERSION_TRIPLE
-        else:
-            filename = pyc_filename
-
-        name = co.co_name
-        if name.startswith("<"):
-            name = name[1:]
-        if name.endswith(">"):
-            name = name[:-1]
-
-        main(co, code_version_tuple=version_tuple, func_or_code_timestamp=timestamp, func_or_code_name=name)
+    main(sys.argv[1:])

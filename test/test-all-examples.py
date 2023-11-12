@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.__main__ import main
+from control_flow.__main__ import control_flow
 from glob import glob
 
 
 def testing():
     assert (
         False
-    ), "This should have been replaced via read-in python script with a function called testing"
+    ), (
+     "This should have been replaced via read-in python script with a function called"
+     " testing"
+     )
 
 
 if len(sys.argv) == 1:
@@ -27,7 +30,7 @@ for filename in files:
 
     short = osp.basename(filename)[0:-3]
 
-    main(testing, func_or_code_name=short)  # NOQA
+    control_flow(testing, func_or_code_name=short)  # NOQA
     # cs.strip()
     # got = cs.strip()
     # want = expect().strip()  # NOQA
