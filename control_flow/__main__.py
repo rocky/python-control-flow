@@ -27,6 +27,7 @@ def control_flow(
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
     func_or_code_name: str = "",
+    debug: dict = {},
 ):
     """
     Compute control-flow graph, dominator information, and
@@ -64,17 +65,24 @@ def control_flow(
     write_dot(func_or_code_name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
 
     try:
-        dt = DominatorTree(cfg)
+        dt = DominatorTree(cfg, debug.get("dom", False))
 
         cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree, False)
-        build_dom_set(cfg.dom_tree, False)
-        write_dot(func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True)
+        build_dom_set(cfg.dom_tree, False, debug.get("dom", False))
+        write_dot(
+            func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True
+        )
 
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
-        write_dot(func_or_code_name, f"/tmp/flow-pdom-{version}-", cfg.pdom_tree, write_png=True)
+        write_dot(
+            func_or_code_name,
+            f"/tmp/flow-pdom-{version}-",
+            cfg.pdom_tree,
+            write_png=True,
+        )
 
         print("=" * 30)
         augmented_instrs = augment_instructions(
@@ -90,10 +98,12 @@ def control_flow(
         print("Unexpected error:", sys.exc_info()[0])
         print(f"{func_or_code_name} had an error")
 
+
 @click.command()
 @click.version_option(version=__version__)
 @click.argument("filename", type=click.Path(readable=True), required=True)
 def main(filename):
+    debug = {}
     try:
         # FIXME: add whether we want PyPy
         pyc_filename = check_object_path(filename)
@@ -125,9 +135,13 @@ def main(filename):
     if name.endswith(">"):
         name = name[:-1]
 
-    control_flow(co, code_version_tuple=version_tuple, func_or_code_timestamp=timestamp,
-                 func_or_code_name=name)
-
+    control_flow(
+        co,
+        code_version_tuple=version_tuple,
+        func_or_code_timestamp=timestamp,
+        func_or_code_name=name,
+        debug=debug,
+    )
 
 
 if __name__ == "__main__":

@@ -24,8 +24,9 @@ class DominatorTree(object):
     computation of the dominance/post-dominance frontier.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, debug=False):
         self.cfg = cfg
+        self.debug = debug
         self.build()
 
     def build(self):
@@ -157,12 +158,12 @@ class DominatorTree(object):
                     else:
                         do_update = True
                     if do_update:
-                        # # debug:
-                        # name = "reverse dominator" if post_dom else "dominator"
-                        # print(
-                        #   f"{name}[{b.number}] is "
-                        #     "{None if new_idom is None else new_idom.number}"
-                        # )
+                        if self.debug:
+                            name = "reverse dominator" if post_dom else "dominator"
+                            print(
+                              f"{name}[{b.number}] is "
+                                "{None if new_idom is None else new_idom.number}"
+                            )
 
                         doms[b] = new_idom
                         changed = True
@@ -214,18 +215,18 @@ class DominatorTree(object):
         return start_block in end_block.doms
 
 
-def build_dom_set(t, do_pdoms):
+def build_dom_set(t, do_pdoms, debug=False):
     """Makes the dominator set for each node in the tree"""
     seen = DominatorSet()
     for node in t.nodes:
         if node not in seen:
             seen.add(node)
-            build_dom_set1(node, do_pdoms)
+            build_dom_set1(node, do_pdoms, debug)
             pass
         pass
 
 
-def build_dom_set1(node, do_pdoms):
+def build_dom_set1(node, do_pdoms, debug=False):
     """Build dominator sets from dominator node"""
 
     if do_pdoms:
@@ -235,7 +236,7 @@ def build_dom_set1(node, do_pdoms):
         pass
 
     for child in node.children:
-        build_dom_set1(child, do_pdoms)
+        build_dom_set1(child, do_pdoms, debug)
         if do_pdoms:
             node.bb.pdom_set |= child.bb.pdom_set
         else:
