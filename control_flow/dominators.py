@@ -258,6 +258,7 @@ def dfs_forest(t, do_pdoms):
         else:
             node.bb.doms = node.doms = DominatorSet([node])
             node.bb.reach_offset = node.reach_offset = node.bb.end_offset
+            print(f"XXX1: {node.bb} reach_offset set to {node.bb.end_offset}")
 
         for n in node.children:
             dfs(seen, n, do_pdoms)
@@ -268,6 +269,7 @@ def dfs_forest(t, do_pdoms):
                 node.doms |= n.doms
                 node.bb.doms |= node.doms
                 if node.reach_offset < n.reach_offset:
+                    print(f"XXX1: {node.bb} reach_offset set to {n.reach_offset}")
                     node.bb.reach_offset = node.reach_offset = n.reach_offset
                     pass
                 pass

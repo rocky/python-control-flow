@@ -133,15 +133,15 @@ class BasicBlock(object):
     # A nice print routine for a Basic block
     def __repr__(self):
         if len(self.jump_offsets) > 0:
-            jump_text = ", jumps=%s" % sorted(self.jump_offsets)
+            jump_text = f", jumps={sorted(self.jump_offsets)}"
         else:
             jump_text = ""
         if len(self.exception_offsets) > 0:
-            exception_text = ", exceptions=%s" % sorted(self.exception_offsets)
+            exception_text = f", exceptions={sorted(self.exception_offsets)}"
         else:
             exception_text = ""
         if len(self.flags) > 0:
-            flag_text = ", flags=%s" % sorted(self.flags)
+            flag_text = f", flags={sorted(self.flags)}"
         else:
             flag_text = ""
         return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)" % (

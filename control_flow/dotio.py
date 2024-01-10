@@ -208,7 +208,7 @@ class DotConverter(object):
     def node_repr(node, align, is_exit):
         jump_text = ""
         if not is_exit and len(node.jump_offsets) > 0:
-            jump_text = "\ljumps=%s" % sorted(node.jump_offsets)
+            jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
             pass
 
         if node.flags:
@@ -235,7 +235,7 @@ class DotConverter(object):
         if l < NODE_TEXT_WIDTH:
             offset_text += " " * (NODE_TEXT_WIDTH - l)
 
-        return "%s%s%s%s" % (offset_text, flag_text, jump_text, reach_offset_text)
+        return f"{offset_text}{flag_text}{jump_text}{reach_offset_text}"
 
     def add_node(self, node, show_exit):
 
