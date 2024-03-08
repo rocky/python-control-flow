@@ -5,6 +5,7 @@ from control_flow.graph import (
     DiGraph,
     Node,
     jump_flags,
+    BB_JUMP_CONDITIONAL,
     BB_LOOP,
     BB_NOFOLLOW,
     BB_ENTRY,
@@ -64,10 +65,10 @@ class ControlFlowGraph(object):
                 self.exit_block = block_node
             pass
 
-        # List of offset to dominator information sorted by offset.
-        # The only offsets here are the ones that start a dominator region.
-        # Sorting then is useful when to find out dominator region an arbitrary
-        # offset lies in.
+        # List of instruction offset to dominator information, sorted
+        # by offset.  The only offsets here are the ones that start a
+        # dominator region.  Sorting then is useful when to find out
+        # dominator region an arbitrary offset lies in.
         self.offset2block_sorted = tuple(
             (offset, offset2block[offset]) for offset in sorted(offset2block.keys())
         )
@@ -78,7 +79,10 @@ class ControlFlowGraph(object):
 
             for jump_offset in set(block.jump_offsets) | block.exception_offsets:
                 # We need to guard against jumps to wild offsets.
-                # This was seen in fontTools/ttLib/tables/ttProgram.cpython-310.pyc line 359:
+                # This was seen in
+                # fontTools/ttLib/tables/ttProgram.cpython-310.pyc
+                # line 359:
+                #
                 # 358        542 ...
                 # 357        550 ...
                 #            596 JUMP_FORWARD             5 (to 608)
@@ -88,8 +92,10 @@ class ControlFlowGraph(object):
                 #            604 EXTENDED_ARG         16777215
                 #            606 JUMP_FORWARD         4294967263 (to 8589935134)
                 # 359    >>  608 ...
-                # The presumption is that some sort of optimization is munging instructions above
-                # in code that is now dead.
+                #
+                # The presumption is that some sort of optimization is
+                # munging instructions above in code that is now dead.
+
                 if jump_offset not in self.block_offsets:
                     continue
                 successor_block = self.block_offsets[jump_offset]
@@ -139,12 +145,15 @@ class ControlFlowGraph(object):
 
             # Connect the current block to its jump targets
             for jump_index in block.jump_offsets:
-                # We need to guard against jumps to wild offsets. See comment about this above.
+                # We need to guard against jumps to wild offsets. See
+                # comment about this above.
                 if jump_index in self.block_offsets:
                     target_block = self.block_offsets[jump_index]
                     if jump_index > block.start_offset:
                         if BB_LOOP in block.flags:
-                            edge_type = "forward_scope"
+                            edge_type = "forward-scope"
+                        elif BB_JUMP_CONDITIONAL in self.block_nodes[block].flags:
+                            edge_type = "forward-conditional"
                         else:
                             edge_type = "forward"
                     else:

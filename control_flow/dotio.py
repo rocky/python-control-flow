@@ -12,9 +12,10 @@ from control_flow.graph import (
     BB_ENTRY,
     BB_EXIT,
     BB_END_FINALLY,
+    BB_JUMP_CONDITIONAL,
     BB_JUMP_TO_FALLTHROUGH,
-    BB_NOFOLLOW,
     BB_JUMP_UNCONDITIONAL,
+    BB_NOFOLLOW,
     format_flags_with_width,
 )
 
@@ -127,7 +128,7 @@ class DotConverter(object):
             # edge_port = '[headport=nw] [tailport=sw]';
             # edge_port = '[headport=_] [tailport=_]';
         else:
-            if edge.kind == "forward_scope":
+            if edge.kind == "forward-scope":
                 style = '[style="dotted"]'
                 if edge.source.bb.number + 1 == edge.dest.bb.number:
                     weight = 10
@@ -186,12 +187,17 @@ class DotConverter(object):
             style = '[style="dashed"] [arrowhead="empty"]'
             pass
 
-        if edge.kind == "fallthrough" and BB_JUMP_UNCONDITIONAL in edge.source.flags:
-            # style = '[color="black:invis:black"]'
-            # style = '[style="dotted"] [arrowhead="empty"]'
-            if edge_seen:
-                return
-            style = '[style="invis"]'
+        if edge.kind == "fallthrough":
+            if BB_JUMP_UNCONDITIONAL in edge.source.flags:
+                # style = '[color="black:invis:black"]'
+                # style = '[style="dotted"] [arrowhead="empty"]'
+                if edge_seen:
+                    return
+                style = '[style="invis"]'
+            else:
+                style = '[style="dashed"]'
+        elif edge.kind == "forward-conditional":
+            style = '[style="dotted"]'
 
         nid1 = self.node_ids[edge.source]
         nid2 = self.node_ids[edge.dest]
@@ -257,7 +263,7 @@ class DotConverter(object):
 
         is_exit = False
         if BB_ENTRY in node.bb.flags:
-            style = '[shape = "oval"]'
+            style = '[shape = "box3d"]'
         elif BB_EXIT in node.bb.flags:
             style = '[shape = "diamond"]'
             align = "\n"

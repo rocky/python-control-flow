@@ -3,7 +3,7 @@
   Graph data structures
 
   Stripped down and modified from equip routine:
-  :copyright: (c) 2018, 2021, 2023 by Rocky Bernstein
+  :copyright: (c) 2018, 2021, 2023-2024 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 

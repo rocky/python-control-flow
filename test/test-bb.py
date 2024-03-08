@@ -168,8 +168,8 @@ def ifelif():
     else:
         x = 4
 
-# control_flow(ifelif)
-# control_flow(or_and)
+control_flow(ifelif)
+control_flow(or_and)
 # control_flow(and_or)
 # control_flow(err)
 # control_flow(or1)
@@ -186,9 +186,9 @@ def ifelif():
 # control_flow(foo1)
 # control_flow(foo2)
 control_flow(while_if_continue)
-# control_flow(while_true_if_else)
-# control_flow(while_else)
-# control_flow(while_if)
-# control_flow(while_true_break)
-# control_flow(try_finally)
+control_flow(while_true_if_else)
+control_flow(while_else)
+control_flow(while_if)
+control_flow(while_true_break)
+control_flow(try_finally)
 # control_flow(try_no_finally)
