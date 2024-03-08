@@ -2,7 +2,7 @@
 # Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from xdis import next_offset
-from xdis.version_info import PYTHON3, PYTHON_VERSION_TRIPLE, IS_PYPY
+from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
 from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
 from control_flow.graph import (

@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2024 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 
@@ -8,15 +8,15 @@ This code is ugly.
 from copy import copy
 from enum import IntEnum
 from types import CodeType
-from typing import Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 
 from xdis.bytecode import Bytecode
 from xdis.instruction import Instruction
 from xdis.codetype.base import CodeBase
 
-from control_flow.bb import BBMgr
+from control_flow.bb import BBMgr, BasicBlock
 from control_flow.cfg import ControlFlowGraph
 from control_flow.graph import Node, BB_FOR, BB_LOOP, BB_NOFOLLOW
 
@@ -81,65 +81,184 @@ block_kind2pseudo_op_name = {
     JumpTarget.SIBLING: "SIBLING_BLOCK",
 }
 
-_ExtendedInstruction = namedtuple(
-    "_Instruction",
-    "opname opcode optype inst_size arg argval argrepr has_arg offset starts_line is_jump_target has_extended_arg basic_block dominator",
-)
-_ExtendedInstruction.opname.__doc__ = "Human readable func_or_code_name for operation"
-_ExtendedInstruction.opcode.__doc__ = "Numeric code for operation"
-_ExtendedInstruction.arg.__doc__ = (
-    "Numeric argument to operation (if any), otherwise None"
-)
-_ExtendedInstruction.argval.__doc__ = (
-    "Resolved arg value (if known), otherwise same as arg"
-)
-_ExtendedInstruction.argrepr.__doc__ = (
-    "Human readable description of operation argument"
-)
-_ExtendedInstruction.has_arg.__doc__ = (
-    "True if instruction has an operand, otherwise False"
-)
-_ExtendedInstruction.offset.__doc__ = (
-    "Start index of operation within bytecode sequence"
-)
-_ExtendedInstruction.starts_line.__doc__ = (
-    "Line started by this opcode (if any), otherwise None"
-)
-_ExtendedInstruction.is_jump_target.__doc__ = (
-    "True if other code jumps to here, otherwise False"
-)
-_ExtendedInstruction.has_extended_arg.__doc__ = (
-    "True there were EXTENDED_ARG opcodes before this, otherwise False"
-)
+class _ExtendedInstruction(NamedTuple):
+    """Details for a bytecode operation
+
+    The order of the fields below follows roughly how the values might be displayed
+    in an assembly listing.
+
+      is_jump_target: True if other code jumps to here,
+                      'loop' if this is a loop beginning, which
+                      in Python can be determined jump to an earlier offset.
+                      Otherwise, False.
+
+      starts_line: Optional Line started by this opcode (if any). Otherwise None.
+
+      offset:  Start index of operation within bytecode sequence.
+
+      opname:  human-readable name for operation.
+      opcode:  numeric code for operation.
+
+      has_arg:   True if opcode takes an argument. In that case,
+                 ``argval`` and ``argepr`` will have that value. False
+                 if this opcode doesn't take an argument. When False,
+                 don't look at ``argval`` or ``argrepr``.
+
+      arg:     Optional numeric argument to operation (if any). Otherwise, None.
+
+      argval:  resolved arg value (if known). Otherwise, the same as ``arg``.
+      argrepr: human-readable description of operation argument.
+
+      tos_str:      If not None, a string representation of the top of the stack (TOS).
+                    This is obtained by scanning previous instructions and
+                    using information there and in their ``tos_str`` fields.
+
+      positions: Optional dis.Positions object holding the start and end locations that
+                 are covered by this instruction. This not implemented yet.
+
+      optype:    Opcode classification. One of:
+                    "compare", "const", "free", "jabs", "jrel", "local",
+                    "name", or "nargs".
+
+      inst_size: number of bytes the instruction occupies
+
+      has_extended_arg: True if the instruction was built from EXTENDED_ARG
+                        opcodes.
+
+      fallthrough:  True if the instruction can (not must) fall through to the next
+                    instruction. Note conditionals are in this category, but
+                    returns, raise, and unconditional jumps are not.
+
+      start_offset: if not None the instruction with the lowest offset that
+                    pushes a stack entry that is consume by this opcode
+    """
+
+    # Numeric code for operation
+    opcode: int
+
+    # Human readable name for operation
+    opname: str
+
+    # Numeric operand value if operation has an operand, otherwise None.
+    # This operand value is an index into one of the lists of a code type.
+    # The exact table indexed depends on optype.
+    arg: Optional[int]
+
+    # Resolved operand value (if known). This is obtained indexing the appropriate list
+    # indicated by optype using value arg.
+    # If for some reason we can't extract a value this way ``argval`` has value as
+    # ``arg``.
+    argval: Any
+
+    # String representation of argval if argval is not None.
+    argrepr: str
+
+    # Offset of the instruction
+    offset: int
+
+    starts_line: Optional[int]
+
+    # True if other code jumps to here, the string "loop" if this is a loop
+    # beginning, which in Python can be determined jump to an earlier
+    # offset.  Otherwise, False.
+    # Note that this is a generalization of Python's "is_jump_target".
+    is_jump_target: Union[bool, str]
+
+    # dis.Positions object holding the start and end locations that
+    # are covered by this instruction.
+    # FIXME: Implement. The below is just a placeholder.
+    #
+    positions: Optional[Any]
+
+    # The following values are our own extended information not found (yet) #
+    # in Python's Instruction structure.                                    #
+
+    # First, values which can be computed or derived from the above,
+    # along with an opcode structure. These We add these in an
+    # instruction to make the instruction self sufficient.
+
+    # opcode classification. One of:
+    #   compare, const, free, jabs, jrel, local, name, nargs
+    optype: str
+
+    # True if instruction has an operand, otherwise False.
+    has_arg: bool
+
+    # The number of bytes this instruction consumes.
+    inst_size: int
+
+    # True there were EXTENDED_ARG opcodes before this, otherwise False
+    has_extended_arg: Optional[bool] = None
+
+    # True if the instruction can (not must) fall through to the next
+    # instruction. Note conditionals are in this category, but
+    # returns, raise, and unconditional jumps are not.
+    fallthrough: Optional[bool] = None
+
+    # If not None, a string representation of the top of the stack (TOS)
+    tos_str: Optional[str] = None
+
+    # Python expressions can be straight-line, operator like-basic block code that take
+    # items off a stack and push a value onto the stack. In this case, in a linear scan
+    # we can basically build up an expression tree.
+    # Note this has to be the last field. Code to set this assumes this.
+    start_offset: Optional[int] = None
+
+    basic_block: BasicBlock = None
+    dominator: Optional[Node] = None
 
 
 class ExtendedInstruction(_ExtendedInstruction, Instruction):
-    """Details for a bytecode operation
+    """Details for an extended bytecode operation
 
-    Defined fields:
-      opname - human-readable func_or_code_name for operation
-      opcode - numeric code for operation
-      optype - opcode classification. One of
-         compare, const, free, jabs, jrel, local, func_or_code_name, nargs
-      inst_size - number of bytes the instruction occupies
-      arg - numeric argument to operation (if any), otherwise None
-      argval - resolved arg value (if known), otherwise same as arg
-      argrepr - human-readable description of operation argument
-      has_arg - True opcode takes an argument. In that case,
-                argval and argepr will have that value. False
-                if this opcode doesn't take an argument. In that case,
-                don't look at argval or argrepr.
-      offset - start index of operation within bytecode sequence
-      starts_line - line started by this opcode (if any), otherwise None
-      is_jump_target - True if other code jumps to here,
-                       'loop' if this is a loop beginning, which
-                       in Python can be determined jump to an earlier offset.
-                       Otherwise, False
-      has_extended_arg - True if the instruction was built from EXTENDED_ARG
-                         opcodes
-      fallthrough - True if the instruction can (not must) fall through to the next
+    The order of the fields below follows roughly how the values might be displayed
+    in an assembly listing.
+
+      is_jump_target: True if other code jumps to here,
+                      'loop' if this is a loop beginning, which
+                      in Python can be determined jump to an earlier offset.
+                      Otherwise, False.
+
+      starts_line: Optional Line started by this opcode (if any). Otherwise None.
+
+      offset:  Start index of operation within bytecode sequence.
+
+      opname:  human-readable name for operation.
+      opcode:  numeric code for operation.
+
+      has_arg:   True if opcode takes an argument. In that case,
+                 ``argval`` and ``argepr`` will have that value. False
+                 if this opcode doesn't take an argument. When False,
+                 don't look at ``argval`` or ``argrepr``.
+
+      arg:     Optional numeric argument to operation (if any). Otherwise, None.
+
+      argval:  resolved arg value (if known). Otherwise, the same as ``arg``.
+      argrepr: human-readable description of operation argument.
+
+      tos_str:      If not None, a string representation of the top of the stack (TOS).
+                    This is obtained by scanning previous instructions and
+                    using information there and in their ``tos_str`` fields.
+
+      positions: Optional dis.Positions object holding the start and end locations that
+                 are covered by this instruction. This not implemented yet.
+
+      optype:    Opcode classification. One of:
+                    "compare", "const", "free", "jabs", "jrel", "local",
+                    "name", or "nargs".
+
+      inst_size: number of bytes the instruction occupies
+
+      has_extended_arg: True if the instruction was built from EXTENDED_ARG
+                        opcodes.
+
+      fallthrough:  True if the instruction can (not must) fall through to the next
                     instruction. Note conditionals are in this category, but
-                    returns, raise, and unconditional jumps are not
+                    returns, raise, and unconditional jumps are not.
+
+      start_offset: if not None the instruction with the lowest offset that
+                    pushes a stack entry that is consume by this opcode
+
       basic_block - extended basic block for this instruction
       dominator   - dominator of this instruction
     """
@@ -261,7 +380,7 @@ def augment_instructions(
     ends = {current_block.end_offset: current_block}
     augmented_instrs = []
     bb = None
-    dom: Node = Optional[Node]
+    dom: Optional[Node] = None
     offset = 0
     loop_stack = []
     instructions = tuple(Bytecode(fn_or_code, opc).get_instructions(fn_or_code))
@@ -306,20 +425,21 @@ def augment_instructions(
                 loop_stack.append((dom, loop_block_dom_set, inst))
 
             pseudo_inst = ExtendedInstruction(
-                "BB_START",
-                1001,
-                "pseudo",
-                0,
-                bb.number,
-                bb.number,
-                f"Basic Block {bb.number}",
-                True,
-                offset,
-                None,
-                False,
-                False,
-                bb,
-                dom,
+                opname = "BB_START",
+                opcode = 1001,
+                optype= "pseudo",
+                inst_size = 0,
+                arg = bb.number,
+                argval = bb.number,
+                argrepr = f"Basic Block {bb.number}",
+                has_arg = True,
+                offset= offset,
+                starts_line = None,
+                is_jump_target = False,
+                has_extended_arg = False,
+                positions= None,
+                basic_block = bb,
+                dominator = dom,
             )
             augmented_instrs.append(pseudo_inst)
             if bb.follow_offset:
@@ -348,20 +468,21 @@ def augment_instructions(
                     else "JUMP_LOOP"
                 )
                 pseudo_inst = ExtendedInstruction(
-                    pseudo_op_name,
-                    1001,
-                    "pseudo",
-                    0,
-                    target_dom_set,
-                    target_dom_set,
-                    f"{target_dom_set}",
-                    True,
-                    offset,
-                    None,
-                    False,
-                    False,
-                    bb,
-                    dom,
+                    opname = pseudo_op_name,
+                    opcode = 1001,
+                    optype = "pseudo",
+                    inst_size = 0,
+                    arg = target_dom_set,
+                    argval = target_dom_set,
+                    argrepr = f"{target_dom_set}",
+                    has_arg = True,
+                    offset = offset,
+                    starts_line = None,
+                    is_jump_target = False,
+                    has_extended_arg = False,
+                    positions = None,
+                    basic_block = bb,
+                    dominator = dom,
                 )
                 augmented_instrs.append(pseudo_inst)
             else:
@@ -380,20 +501,21 @@ def augment_instructions(
                         else:
                             pseudo_op_name = "BREAK_LOOP"
                         pseudo_inst = ExtendedInstruction(
-                            pseudo_op_name,
-                            1002,
-                            "pseudo",
-                            0,
-                            target_dom_set,
-                            target_dom_set,
-                            f"{target_dom_set}",
-                            True,
-                            offset,
-                            None,
-                            False,
-                            False,
-                            bb,
-                            dom,
+                            opname = pseudo_op_name,
+                            opcode = 1002,
+                            optype = "pseudo",
+                            inst_size = 0,
+                            arg = target_dom_set,
+                            argval = target_dom_set,
+                            argrepr = f"{target_dom_set}",
+                            has_arg = True,
+                            offset = offset,
+                            start_offset = None,
+                            is_jump_target = False,
+                            has_extended_arg = False,
+                            positions = None,
+                            basic_block = bb,
+                            dominator = dom,
                         )
                         augmented_instrs.append(pseudo_inst)
                         loop_related_jump = True
@@ -428,38 +550,40 @@ def augment_instructions(
         if block_kind is not None:
             pseudo_op_name = block_kind2pseudo_op_name[block_kind]
             pseudo_inst = ExtendedInstruction(
-                pseudo_op_name,
-                int(block_kind),
-                "pseudo",
-                0,
-                None,
-                None,
-                False,
-                False,
-                offset,
-                None,
-                False,
-                False,
-                bb,
-                dom,
+                opname = pseudo_op_name,
+                opcode = int(block_kind),
+                optype = "pseudo",
+                inst_size = 0,
+                arg = None,
+                argval = None,
+                argrepr = "",
+                has_arg = False,
+                offset = offset,
+                starts_line = None,
+                is_jump_target = False,
+                has_extended_arg = False,
+                positions=None,
+                basic_block = bb,
+                dominator=dom,
             )
             augmented_instrs.append(pseudo_inst)
 
         extended_inst = ExtendedInstruction(
-            inst.opname,
-            inst.opcode,
-            inst.optype,
-            inst.inst_size,
-            inst.arg,
-            inst.argval,
-            inst.argrepr,
-            inst.has_arg,
-            inst.offset,
-            inst.starts_line,
-            inst.is_jump_target,
-            inst.has_extended_arg,
-            bb,
-            dom,
+            opname = inst.opname,
+            opcode = inst.opcode,
+            optype = inst.optype,
+            inst_size = inst.inst_size,
+            arg = inst.arg,
+            argval = inst.argval,
+            argrepr = inst.argrepr,
+            has_arg = inst.has_arg,
+            offset = inst.offset,
+            starts_line = inst.starts_line,
+            is_jump_target=inst.is_jump_target,
+            has_extended_arg=inst.has_extended_arg,
+            positions = None,
+            basic_block=bb,
+            dominator=dom,
         )
         augmented_instrs.append(extended_inst)
         pass
@@ -467,20 +591,21 @@ def augment_instructions(
         bb = ends.get(offset, None)
         if bb:
             pseudo_inst = ExtendedInstruction(
-                "BB_END",
-                1002,
-                "pseudo",
-                0,
-                bb.number,
-                bb.number,
-                f"Basic Block {bb.number}",
-                True,
-                offset,
-                None,
-                False,
-                False,
-                bb,
-                dom,
+                opname = "BB_END",
+                opcode = 1002,
+                optype = "pseudo",
+                inst_size = 0,
+                arg = bb.number,
+                argval = bb.number,
+                argrepr = f"Basic Block {bb.number}",
+                has_arg = True,
+                offset = offset,
+                starts_line = None,
+                is_jump_target = False,
+                has_extended_arg=False,
+                positions = None,
+                basic_block=bb,
+                dominator = dom,
             )
             augmented_instrs.append(pseudo_inst)
             if bb.flags in [BB_FOR, BB_LOOP]:
@@ -493,20 +618,21 @@ def augment_instructions(
                 post_end_set = post_ends(dom.bb)
                 if post_end_set:
                     pseudo_inst = ExtendedInstruction(
-                        "BLOCK_END_JOIN",
-                        1003,
-                        "pseudo",
-                        0,
-                        dom_number,
-                        dom_number,
-                        f"Basic Block {post_end_set}",
-                        True,
-                        offset,
-                        None,
-                        False,
-                        False,
-                        dom.bb,
-                        dom,
+                        opname = "BLOCK_END_JOIN",
+                        opcode = 1003,
+                        optype = "pseudo",
+                        inst_size = 0,
+                        arg  = dom_number,
+                        argval = dom_number,
+                        argrepr = f"Basic Block {post_end_set}",
+                        has_arg = True,
+                        offset = offset,
+                        starts_line = None,
+                        is_jump_target=False,
+                        has_extended_arg=False,
+                        positions = None,
+                        basic_block=dom.bb,
+                        dominator=dom,
                     )
                     augmented_instrs.append(pseudo_inst)
             pass
@@ -527,20 +653,21 @@ def augment_instructions(
             post_end_set = post_ends(dom.bb)
             if post_end_set and not block_end_join_added:
                 pseudo_inst = ExtendedInstruction(
-                    "BLOCK_END_JOIN_NO_ARG",
-                    1003,
-                    "pseudo",
-                    0,
-                    dom_number,
-                    dom_number,
-                    f"Basic Block {post_end_set}",
-                    False,
-                    offset,
-                    None,
-                    False,
-                    False,
-                    dom.bb,
-                    dom,
+                    opname = "BLOCK_END_JOIN_NO_ARG",
+                    opcode = 1003,
+                    optype = "pseudo",
+                    inst_size = 0,
+                    arg = dom_number,
+                    argval = dom_number,
+                    argrepr = f"Basic Block {post_end_set}",
+                    has_arg = False,
+                    offset = offset,
+                    starts_line = None,
+                    is_jump_target = False,
+                    has_extended_arg = False,
+                    positions = None,
+                    basic_block = dom.bb,
+                    dominator = dom,
                 )
                 augmented_instrs.append(pseudo_inst)
                 block_end_join_added = True
