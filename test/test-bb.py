@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from control_flow.__main__ import main
+from control_flow.__main__ import control_flow
 
 
 def err():
@@ -168,28 +168,27 @@ def ifelif():
     else:
         x = 4
 
-
-# main(ifelif)
-# main(or_and)
-# main(and_or)
-# main(err)
-# main(or1)
-# main(if_then0)
-# main(if_then1)
-# main(if_then2)
-# main(if_then3)
-# main(if_then4)
-# main(five)
-# main(for_break)
-# main(if_else)
-# main(if_vs_and)
-# main(foo)
-# main(foo1)
-# main(foo2)
-# main(while_if_continue)
-# main(while_true_if_else)
-# main(while_else)
-# main(while_if)
-# main(while_true_break)
-main(try_finally)
-# main(try_no_finally)
+# control_flow(ifelif)
+# control_flow(or_and)
+# control_flow(and_or)
+# control_flow(err)
+# control_flow(or1)
+# control_flow(if_then0)
+# control_flow(if_then1)
+# control_flow(if_then2)
+# control_flow(if_then3)
+# control_flow(if_then4)
+# control_flow(five)
+# control_flow(for_break)
+# control_flow(if_else)
+# control_flow(if_vs_and)
+# control_flow(foo)
+# control_flow(foo1)
+# control_flow(foo2)
+control_flow(while_if_continue)
+# control_flow(while_true_if_else)
+# control_flow(while_else)
+# control_flow(while_if)
+# control_flow(while_true_break)
+# control_flow(try_finally)
+# control_flow(try_no_finally)
