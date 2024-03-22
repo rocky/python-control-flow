@@ -179,6 +179,7 @@ class Edge(object):
         self.source = source
         self.dest = dest
         self.kind = kind
+        self.flags = set()
         self.data = data
 
     @classmethod
@@ -201,6 +202,12 @@ class Edge(object):
             self.dest,
             repr(self.kind),
             repr(self.data),
+        )
+
+    def is_conditional_jump(self) -> bool:
+        return (
+            BB_JUMP_CONDITIONAL in self.source.flags
+            and self.dest.bb.start_offset in self.source.bb.jump_offsets
         )
 
 
@@ -293,6 +300,7 @@ class TreeGraph(DiGraph):
             self.postorder_traverse1(child)
             yield child
         yield node
+
 
 def write_dot(name: str, prefix: str, graph, write_png: bool = False, debug=True):
     """Produce and write dot and png files for control-flow graph `cfg`;

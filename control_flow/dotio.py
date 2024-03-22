@@ -3,7 +3,7 @@
 """
   Converts graph to dot format
 
-  :copyright: (c) 2018 by Rocky Bernstein
+  :copyright: (c) 2018, 2024 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
@@ -12,7 +12,6 @@ from control_flow.graph import (
     BB_ENTRY,
     BB_EXIT,
     BB_END_FINALLY,
-    BB_JUMP_CONDITIONAL,
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_NOFOLLOW,
@@ -94,7 +93,7 @@ class DotConverter(object):
         if not show_exit and BB_EXIT in edge.dest.bb.flags:
             return
 
-        color = ""
+        color = '[color="blue"]' if edge.is_conditional_jump() else ""
         style = ""
         edge_port = ""
         source_port = ""
@@ -111,6 +110,8 @@ class DotConverter(object):
         ):
             if edge.kind == "follow":
                 style = '[style="invis"]'
+            elif edge.kind == "fallthrough":
+                color = '[color="red"]'
                 pass
             if edge.kind != "exit edge":
                 weight = 10
