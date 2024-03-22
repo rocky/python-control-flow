@@ -24,6 +24,7 @@ VARIANT = "pypy" if IS_PYPY else None
 
 def control_flow(
     func_or_code,
+    graph_options: str,
     opc=None,
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
@@ -63,7 +64,8 @@ def control_flow(
     cfg = ControlFlowGraph(bb_mgr)
 
     version = ".".join((str(n) for n in code_version_tuple[:2]))
-    write_dot(func_or_code_name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
+    if graph_options in ("all", "control-flow"):
+        write_dot(func_or_code_name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
 
     try:
         dt = DominatorTree(cfg, debug.get("dom", False))
@@ -71,19 +73,21 @@ def control_flow(
         cfg.dom_tree = dt.tree(False)
         dfs_forest(cfg.dom_tree, False)
         build_dom_set(cfg.dom_tree, False, debug.get("dom", False))
-        write_dot(
-            func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True
-        )
+        if graph_options in ("all", "dominators"):
+            write_dot(
+                func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True
+            )
 
         cfg.pdom_tree = dt.tree(True)
         dfs_forest(cfg.pdom_tree, True)
         build_dom_set(cfg.pdom_tree, True)
-        write_dot(
-            func_or_code_name,
-            f"/tmp/flow-pdom-{version}-",
-            cfg.pdom_tree,
-            write_png=True,
-        )
+        if graph_options in ("all", "reverse-domniators"):
+            write_dot(
+                func_or_code_name,
+                f"/tmp/flow-pdom-{version}-",
+                cfg.pdom_tree,
+                write_png=True,
+            )
 
         print("=" * 30)
         augmented_instrs = augment_instructions(
@@ -107,9 +111,17 @@ def control_flow(
 @click.option("-m", "--member",
               help="function, or class inside the module name")
 @click.option("--filename", type=click.Path(readable=True))
-def main(import_name, member, filename):
+@click.option(
+    "--graph",
+    "-g",
+    type=click.Choice(
+        ["all", "control-flow", "dominators", "reverse-dominiators"],
+        case_sensitive=False,
+    ),
+    help="Produce graphviz graph of program"
+)
+def main(import_name, member, filename, graph):
     debug = {}
-    from trepan.api import debug; debug()
     try:
         if import_name is not None:
             import_module = importlib.__import__(import_name)
@@ -165,6 +177,7 @@ def main(import_name, member, filename):
 
     control_flow(
         co,
+        graph_options=graph,
         code_version_tuple=version_tuple,
         func_or_code_timestamp=timestamp,
         func_or_code_name=name,

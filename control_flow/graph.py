@@ -205,6 +205,9 @@ class Edge(object):
         )
 
     def is_conditional_jump(self) -> bool:
+        """Return True is edge is attached to a conditional jump
+        instruction at its source.
+        """
         return (
             BB_JUMP_CONDITIONAL in self.source.flags
             and self.dest.bb.start_offset in self.source.bb.jump_offsets
