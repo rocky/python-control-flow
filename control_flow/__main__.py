@@ -24,7 +24,7 @@ VARIANT = "pypy" if IS_PYPY else None
 
 def control_flow(
     func_or_code,
-    graph_options: str,
+    graph_options: str="",
     opc=None,
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
@@ -75,7 +75,10 @@ def control_flow(
         build_dom_set(cfg.dom_tree, False, debug.get("dom", False))
         if graph_options in ("all", "dominators"):
             write_dot(
-                func_or_code_name, f"/tmp/flow-dom-{version}-", cfg.dom_tree, write_png=True
+                func_or_code_name,
+                f"/tmp/flow-dom-{version}-",
+                cfg.dom_tree,
+                write_png=True,
             )
 
         cfg.pdom_tree = dt.tree(True)
@@ -87,7 +90,10 @@ def control_flow(
                 f"/tmp/flow-pdom-{version}-",
                 cfg.pdom_tree,
                 write_png=True,
+                dominator_info_format=False
             )
+
+        assert cfg.graph
 
         print("=" * 30)
         augmented_instrs = augment_instructions(
@@ -95,6 +101,16 @@ def control_flow(
         )
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
+
+        if graph_options in ("all"):
+            write_dot(
+                func_or_code_name,
+                f"/tmp/flow-with-dom-{version}-",
+                cfg.graph,
+                write_png=True,
+                dominator_info_format=True,
+            )
+
         # return cs_str
     except Exception:
         import traceback
@@ -106,19 +122,19 @@ def control_flow(
 
 @click.command()
 @click.version_option(version=__version__)
-@click.option("-i", "--import", "import_name",
-              help="function, or class inside the module name")
-@click.option("-m", "--member",
-              help="function, or class inside the module name")
-@click.option("--filename", type=click.Path(readable=True))
+@click.option(
+    "-i", "--import", "import_name", help="function, or class inside the module name"
+)
+@click.option("-m", "--member", help="function, or class inside the module name")
+@click.option("--filename", "-f", type=click.Path(readable=True))
 @click.option(
     "--graph",
     "-g",
     type=click.Choice(
-        ["all", "control-flow", "dominators", "reverse-dominiators"],
+        ["all", "control-flow", "dominators", "reverse-dominators"],
         case_sensitive=False,
     ),
-    help="Produce graphviz graph of program"
+    help="Produce graphviz graph of program",
 )
 def main(import_name, member, filename, graph):
     debug = {}
@@ -136,7 +152,9 @@ def main(import_name, member, filename, graph):
             else:
                 import_filename = import_module.__file__
                 if filename is not None and import_filename != filename:
-                    print(f"--filename and --import but files do not match: {filename} vs. {import_filename}")
+                    print(
+                        f"--filename and --import but files do not match: {filename} vs. {import_filename}"
+                    )
                     print("Use just one option")
                     sys.exit(1)
                 filename = import_filename
@@ -154,6 +172,9 @@ def main(import_name, member, filename, graph):
                 _,  # sip_hash,
             ) = load_module(pyc_filename)
             filename = pyc_filename
+        else:
+            print("either options --filename or --import must be given")
+            sys.exit(2)
 
     except Exception:
         # Hack alert: we're using pyc_filename set as a proxy for whether the filename

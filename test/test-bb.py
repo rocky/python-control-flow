@@ -177,7 +177,7 @@ def ifelif():
 # control_flow(if_then1)
 # control_flow(if_then2)
 # control_flow(if_then3)
-control_flow(if_then4)
+control_flow(if_then4, graph_options="all")
 # control_flow(five)
 # control_flow(for_break)
 # control_flow(if_else)

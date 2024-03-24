@@ -42,14 +42,14 @@ class DotConverter(object):
         self.node_ids = {}
 
     @staticmethod
-    def process(graph, show_exit):
+    def process(graph, show_exit, show_dominator_info):
         converter = DotConverter(graph)
-        converter.run(show_exit)
+        converter.run(show_exit, show_dominator_info)
         return converter.buffer
 
     # See Stackoverflow link below for information on how imporve
     # layout of graph. It's a mess and not very well understood.
-    def run(self, show_exit):
+    def run(self, show_exit: bool, is_dominator_format: bool):
         self.buffer += "digraph G {"
         self.buffer += DOT_STYLE
 
@@ -57,7 +57,7 @@ class DotConverter(object):
             self.buffer += "\n  # basic blocks:\n"
             for node in sorted(self.g.nodes, key=lambda n: n.number):
                 self.node_ids[node] = "block_%d" % node.number
-                self.add_node(node, show_exit)
+                self.add_node(node, show_exit, is_dominator_format)
 
             self.buffer += """
   # Edges should be ordered from innermost block edges to outmost.
@@ -215,30 +215,32 @@ class DotConverter(object):
         )
 
     @staticmethod
-    def node_repr(node, align, is_exit):
+    def node_repr(node, align, is_exit, is_dominator_format: bool):
         jump_text = ""
-        if not is_exit and len(node.jump_offsets) > 0:
-            jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
-            pass
+        reach_offset_text = ""
+        flag_text = ""
+        if not is_dominator_format:
+            if not is_exit and len(node.jump_offsets) > 0:
+                jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
+                pass
 
-        if node.flags:
-            flag_text = "%s%s%s" % (
-                align,
-                flags_prefix,
-                format_flags_with_width(
-                    node.flags, NODE_TEXT_WIDTH - FEL, align + (" " * (len("flags=")))
-                ),
-            )
-        else:
-            flag_text = ""
-            pass
+            if node.flags:
+                flag_text = "%s%s%s" % (
+                    align,
+                    flags_prefix,
+                    format_flags_with_width(
+                        node.flags, NODE_TEXT_WIDTH - FEL, align + (" " * (len("flags=")))
+                    ),
+                )
+            else:
+                flag_text = ""
+                pass
+
+            if hasattr(node, "reach_offset"):
+                reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
 
         if is_exit:
             return "flags=exit"
-
-        reach_offset_text = ""
-        if hasattr(node, "reach_offset"):
-            reach_offset_text = "\lreach_offset=%d" % node.reach_offset
 
         offset_text = "offset: %d..%d" % (node.start_offset, node.end_offset)
         l = len(offset_text)
@@ -247,20 +249,14 @@ class DotConverter(object):
 
         return f"{offset_text}{flag_text}{jump_text}{reach_offset_text}"
 
-    def add_node(self, node, show_exit):
+    def add_node(self, node, show_exit: bool, is_dominator_format: bool):
 
-        try:
-            not show_exit and BB_EXIT in node.bb.flags
-        except:
-            from trepan.api import debug
-
-            debug()
         if not show_exit and BB_EXIT in node.bb.flags:
             return
 
         label = ""
         style = ""
-        align = "\l"
+        align = "\\l"
 
         is_exit = False
         if BB_ENTRY in node.bb.flags:
@@ -275,7 +271,7 @@ class DotConverter(object):
         label = '[label="Basic Block %d%s%s%s"]' % (
             node.number,
             align,
-            self.node_repr(node.bb, align, is_exit),
+            self.node_repr(node.bb, align, is_exit, is_dominator_format),
             align,
         )
         self.buffer += "  block_%d %s%s;\n" % (node.number, style, label)
