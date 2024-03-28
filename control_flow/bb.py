@@ -453,9 +453,13 @@ def basic_blocks(
             )
             loop_offset = None
             start_offset = follow_offset
+        # FIXME: SETUP_LOOP offsets in < 3.8 may have jump targets
+        # that might not be jumped to by other instructions.  The
+        # intervening instructions are stack cleanup like
+        # POP_STACK. How do we want to handle this?
         elif op in BB.JUMP_INSTRUCTIONS:
             # Some sort of jump instruction.
-            # Figure out where we jump to amd add it to this
+            # Figure out where we jump to and add it to this
             # basic block's jump offsets.
             jump_offset = inst.argval
 

@@ -102,6 +102,8 @@ def control_flow(
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
 
+        if graph_options is None:
+            from trepan.api import debug; debug()
         if graph_options in ("all"):
             write_dot(
                 func_or_code_name,
@@ -131,9 +133,10 @@ def control_flow(
     "--graph",
     "-g",
     type=click.Choice(
-        ["all", "control-flow", "dominators", "reverse-dominators"],
+        ["all", "control-flow", "dominators", "reverse-dominators", "none"],
         case_sensitive=False,
     ),
+    default="none",
     help="Produce graphviz graph of program",
 )
 def main(import_name, member, filename, graph):

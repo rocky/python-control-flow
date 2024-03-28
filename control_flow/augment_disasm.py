@@ -7,6 +7,7 @@ This code is ugly.
 """
 from copy import copy
 from enum import IntEnum
+from sys import maxsize
 from types import CodeType
 from typing import Any, Callable, Dict, NamedTuple, Optional, Union
 
@@ -492,11 +493,18 @@ def augment_instructions(
                 # Check for jump break out of a loop
                 loop_related_jump = False
                 if len(loop_stack) > 0:
-                    # Check for loop-related jumps such as  those that can occur from break, continue.
-                    # Note: we also add instructions for normal loop iteration jump and
-                    # jump-termination jump
+                    # Check for loop-related jumps such as those that
+                    # can occur from break, continue.  Note: we also
+                    # add instructions for normal loop iteration jump
+                    # and jump-termination jump
                     loop_dom, loop_block_dom_set, loop_inst = loop_stack[-1]
-                    if jump_target >= max(loop_dom.bb.__dict__["jump_offsets"]):
+                    # SETUP_LOOP offsets in < 3.8 refer to places that
+                    # that might not be jumped to by other instructions.
+                    # The intervening instructions are stack cleanup like
+                    # POP_STACK. We extend max to cover this kind of thing.
+                    if jump_target >= max(
+                        loop_dom.bb.__dict__["jump_offsets"] | {maxsize}
+                    ):
                         if loop_inst.opcode in bb_mgr.FOR_INSTRUCTIONS:
                             pseudo_op_name = "BREAK_FOR"
                         else:
