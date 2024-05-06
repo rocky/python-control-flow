@@ -22,13 +22,13 @@ BB_LOOP = 2
 # A BREAK instruction breaking out of a loop
 BB_BREAK = 3
 
-# POP_BLOCKs detect presense of scope-defining
-# blocks, and can be used to tell the diffrence between
+# POP_BLOCKs detect presence of scope-defining
+# blocks, and can be used to tell the difference between
 # 'if's and 'whiles'
 BB_POP_BLOCK = 4
 
 # Does the basic block contain a single POP_BLOCK instruction?
-# If so, it can signle the difference between "while else"
+# If so, it can signal the difference between "while else"
 # and "while" (with no "else"). The latter has the single
 # POP_BLOCK instruction.
 BB_SINGLE_POP_BLOCK = 5
@@ -56,7 +56,7 @@ BB_TRY = 11
 # of a "finally' block
 BB_END_FINALLY = 12
 
-# An artifical block where all exits and returns are tied
+# An artificial block where all exits and returns are tied
 # to. There will be only one such block, and it used in
 # postdominsator or reverse dominiator calculation.
 BB_EXIT = 13

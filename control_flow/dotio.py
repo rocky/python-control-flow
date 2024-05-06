@@ -47,7 +47,7 @@ class DotConverter(object):
         converter.run(show_exit, show_dominator_info)
         return converter.buffer
 
-    # See Stackoverflow link below for information on how imporve
+    # See Stackoverflow link below for information on how improve
     # layout of graph. It's a mess and not very well understood.
     def run(self, show_exit: bool, is_dominator_format: bool):
         self.buffer += "digraph G {"
@@ -145,7 +145,7 @@ class DotConverter(object):
                 pass
             elif edge.kind == "backward":
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
-                    # For a loop to the immmediate predecessor we use
+                    # For a loop to the immediate predecessor we use
                     # a somewhat straight centered backward arrow.
                     source_port = ":c"
                     dest_port = ":c"

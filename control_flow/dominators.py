@@ -3,7 +3,7 @@
 """
   Dominator tree
 
-  Copyright (c) 2017-2018, 2021, 2023 by Rocky Bernstein
+  Copyright (c) 2017-2018, 2021, 2023-2024 by Rocky Bernstein
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
