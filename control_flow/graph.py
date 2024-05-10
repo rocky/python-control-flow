@@ -7,6 +7,8 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
+from typing import Optional
+
 # First or Basic block that we entered on. Usually
 # at offset 0.
 # Does this need to be a set?
@@ -310,7 +312,7 @@ class TreeGraph(DiGraph):
 def write_dot(
     name: str,
     prefix: str,
-    graph: DiGraph,
+    graph: Optional[DiGraph],
     write_png: bool = False,
     debug=True,
     dominator_info_format=False,
@@ -321,6 +323,8 @@ def write_dot(
 
       dot is converted to PNG and dumped if `write_bool` is True.
     """
+    if graph is None:
+        return
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
     dot_path = f"{prefix}{path_safe}.dot"
     open(dot_path, "w").write(graph.to_dot(False, dominator_info_format))

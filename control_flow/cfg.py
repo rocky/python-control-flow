@@ -1,9 +1,11 @@
-# Copyright (c) 2021 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2024 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
+from typing import Dict, Optional, Tuple
 from control_flow.graph import (
     DiGraph,
     Node,
+    TreeGraph,
     jump_flags,
     BB_JUMP_CONDITIONAL,
     BB_LOOP,
@@ -13,7 +15,7 @@ from control_flow.graph import (
 )
 
 
-class ControlFlowGraph(object):
+class ControlFlowGraph:
     """
     Performs the control-flow analysis on set of basic blocks. It
     iterates over its bytecode and builds basic blocks with flag
@@ -25,13 +27,13 @@ class ControlFlowGraph(object):
         self.block_offsets = {}
         self.seen_blocks = set()
         self.blocks = bb_mgr.bb_list
-        self.offset2block = {}
-        self.offset2block_sorted = {}
+        self.offset2block: Dict[int, Node] = {}
+        self.offset2block_sorted: Tuple[int, Node] = tuple()
         self.block_nodes = {}
         self.graph = None
         self.entry_node = None
         self.exit_node = bb_mgr.exit_block
-        self.dom_tree = None
+        self.dom_tree: Optional[TreeGraph] = None
         self.analyze(self.blocks, bb_mgr.exit_block)
 
     def analyze(self, blocks, exit_block):
@@ -42,7 +44,7 @@ class ControlFlowGraph(object):
         assert (
             len(blocks) >= 2
         ), "Should have at least a start block and an exception exit block"
-        self.entry = blocks[1]
+        self.entry_node = blocks[1]
         self.build_flowgraph(blocks, exit_block)
 
     def build_flowgraph(self, blocks, exit_block):
@@ -191,7 +193,7 @@ class ControlFlowGraph(object):
         block = self.offset2block_sorted[0]
 
         # FIXME: use binary search
-        for next_offset, block in self.offset2block_sorted:
+        for _, block in self.offset2block_sorted:
             if block.bb.start_offset <= offset <= block.bb.end_offset:
                 break
             pass

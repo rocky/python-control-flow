@@ -1,9 +1,9 @@
 """Test control_flow.bb: basic blocks and basd-block management"""
 from control_flow.bb import basic_blocks, BB_ENTRY, BB_EXIT, BB_RETURN
-from example_fns import two_basic_blocks, if_else_blocks
+from example_fns import one_basic_block, if_else_blocks
 
-debug = False
-if debug:
+DEBUG = False
+if DEBUG:
     import dis
 
 
@@ -15,7 +15,7 @@ def check_blocks(bb_list: list):
     exit_count = 0
     return_count = 0
     for bb in bb_list:
-        if debug:
+        if DEBUG:
             print(bb)
         if BB_ENTRY in bb.flags:
             entry_count += 1
@@ -34,8 +34,8 @@ def check_blocks(bb_list: list):
 def test_basic():
 
     offset2inst_index = {}
-    for fn in (two_basic_blocks, if_else_blocks):
-        if debug:
+    for fn in (one_basic_block, if_else_blocks):
+        if DEBUG:
             print(fn.__name__)
             dis.dis(fn)
             print()

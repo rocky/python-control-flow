@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023, 2024 by Rocky Bernstein <rb@dustyfeet.com>
 """
   Dominator tree
 
@@ -18,7 +18,7 @@ class DominatorSet(set):
         return f"DominatorSet<{sorted_set}>"
 
 
-class DominatorTree(object):
+class DominatorTree:
     """
     Handles the dominator trees (dominator/post-dominator), and the
     computation of the dominance/post-dominance frontier.
@@ -27,6 +27,7 @@ class DominatorTree(object):
     def __init__(self, cfg, debug=False):
         self.cfg = cfg
         self.debug = debug
+        self.root = cfg.entry_node
         self.build()
 
     def build(self):
@@ -243,7 +244,8 @@ def build_dom_set1(node, do_pdoms, debug=False):
             node.bb.dom_set |= child.bb.dom_set
 
 
-# Note: this has to be done after calling tree
+# Note: this has to be done after calling tree()
+# which builds the dominator tree.
 def dfs_forest(t, do_pdoms):
     """
     Builds data flow graph using Depth-First search.

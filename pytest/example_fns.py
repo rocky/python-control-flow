@@ -1,6 +1,5 @@
-def two_basic_blocks():
-    """An example of code with a two basic blocks. The body of the code
-    and one for execption-branching exit.
+def one_basic_block():
+    """An example of code with a one basic block.
     """
     return 5
 

@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright (c) 2021, 2023 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023-2024 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from xdis import next_offset
 from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
@@ -23,6 +22,7 @@ from control_flow.graph import (
     BB_LOOP,
     BB_NOFOLLOW,
     BB_RETURN,
+    FLAG2NAME,
 )
 
 # The byte code versions we support
@@ -141,7 +141,8 @@ class BasicBlock(object):
         else:
             exception_text = ""
         if len(self.flags) > 0:
-            flag_text = f", flags={sorted(self.flags)}"
+            flag_str = ",".join(FLAG2NAME[flag] for flag in sorted(self.flags))
+            flag_text = ", flags={%s}"% flag_str
         else:
             flag_text = ""
         return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)" % (

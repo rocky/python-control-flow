@@ -1,19 +1,36 @@
-"""Test control_flow.bb: basic blocks and basd-block management"""
+"""Test control_flow.bb: basic blocks and basic-block management"""
+
 from typing import Callable
 from xdis.bytecode import get_instructions_bytes
 from xdis.std import opc
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import write_dot
-from example_fns import two_basic_blocks, if_else_blocks
+from control_flow.graph import BB_ENTRY, write_dot
+from example_fns import one_basic_block, if_else_blocks
 
-debug = True
-if debug:
+DEBUG = True
+if DEBUG:
     import dis
 
 
-def check_cfg(fn: Callable, cfg: ControlFlowGraph):
+def check_cfg(fn: Callable, cfg: ControlFlowGraph, check_dict: dict):
+    """
+    Check validity of congtrol-flow graph `cfg`. Values in `check_dict()`
+    are used to assist.
+    """
     bytecode = fn.__code__.co_code
+
+    # Prefix used in assert failures:
+    prefix = f"In {fn.__name__}:"
+
+    assert cfg.entry_node, f"{prefix} control-flow-graph should have non-null entry"
+    assert (
+        BB_ENTRY in cfg.entry_node.flags
+    ), f"{prefix}: the root should be marked as an entry node"
+
+    assert (
+        len(cfg.blocks) == check_dict["count"]
+    ), f"{prefix} graph should have {check_dict['count']} blocks"
 
     # Check that all get_node returns the correct node
     # for all instruction offsets in bytecode
@@ -42,7 +59,7 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph):
     # asking for each offset above
     assert all(
         (inst.offset in offset2block for inst in get_instructions_bytes(bytecode, opc))
-    )
+    ), (f"{prefix}" "all offsets should be covered by cfg.offset2block")
 
     # Assert offset originally was in offset2block or was added in cache
     assert len(offset2block) == cached_offsets + cache_diff
@@ -51,16 +68,19 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph):
 
 def test_basic():
     offset2inst_index = {}
-    for fn in (two_basic_blocks, if_else_blocks):
-        if debug:
+    for fn, check_dict in (
+        (one_basic_block, {"count": 2}),
+        (if_else_blocks, {"count": 5}),
+    ):
+        if DEBUG:
             print(fn.__name__)
             dis.dis(fn)
             print()
         bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
         cfg = ControlFlowGraph(bb_mgr)
-        if debug:
+        if DEBUG:
             write_dot(fn.__name__, "/tmp/test_cfg-", cfg.graph, write_png=True)
-        check_cfg(fn, cfg)
+        check_cfg(fn, cfg, check_dict)
 
 
 if __name__ == "__main__":
