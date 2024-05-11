@@ -61,6 +61,9 @@ def if_then4(a):
         return 5
     return 6
 
+def if_else_expr(x):
+    """An example "if expr1 else expr2 """
+    return 1 if x else 5
 
 def foo1(a):
     if a:
@@ -168,6 +171,7 @@ def ifelif():
     else:
         x = 4
 
+# control_flow(if_else_expr, graph_options="all")
 # control_flow(ifelif)
 # control_flow(or_and)
 # control_flow(and_or)
@@ -177,11 +181,11 @@ def ifelif():
 # control_flow(if_then1)
 # control_flow(if_then2)
 # control_flow(if_then3)
-control_flow(if_then4, graph_options="all")
+# control_flow(if_then4, graph_options="all")
 # control_flow(five)
 # control_flow(for_break)
 # control_flow(if_else)
-# control_flow(if_vs_and)
+control_flow(if_vs_and, graph_options="all")
 # control_flow(foo)
 # control_flow(foo1)
 # control_flow(foo2)

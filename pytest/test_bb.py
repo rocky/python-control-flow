@@ -1,16 +1,19 @@
-"""Test control_flow.bb: basic blocks and basd-block management"""
-from control_flow.bb import basic_blocks, BB_ENTRY, BB_EXIT, BB_RETURN
-from example_fns import one_basic_block, if_else_blocks
+"""Test control_flow.bb: basic blocks and basic-block management"""
 
-DEBUG = False
+from control_flow.bb import basic_blocks, BB_ENTRY, BB_EXIT, BB_RETURN
+from example_fns import one_basic_block, if_else_expr
+
+DEBUG = True
 if DEBUG:
     import dis
 
 
-def check_blocks(bb_list: list):
+def check_blocks(bb_list: list, fn_name: str):
     assert (
         len(bb_list) >= 2
     ), "minimum basic block in a function is 2: entry and exception exit"
+
+    prefix = f"In {fn_name}:"
     entry_count = 0
     exit_count = 0
     return_count = 0
@@ -28,19 +31,22 @@ def check_blocks(bb_list: list):
         pass
     assert entry_count == 1
     assert exit_count == 1
-    assert return_count >= 1
+    assert (
+        return_count >= 1
+    ), f"{prefix} expecting at least one block to be labeled a return"
 
 
 def test_basic():
 
     offset2inst_index = {}
-    for fn in (one_basic_block, if_else_blocks):
+    for fn in (one_basic_block, if_else_expr):
+        fn_name = fn.__name__
         if DEBUG:
-            print(fn.__name__)
+            print(f"{fn_name}: ")
             dis.dis(fn)
             print()
         bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
-        check_blocks(bb_mgr.bb_list)
+        check_blocks(bb_mgr.bb_list, fn_name)
 
 
 if __name__ == "__main__":

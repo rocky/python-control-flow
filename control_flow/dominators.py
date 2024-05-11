@@ -242,6 +242,10 @@ def build_dom_set1(node, do_pdoms, debug=False):
             node.bb.pdom_set |= child.bb.pdom_set
         else:
             node.bb.dom_set |= child.bb.dom_set
+    # We want only proper/non-trivial dominators, so remove `node` from the
+    # set.
+    node.bb.dom_set.remove(node)
+    return
 
 
 # Note: this has to be done after calling tree()

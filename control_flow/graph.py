@@ -239,11 +239,11 @@ class DiGraph(object):
     def add_node(self, node):
         self.nodes.add(node)
 
-    def to_dot(self, show_exit=False, show_dominator_info=False):
+    def to_dot(self, show_exit=False, is_dominator_format: bool=False):
         from control_flow.dotio import DotConverter
 
         return DotConverter.process(
-            self, show_exit, show_dominator_info=show_dominator_info
+            self, show_exit, is_dominator_format
         )
 
     @staticmethod
@@ -315,7 +315,7 @@ def write_dot(
     graph: Optional[DiGraph],
     write_png: bool = False,
     debug=True,
-    dominator_info_format=False,
+    is_dominator_format: bool=False,
 ):
     """Produce and write dot and png files for control-flow graph `cfg`;
     `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the
@@ -327,7 +327,7 @@ def write_dot(
         return
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
     dot_path = f"{prefix}{path_safe}.dot"
-    open(dot_path, "w").write(graph.to_dot(False, dominator_info_format))
+    open(dot_path, "w").write(graph.to_dot(False, is_dominator_format))
     if debug:
         print(f"{dot_path} written")
     if write_png:

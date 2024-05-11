@@ -42,9 +42,9 @@ class DotConverter(object):
         self.node_ids = {}
 
     @staticmethod
-    def process(graph, show_exit, show_dominator_info):
+    def process(graph, show_exit: bool, is_dominator_format: bool):
         converter = DotConverter(graph)
-        converter.run(show_exit, show_dominator_info)
+        converter.run(show_exit, is_dominator_format)
         return converter.buffer
 
     # See Stackoverflow link below for information on how improve
@@ -259,7 +259,7 @@ class DotConverter(object):
         align = "\\l"
 
         is_exit = False
-        if BB_ENTRY in node.bb.flags:
+        if BB_ENTRY in node.bb.flags or len(node.bb.dom_set) > 0:
             style = '[shape = "box3d"]'
         elif BB_EXIT in node.bb.flags:
             style = '[shape = "diamond"]'
@@ -273,5 +273,6 @@ class DotConverter(object):
             align,
             self.node_repr(node.bb, align, is_exit, is_dominator_format),
             align,
+
         )
         self.buffer += "  block_%d %s%s;\n" % (node.number, style, label)

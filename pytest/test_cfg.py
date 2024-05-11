@@ -1,12 +1,13 @@
-"""Test control_flow.bb: basic blocks and basic-block management"""
+"""Test control_flow.cfg: control-flow graph"""
 
 from typing import Callable
+from xdis import PYTHON_VERSION_TRIPLE
 from xdis.bytecode import get_instructions_bytes
 from xdis.std import opc
 from control_flow.bb import basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.graph import BB_ENTRY, write_dot
-from example_fns import one_basic_block, if_else_blocks
+from example_fns import one_basic_block, if_else_expr
 
 DEBUG = True
 if DEBUG:
@@ -68,9 +69,10 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph, check_dict: dict):
 
 def test_basic():
     offset2inst_index = {}
+    version = ".".join((str(n) for n in PYTHON_VERSION_TRIPLE[:2]))
     for fn, check_dict in (
         (one_basic_block, {"count": 2}),
-        (if_else_blocks, {"count": 5}),
+        (if_else_expr, {"count": 4 if PYTHON_VERSION_TRIPLE[:2] != (3, 11) else 5}),
     ):
         if DEBUG:
             print(fn.__name__)
@@ -79,7 +81,7 @@ def test_basic():
         bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
         cfg = ControlFlowGraph(bb_mgr)
         if DEBUG:
-            write_dot(fn.__name__, "/tmp/test_cfg-", cfg.graph, write_png=True)
+            write_dot(fn.__name__, f"/tmp/test_cfg-{version}-", cfg.graph, write_png=True)
         check_cfg(fn, cfg, check_dict)
 
 

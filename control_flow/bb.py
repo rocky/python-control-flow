@@ -114,10 +114,12 @@ class BasicBlock(object):
         self.predecessors = set()
         self.successors = set()
 
-        # The list of blocks we dominate is empty.
+        # The list of blocks we dominate is empty.  Note: block
+        # dominates itself, but we want only proper, and nontrivial
+        # dominators, i.e.  dominators of *other* blocks.
         self.dom_set = set()
 
-        # Set true if this is dead code, or unreachable.
+        # Set True if this is dead code, or unreachable.
         self.unreachable = False
         self.number = end_bb
         self.edge_count = len(jump_offsets)
@@ -188,6 +190,8 @@ class BBMgr(object):
         if "POP_BLOCK" in opcode.opmap:
             self.POP_BLOCK_INSTRUCTIONS.add(opcode.opmap["POP_BLOCK"])
         self.RETURN_INSTRUCTIONS = set([opcode.opmap["RETURN_VALUE"]])
+        if "RETURN_CONST" in opcode.opmap:
+            self.RETURN_INSTRUCTIONS.add(opcode.opmap["RETURN_CONST"])
 
         # These instructions don't appear in all version of Python
         self.BREAK_INSTRUCTIONS = set()
@@ -519,6 +523,8 @@ def basic_blocks(
             if op in BB.RETURN_INSTRUCTIONS:
                 return_blocks.append(last_block)
             pass
+        elif op in BB.RETURN_INSTRUCTIONS:
+            flags.add(BB_RETURN)
         pass
 
     # If the bytecode comes from Python, then there is possibly an

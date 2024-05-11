@@ -24,7 +24,7 @@ VARIANT = "pypy" if IS_PYPY else None
 
 def control_flow(
     func_or_code,
-    graph_options: str="",
+    graph_options: str = "",
     opc=None,
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
@@ -81,17 +81,25 @@ def control_flow(
                 write_png=True,
             )
 
-        cfg.pdom_tree = dt.tree(True)
-        dfs_forest(cfg.pdom_tree, True)
-        build_dom_set(cfg.pdom_tree, True)
-        if graph_options in ("all", "reverse-domniators"):
+        if graph_options in ("all",):
             write_dot(
                 func_or_code_name,
-                f"/tmp/flow-pdom-{version}-",
-                cfg.pdom_tree,
+                f"/tmp/flow+dom-{version}-",
+                cfg.graph,
                 write_png=True,
-                dominator_info_format=False
+                is_dominator_format=True,
             )
+        # cfg.pdom_tree = dt.tree(True)
+        # dfs_forest(cfg.pdom_tree, True)
+        # build_dom_set(cfg.pdom_tree, True)
+        # if graph_options in ("all", "reverse-domniators"):
+        #     write_dot(
+        #         func_or_code_name,
+        #         f"/tmp/flow-pdom-{version}-",
+        #         cfg.pdom_tree,
+        #         write_png=True,
+        #         dominator_info_format=False
+        #     )
 
         assert cfg.graph
 
@@ -101,17 +109,6 @@ def control_flow(
         )
         for inst in augmented_instrs:
             print(inst.disassemble(opc))
-
-        if graph_options is None:
-            from trepan.api import debug; debug()
-        if graph_options in ("all"):
-            write_dot(
-                func_or_code_name,
-                f"/tmp/flow-with-dom-{version}-",
-                cfg.graph,
-                write_png=True,
-                dominator_info_format=True,
-            )
 
         # return cs_str
     except Exception:
