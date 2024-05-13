@@ -172,7 +172,7 @@ class Node(object):
         )
 
 
-class Edge(object):
+class Edge:
     GLOBAL_COUNTER = 0
 
     def __init__(self, source, dest, kind, data):
@@ -231,7 +231,6 @@ class DiGraph:
         # computed.
         self.max_nesting: int = -1
 
-
     def add_edge(self, edge):
         if edge in self.edges:
             raise Exception("Edge already present")
@@ -244,12 +243,10 @@ class DiGraph:
     def add_node(self, node):
         self.nodes.add(node)
 
-    def to_dot(self, show_exit=False, is_dominator_format: bool=False):
+    def to_dot(self, exit_node, is_dominator_format: bool = False):
         from control_flow.dotio import DotConverter
 
-        return DotConverter.process(
-            self, show_exit, is_dominator_format
-        )
+        return DotConverter.process(self, exit_node, is_dominator_format)
 
     @staticmethod
     def make_node(bb):
@@ -288,7 +285,6 @@ class TreeGraph(DiGraph):
         # computed.
         self.max_nesting: int = -1
 
-
     def add_edge(self, edge):
         if edge in self.edges:
             raise Exception("Edge already present")
@@ -326,19 +322,21 @@ def write_dot(
     graph: Optional[DiGraph],
     write_png: bool = False,
     debug=True,
-    is_dominator_format: bool=False,
+    is_dominator_format: bool = False,
+    exit_node=None,
 ):
-    """Produce and write dot and png files for control-flow graph `cfg`;
-    `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the
-    file prefix to use.
-
-      dot is converted to PNG and dumped if `write_bool` is True.
+    """Produce and write dot and png files for control-flow graph
+    `cfg`; `func_or_code_name` is the func_or_code_name of the
+    code and `prefix` indicates the file prefix to use.
+    dot is converted to PNG and dumped if `write_bool` is True.
     """
+
     if graph is None:
         return
+
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
     dot_path = f"{prefix}{path_safe}.dot"
-    open(dot_path, "w").write(graph.to_dot(False, is_dominator_format))
+    open(dot_path, "w").write(graph.to_dot(exit_node, is_dominator_format))
     if debug:
         print(f"{dot_path} written")
     if write_png:

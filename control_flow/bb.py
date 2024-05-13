@@ -150,7 +150,7 @@ class BasicBlock(object):
             exception_text = ""
         if len(self.flags) > 0:
             flag_str = ",".join(FLAG2NAME[flag] for flag in sorted(self.flags))
-            flag_text = ", flags={%s}"% flag_str
+            flag_text = ", flags={%s}" % flag_str
         else:
             flag_text = ""
         return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)" % (

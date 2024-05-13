@@ -65,7 +65,13 @@ def control_flow(
 
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
-        write_dot(func_or_code_name, f"/tmp/flow-{version}-", cfg.graph, write_png=True)
+        write_dot(
+            func_or_code_name,
+            f"/tmp/flow-{version}-",
+            cfg.graph,
+            write_png=True,
+            exit_node=cfg.exit_node,
+        )
 
     try:
         dt = DominatorTree(cfg, debug.get("dom", False))
@@ -80,6 +86,7 @@ def control_flow(
                 f"/tmp/flow-dom-{version}-",
                 cfg.dom_tree,
                 write_png=True,
+                exit_node=cfg.exit_node,
             )
 
         if graph_options in ("all",):
@@ -89,6 +96,7 @@ def control_flow(
                 cfg.graph,
                 write_png=True,
                 is_dominator_format=True,
+                exit_node=cfg.exit_node,
             )
 
         assert cfg.graph

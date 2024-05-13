@@ -178,7 +178,7 @@ def ifelif():
     else:
         x = 4
 
-# control_flow(if_else_expr, graph_options="all")
+control_flow(if_else_expr, graph_options="all")
 control_flow(ifelif, graph_options="all")
 # control_flow(or_and)
 # control_flow(and_or)
@@ -188,11 +188,11 @@ control_flow(ifelif, graph_options="all")
 # control_flow(if_then1)
 # control_flow(if_then2)
 # control_flow(if_then3)
-# control_flow(if_then4, graph_options="all")
+control_flow(if_then4, graph_options="all")
 # control_flow(five)
 control_flow(for_break, graph_options="all")
 # control_flow(if_else)
-# control_flow(if_vs_and, graph_options="all")
+control_flow(if_vs_and, graph_options="all")
 # control_flow(foo)
 # control_flow(foo1)
 # control_flow(foo2)

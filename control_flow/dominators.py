@@ -108,13 +108,13 @@ class DominatorTree:
                 # Sorting also gives deterministic results.
                 predecessors = sorted(
                     [
-                     p
-                     for p in b.predecessors
-                     if post_order_number.get(p, -1) > post_order_number[b]
-                            ],
+                        p
+                        for p in b.predecessors
+                        if post_order_number.get(p, -1) > post_order_number[b]
+                    ],
                     key=lambda p: p.number,
                     reverse=True,
-                    )
+                )
 
                 # If no predecessors, then nothing to do here.
                 if len(predecessors) == 0:
@@ -135,16 +135,14 @@ class DominatorTree:
                     if b in doms:
                         b_number = doms[b].number
                         new_idom_number = new_idom.number
-                        do_update = (
-                            b_number > new_idom_number
-                        )
+                        do_update = b_number > new_idom_number
                     else:
                         do_update = True
                     if do_update:
                         if self.debug:
                             name = "reverse dominator" if post_dom else "dominator"
                             print(
-                              f"{name}[{b.number}] is "
+                                f"{name}[{b.number}] is "
                                 "{None if new_idom is None else new_idom.number}"
                             )
 

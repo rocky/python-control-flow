@@ -80,6 +80,7 @@ class Walker(object):
 # Recursive version of the post-order DFS, should only be used
 # when computing dominators on smallish CFGs
 
+
 # FIXME: This assumes the graph is strongly connected.
 # handle if it is a not.
 def dfs_postorder_nodes(root):
