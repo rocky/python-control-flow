@@ -121,6 +121,13 @@ def for_break():
             continue
 
 
+def try_except():
+    try:
+        a = 1
+    except:
+        a = 2
+    return a
+
 def try_finally():
     try:
         x = 1
@@ -172,7 +179,7 @@ def ifelif():
         x = 4
 
 # control_flow(if_else_expr, graph_options="all")
-# control_flow(ifelif)
+control_flow(ifelif, graph_options="all")
 # control_flow(or_and)
 # control_flow(and_or)
 # control_flow(err)
@@ -183,9 +190,9 @@ def ifelif():
 # control_flow(if_then3)
 # control_flow(if_then4, graph_options="all")
 # control_flow(five)
-# control_flow(for_break)
+control_flow(for_break, graph_options="all")
 # control_flow(if_else)
-control_flow(if_vs_and, graph_options="all")
+# control_flow(if_vs_and, graph_options="all")
 # control_flow(foo)
 # control_flow(foo1)
 # control_flow(foo2)
@@ -194,5 +201,6 @@ control_flow(if_vs_and, graph_options="all")
 # control_flow(while_else)
 # control_flow(while_if)
 # control_flow(while_true_break)
+control_flow(try_except, graph_options="all")
 # control_flow(try_finally)
 # control_flow(try_no_finally)

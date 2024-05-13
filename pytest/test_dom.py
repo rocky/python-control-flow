@@ -65,8 +65,8 @@ def test_basic():
         if DEBUG:
             write_dot(name, f"/tmp/test_dom-{version}-", cfg.graph, write_png=True)
         dom_tree = DominatorTree(cfg)
-        cfg.dom_tree = dom_tree.tree(False)
-        dfs_forest(cfg.dom_tree, False)
+        cfg.dom_tree = dom_tree.build_dom_tree()
+        dfs_forest(cfg.dom_tree)
         build_dom_set(cfg.dom_tree, False)
         write_dot(name, f"/tmp/test_dom-dom-{version}-", cfg.dom_tree, write_png=True)
         check_dom(dom_tree, check_dict, fn.__name__)

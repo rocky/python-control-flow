@@ -33,7 +33,14 @@ class ControlFlowGraph:
         self.graph = None
         self.entry_node = None
         self.exit_node = bb_mgr.exit_block
+
+        #
         self.dom_tree: Optional[TreeGraph] = None
+        # Maximum nesting in control flow grapy. -1 means this hasn't been
+        # computed. It is computed when self.dom_tree is computed and also is
+        # stored in there.
+        self.max_nesting_depth: int = -1
+
         self.analyze(self.blocks, bb_mgr.exit_block)
 
     def analyze(self, blocks, exit_block):

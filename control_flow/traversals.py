@@ -82,7 +82,7 @@ class Walker(object):
 
 # FIXME: This assumes the graph is strongly connected.
 # handle if it is a not.
-def dfs_postorder_nodes(graph, root, post_dom):
+def dfs_postorder_nodes(root):
     import sys
 
     sys.setrecursionlimit(5000)
@@ -90,7 +90,7 @@ def dfs_postorder_nodes(graph, root, post_dom):
 
     def _dfs(node, _visited):
         _visited.add(node)
-        successors = node.predecessors if post_dom else node.successors
+        successors = node.successors
         for dest_node in successors:
             if dest_node not in _visited:
                 for child in _dfs(dest_node, _visited):

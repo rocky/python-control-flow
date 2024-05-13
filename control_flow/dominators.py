@@ -28,6 +28,7 @@ class DominatorTree:
         self.cfg = cfg
         self.debug = debug
         self.root = cfg.entry_node
+        self.max_nesting_depth = -1
         self.build()
 
     def build(self):
@@ -37,22 +38,17 @@ class DominatorTree:
         self.doms = {}  # map of node to its dominator
         self.df = {}  # dominator frontier
 
-        self.build_dominators(graph, entry)
+        self.build_dominators(entry)
 
-        self.pdoms = {}  # map of node to its post-dominator
-        entry = self.cfg.exit_node
-        self.build_dominators(graph, entry, post_dom=True)
-
-    def build_dominators(self, graph, entry, post_dom=False):
+    def build_dominators(self, entry):
         """
         Builds the dominator tree based on:
           http://www.cs.rice.edu/~keith/Embed/dom.pdf
 
-        Also used to build the post-dominator tree.
         """
-        doms = self.doms if not post_dom else self.pdoms
+        doms = self.doms
         doms[entry] = entry
-        post_order = dfs_postorder_nodes(graph, entry, post_dom)
+        post_order = dfs_postorder_nodes(entry)
 
         post_order_number = {}
         for i, n in enumerate(post_order):
@@ -110,26 +106,14 @@ class DominatorTree:
                 # For post dominators  it is the number that is closest
                 # and greater than b.number.
                 # Sorting also gives deterministic results.
-                if post_dom:
-                    n = len(b.predecessors)
-                    predecessors = sorted(
-                        [
-                            p
-                            for p in b.predecessors
-                            if post_order_number.get(p, n) < post_order_number[b]
-                        ],
-                        key=lambda p: p.number,
-                        reverse=False,
-                    )
-                else:
-                    predecessors = sorted(
-                        [
-                            p
-                            for p in b.predecessors
-                            if post_order_number.get(p, -1) > post_order_number[b]
-                        ],
-                        key=lambda p: p.number,
-                        reverse=True,
+                predecessors = sorted(
+                    [
+                     p
+                     for p in b.predecessors
+                     if post_order_number.get(p, -1) > post_order_number[b]
+                            ],
+                    key=lambda p: p.number,
+                    reverse=True,
                     )
 
                 # If no predecessors, then nothing to do here.
@@ -152,9 +136,7 @@ class DominatorTree:
                         b_number = doms[b].number
                         new_idom_number = new_idom.number
                         do_update = (
-                            new_idom_number > b_number
-                            if post_dom
-                            else b_number > new_idom_number
+                            b_number > new_idom_number
                         )
                     else:
                         do_update = True
@@ -174,21 +156,16 @@ class DominatorTree:
             pass
         return
 
-    def tree(self, do_pdoms=False):
-        """Makes the dominator tree"""
+    def build_dom_tree(self) -> TreeGraph:
+        """Computes and return a dominator tree"""
         t_nodes = {}
 
         # We sort dominators to give deterministic results.
-        if do_pdoms:
-            edge_type = "pdom-edge"
-            doms_list = sorted(self.pdoms, key=lambda x: x.number, reverse=False)
-            doms = self.pdoms
-        else:
-            edge_type = "dom-edge"
-            doms_list = sorted(self.doms, key=lambda x: x.number, reverse=True)
-            doms = self.doms
+        edge_type = "dom-edge"
+        doms_list = sorted(self.doms, key=lambda x: x.number, reverse=True)
+        doms = self.doms
 
-        root = self.cfg.entry_node if do_pdoms else self.cfg.exit_node
+        root = self.cfg.entry_node
         t = TreeGraph(root)
 
         for node in doms_list:
@@ -216,81 +193,83 @@ class DominatorTree:
         return start_block in end_block.doms
 
 
-def build_dom_set(t, do_pdoms, debug=False):
+def build_dom_set(t, debug=False):
     """Makes the dominator set for each node in the tree"""
     seen = DominatorSet()
     for node in t.nodes:
         if node not in seen:
             seen.add(node)
-            build_dom_set1(node, do_pdoms, debug)
+            build_dom_set1(node, debug)
             pass
         pass
 
 
-def build_dom_set1(node, do_pdoms, debug=False):
+def build_dom_set1(node, debug=False):
     """Build dominator sets from dominator node"""
 
-    if do_pdoms:
-        node.bb.pdom_set = DominatorSet(node.bb.pdoms)
-    else:
-        node.bb.dom_set = DominatorSet(node.bb.doms)
-        pass
+    node.bb.dom_set = DominatorSet(node.bb.doms)
 
     for child in node.children:
-        build_dom_set1(child, do_pdoms, debug)
-        if do_pdoms:
-            node.bb.pdom_set |= child.bb.pdom_set
-        else:
-            node.bb.dom_set |= child.bb.dom_set
+        build_dom_set1(child, debug)
+        node.bb.dom_set |= child.bb.dom_set
     # We want only proper/non-trivial dominators, so remove `node` from the
     # set.
     node.bb.dom_set.remove(node)
     return
 
 
-# Note: this has to be done after calling tree()
+# Note: this has to be done after calling build_dom_tree()
 # which builds the dominator tree.
-def dfs_forest(t, do_pdoms):
+def dfs_forest(t):
     """
     Builds data flow graph using Depth-First search.
     """
 
-    def dfs(seen, node, do_pdoms):
+    def dfs(seen, node, nesting_depth: int):
+        # print("XXX", node, nesting_depth)
         if node in seen:
             return
+        if nesting_depth > t.max_nesting:
+            t.max_nesting = nesting_depth
+        node.bb.nesting_depth = nesting_depth
         seen.add(node)
-        if do_pdoms:
-            node.bb.pdoms = node.pdoms = DominatorSet([node])
-        else:
-            node.bb.doms = node.doms = DominatorSet([node])
-            node.bb.reach_offset = node.reach_offset = node.bb.end_offset
-            # print(f"XXX1: {node.bb} reach_offset set to {node.bb.end_offset}")
+        node.bb.doms = node.doms = DominatorSet([node])
+        node.bb.reach_offset = node.reach_offset = node.bb.end_offset
+        # print(f"XXX1: {node.bb} reach_offset set to {node.bb.end_offset}")
 
         for n in node.children:
-            dfs(seen, n, do_pdoms)
-            if do_pdoms:
-                node.pdoms |= n.pdoms
-                node.bb.pdoms |= node.pdoms
-            else:
-                node.doms |= n.doms
-                node.bb.doms |= node.doms
-                if node.reach_offset < n.reach_offset:
-                    # print(f"XXX1: {node.bb} reach_offset set to {n.reach_offset}")
-                    node.bb.reach_offset = node.reach_offset = n.reach_offset
-                    pass
+            dfs(seen, n, nesting_depth + 1)
+            node.doms |= n.doms
+            node.bb.doms |= node.doms
+            if node.reach_offset < n.reach_offset:
+                # print(f"XXX1: {node.bb} reach_offset set to {n.reach_offset}")
+                node.bb.reach_offset = node.reach_offset = n.reach_offset
                 pass
+            pass
         # print("node %d has children %s" %
         #       (node.number, [n.number for n in node.children]))
 
     seen = set([])
     for node in t.nodes:
+        if node.bb == t.root:
+            root_node = node
+            break
+    else:
+        raise RuntimeError("Root node not found in dominator tree")
+
+    dfs(seen, root_node, 0)
+
+    for node in t.nodes:
         if node not in seen:
-            dfs(seen, node, do_pdoms)
+            dfs(seen, node.bb, 0)
     return
 
 
-def dominates(bb1: BasicBlock, bb2: BasicBlock) -> bool:
+def dominates(bb1: BasicBlock, bb2: BasicBlock, proper=True) -> bool:
     """Return true if bb1 dominates bb2. In other words,
     bb2 is in bb1's dominator set.
     """
-    return bb2 in bb1.dom_set
+    if proper:
+        return bb2 in bb1.dom_set
+    else:
+        return bb2 == bb1 or bb2 in bb1.dom_set

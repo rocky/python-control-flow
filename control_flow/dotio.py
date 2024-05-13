@@ -7,6 +7,7 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
+from typing import Final, Tuple
 from control_flow.graph import (
     DiGraph,
     BB_ENTRY,
@@ -18,7 +19,7 @@ from control_flow.graph import (
     format_flags_with_width,
 )
 
-DOT_STYLE = """
+DOT_STYLE: Final = """
   graph[fontsize=10 fontname="DejaVu Sans Mono"];
 
   mclimit=1.5;
@@ -30,8 +31,23 @@ DOT_STYLE = """
   edge[fontsize=10 fontname="Verdana"];
 """
 
-flags_prefix = "flags="
-FEL = len(flags_prefix)
+BB_LEVEL_BACKGROUNDS = (
+    {"name": "DodgerBlue4", "hex": "#104e8b", "bg": "white"},
+    {"name": "DodgerBlue3", "hex": "#1874cd", "bg": "white"},
+    {"name": "DodgerBlue2", "hex": "#1c86ee", "bg": "white"},
+    {"name": "DodgerBlue1", "hex": "#1e90ff", "bg": "white"},
+    {"name": "SteelBlue2", "hex": "#5cacee", "bg": "black"},
+    {"name": "SteelBlue1", "hex": "#63b8ff", "bg": "black"},
+    {"name": "LightSteelBlue3", "hex": "#a2b5cd", "bg": "black"},
+    {"name": "LightSteelBlue2", "hex": "#bcd2ee", "bg": "black"},
+    # {"name": "SlateGray2", "hex": "#b9d3ee", "bg": "black"},
+    {"name": "LightSteelBlue1", "hex": "#cae1ff", "bg": "black"},
+)
+
+MAX_COLOR_LEVELS: Final = len(BB_LEVEL_BACKGROUNDS) - 1
+
+flags_prefix: Final = "flags="
+FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
 
 
@@ -40,6 +56,17 @@ class DotConverter(object):
         self.g = graph
         self.buffer = ""
         self.node_ids = {}
+
+    def get_node_colors(self, nesting_depth: int) -> Tuple[str, str]:
+        if self.g.max_nesting < 0 or nesting_depth == -1:
+            return "white", "black"
+        if nesting_depth  <= MAX_COLOR_LEVELS:
+            color_info = BB_LEVEL_BACKGROUNDS[- (nesting_depth + 1)]
+        else:
+            level_index = round(1.0 / (nesting_depth * (self.g.max_nesting+1)) * MAX_COLOR_LEVELS)
+            color_info = BB_LEVEL_BACKGROUNDS[level_index]
+
+        return color_info["hex"], color_info["bg"]
 
     @staticmethod
     def process(graph, show_exit: bool, is_dominator_format: bool):
@@ -214,8 +241,7 @@ class DotConverter(object):
             edge_port,
         )
 
-    @staticmethod
-    def node_repr(node, align, is_exit, is_dominator_format: bool):
+    def node_repr(self, node, align, is_exit, is_dominator_format: bool):
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
@@ -229,7 +255,9 @@ class DotConverter(object):
                     align,
                     flags_prefix,
                     format_flags_with_width(
-                        node.flags, NODE_TEXT_WIDTH - FEL, align + (" " * (len("flags=")))
+                        node.flags,
+                        NODE_TEXT_WIDTH - FEL,
+                        align + (" " * (len("flags="))),
                     ),
                 )
             else:
@@ -238,6 +266,8 @@ class DotConverter(object):
 
             if hasattr(node, "reach_offset"):
                 reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
+                pass
+            pass
 
         if is_exit:
             return "flags=exit"
@@ -268,11 +298,19 @@ class DotConverter(object):
         elif not node.bb.predecessors:
             style = '[style = "dashed"]'
             pass
-        label = '[label="Basic Block %d%s%s%s"]' % (
+
+        if is_dominator_format:
+            fillcolor, fontcolor = self.get_node_colors(node.bb.nesting_depth)
+            # print("XXX", node.bb, node.bb.nesting_depth, fillcolor, fontcolor)
+            style +=f'[fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
+
+        level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""
+
+        label = '[label="Basic Block %d%s%s%s%s"]' % (
             node.number,
+            level,
             align,
             self.node_repr(node.bb, align, is_exit, is_dominator_format),
             align,
-
         )
         self.buffer += "  block_%d %s%s;\n" % (node.number, style, label)

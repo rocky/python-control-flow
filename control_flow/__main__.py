@@ -70,9 +70,10 @@ def control_flow(
     try:
         dt = DominatorTree(cfg, debug.get("dom", False))
 
-        cfg.dom_tree = dt.tree(False)
-        dfs_forest(cfg.dom_tree, False)
-        build_dom_set(cfg.dom_tree, False, debug.get("dom", False))
+        cfg.dom_tree = dt.build_dom_tree()
+        dfs_forest(cfg.dom_tree)
+        cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_tree.max_nesting
+        build_dom_set(cfg.dom_tree, debug.get("dom", False))
         if graph_options in ("all", "dominators"):
             write_dot(
                 func_or_code_name,
@@ -89,17 +90,6 @@ def control_flow(
                 write_png=True,
                 is_dominator_format=True,
             )
-        # cfg.pdom_tree = dt.tree(True)
-        # dfs_forest(cfg.pdom_tree, True)
-        # build_dom_set(cfg.pdom_tree, True)
-        # if graph_options in ("all", "reverse-domniators"):
-        #     write_dot(
-        #         func_or_code_name,
-        #         f"/tmp/flow-pdom-{version}-",
-        #         cfg.pdom_tree,
-        #         write_png=True,
-        #         dominator_info_format=False
-        #     )
 
         assert cfg.graph
 

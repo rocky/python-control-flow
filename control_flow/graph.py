@@ -216,7 +216,7 @@ class Edge(object):
         )
 
 
-class DiGraph(object):
+class DiGraph:
     """
     A simple directed-graph structure.
     """
@@ -226,6 +226,11 @@ class DiGraph(object):
         Edge.reset()
         self.nodes = set()
         self.edges = set()
+
+        # Maximum nesting of graph. -1 means this hasn't been
+        # computed.
+        self.max_nesting: int = -1
+
 
     def add_edge(self, edge):
         if edge in self.edges:
@@ -272,11 +277,17 @@ class TreeGraph(DiGraph):
     """
 
     def __init__(self, root):
-        Node.reset()
         Edge.reset()
-        self.root = root
-        self.nodes = []
+        Node.reset()
         self.edges = set()
+        self.nodes = []
+        self.root = root
+        self.root_node = None
+
+        # Maximum nesting of graph. -1 means this hasn't been
+        # computed.
+        self.max_nesting: int = -1
+
 
     def add_edge(self, edge):
         if edge in self.edges:
