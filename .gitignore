@@ -4,6 +4,7 @@
 /.pre-commit-config.yaml
 /.python-version
 /__pycache__
+/admin-tools/.python-version
 /build
 /control_flow.egg-info
 /dist

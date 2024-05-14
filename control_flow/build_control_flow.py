@@ -53,6 +53,7 @@ def build_and_analyze_control_flow(
     #     print("\t", bb)
 
     cfg = ControlFlowGraph(bb_mgr)
+    assert cfg.graph is not None, "Failed to build graph"
 
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
@@ -73,7 +74,7 @@ def build_and_analyze_control_flow(
         build_dom_set(cfg.dom_tree, debug.get("dom", False))
 
         # FIXME
-        # compue "join" edges
+        # classify "join" nodes and edges
 
         if graph_options in ("all", "dominators"):
             write_dot(
@@ -110,3 +111,11 @@ def build_and_analyze_control_flow(
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
         print(f"{func_or_code_name} had an error")
+
+def classify_join_nodes_and_edges(cfg: ControlFlowGraph):
+    """
+    Classify basic blocks as whether the first instruction
+    is a join instructions, also mark join edges.
+    """
+    assert cfg
+    return
