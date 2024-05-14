@@ -172,10 +172,18 @@ class Node:
         return not self == obj
 
     def __repr__(self):
+
         return "Node%d(flags=%s, bb=%s)" % (
             self.number,
             repr(self.flags),
             repr(self.bb),
+        )
+
+    def __str__(self):
+        return "Node%d(flags=%s, bb=%s)" % (
+            self.number,
+            repr(self.flags),
+            str(self.bb),
         )
 
 
@@ -209,6 +217,15 @@ class Edge:
 
     def __hash__(self):
         return hash("edge-" + str(self.id))
+
+    def __str__(self):
+        return "Edge%d(source=%s, dest=%s, kind=%s, data=%s)" % (
+            self.id,
+            self.source,
+            self.dest,
+            str(self.kind),
+            str(self.data),
+        )
 
     def __repr__(self):
         return "Edge%d(source=%s, dest=%s, kind=%s, data=%s)" % (
@@ -272,7 +289,6 @@ class DiGraph:
         for edge in self.edges:
             edge.source.out_edges.add(edge)
             edge.dest.in_edges.add(edge)
-
 
     @staticmethod
     def make_node(bb):

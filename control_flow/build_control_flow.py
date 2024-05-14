@@ -7,7 +7,7 @@ from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
 from control_flow.augment_disasm import augment_instructions
-from control_flow.bb import BB_JUMP_UNCONDITIONAL, basic_blocks
+from control_flow.bb import BB_JUMP_UNCONDITIONAL, BB_NOFOLLOW, basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, build_dom_set, dfs_forest
 from control_flow.graph import write_dot
@@ -128,11 +128,18 @@ def classify_join_nodes_and_edges(cfg: ControlFlowGraph):
         for edge in node.in_edges:
             source_nesting_depth = edge.source.bb.nesting_depth
             assert source_nesting_depth >= 0
-            if source_nesting_depth >= node_nesting_depth and edge.kind not in (
-                "self-loop",
-                "looping",
-            ) and BB_JUMP_UNCONDITIONAL not in edge.source.flags:
-                print(f"WOOT: join node {node}")
+            if (
+                source_nesting_depth >= node_nesting_depth
+                and edge.kind
+                not in (
+                    "self-loop",
+                    "looping",
+                )
+                and not (
+                    edge.source.flags & {BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL}
+                )
+            ):
+                print(f"WOOT: join {edge}")
                 node.is_join_node = True
                 edge.is_join = True
         if node.is_join_node is not True:

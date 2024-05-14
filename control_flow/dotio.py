@@ -125,7 +125,6 @@ class DotConverter(object):
         if exit_node is not None and BB_EXIT in edge.dest.bb.flags:
             return
 
-        color = '[color="blue"]' if edge.is_conditional_jump() else ""
         style = ""
         edge_port = ""
         source_port = ""
@@ -136,6 +135,8 @@ class DotConverter(object):
             arrow_color = ":brown;0.01"
         else:
             arrow_color = ""
+
+        color = f'[color="blue:{arrow_color}"]' if edge.is_conditional_jump() else ""
 
         if edge.kind in (
             "fallthrough",
@@ -216,8 +217,6 @@ class DotConverter(object):
                 pass
         elif BB_NOFOLLOW in edge.source.flags:
             style = '[style="dashed"] [arrowhead="none"]'
-            if edge.is_join:
-                style += ' [color="brown"]'
             weight = 10
 
         if style == "" and edge.source.bb.unreachable:

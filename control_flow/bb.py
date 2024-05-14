@@ -163,6 +163,22 @@ class BasicBlock(object):
             exception_text,
         )
 
+    def __str__(self):
+        if len(self.jump_offsets) > 0:
+            jump_text = f", jumps={sorted(self.jump_offsets)}"
+        else:
+            jump_text = ""
+        if len(self.exception_offsets) > 0:
+            exception_text = f", exceptions={sorted(self.exception_offsets)}"
+        else:
+            exception_text = ""
+        return "BasicBlock(#%d range: %s, %s%s)" % (
+            self.number,
+            self.index,
+            jump_text,
+            exception_text,
+        )
+
     # Define "<" so we can compare and sort basic blocks.
     # Define 0 (the exit block) as the largest/last block
     def __lt__(self, other):
