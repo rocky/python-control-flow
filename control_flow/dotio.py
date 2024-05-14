@@ -7,6 +7,8 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
+from typing import Final, Optional, Tuple
+from control_flow.bb import BasicBlock
 from control_flow.graph import (
     DiGraph,
     BB_ENTRY,
@@ -15,10 +17,11 @@ from control_flow.graph import (
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_NOFOLLOW,
+    Node,
     format_flags_with_width,
 )
 
-DOT_STYLE = """
+DOT_STYLE: Final = """
   graph[fontsize=10 fontname="DejaVu Sans Mono"];
 
   mclimit=1.5;
@@ -30,26 +33,56 @@ DOT_STYLE = """
   edge[fontsize=10 fontname="Verdana"];
 """
 
-flags_prefix = "flags="
-FEL = len(flags_prefix)
+BB_LEVEL_BACKGROUNDS = (
+    {"name": "DodgerBlue4", "hex": "#104e8b", "bg": "white"},
+    {"name": "DodgerBlue3", "hex": "#1874cd", "bg": "white"},
+    {"name": "DodgerBlue2", "hex": "#1c86ee", "bg": "white"},
+    {"name": "DodgerBlue1", "hex": "#1e90ff", "bg": "white"},
+    {"name": "SteelBlue2", "hex": "#5cacee", "bg": "black"},
+    {"name": "SteelBlue1", "hex": "#63b8ff", "bg": "black"},
+    {"name": "LightSteelBlue3", "hex": "#a2b5cd", "bg": "black"},
+    {"name": "LightSteelBlue2", "hex": "#bcd2ee", "bg": "black"},
+    # {"name": "SlateGray2", "hex": "#b9d3ee", "bg": "black"},
+    {"name": "LightSteelBlue1", "hex": "#cae1ff", "bg": "black"},
+)
+
+MAX_COLOR_LEVELS: Final = len(BB_LEVEL_BACKGROUNDS) - 1
+
+flags_prefix: Final = "flags="
+FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
 
 
 class DotConverter(object):
-    def __init__(self, graph):
+    def __init__(self, graph, exit_node: Optional[Node] = None):
         self.g = graph
+        self.exit_node = graph
         self.buffer = ""
+        # from trepan.api import debug; debug()
         self.node_ids = {}
 
+    def get_node_colors(self, nesting_depth: int) -> Tuple[str, str]:
+        if self.g.max_nesting < 0 or nesting_depth == -1:
+            return "white", "black"
+        if nesting_depth <= MAX_COLOR_LEVELS:
+            color_info = BB_LEVEL_BACKGROUNDS[-(nesting_depth + 1)]
+        else:
+            level_index = round(
+                1.0 / (nesting_depth * (self.g.max_nesting + 1)) * MAX_COLOR_LEVELS
+            )
+            color_info = BB_LEVEL_BACKGROUNDS[level_index]
+
+        return color_info["hex"], color_info["bg"]
+
     @staticmethod
-    def process(graph, show_exit: bool, is_dominator_format: bool):
-        converter = DotConverter(graph)
-        converter.run(show_exit, is_dominator_format)
+    def process(graph, exit_node: Optional[BasicBlock], is_dominator_format: bool):
+        converter = DotConverter(graph, exit_node)
+        converter.run(exit_node, is_dominator_format)
         return converter.buffer
 
     # See Stackoverflow link below for information on how improve
     # layout of graph. It's a mess and not very well understood.
-    def run(self, show_exit: bool, is_dominator_format: bool):
+    def run(self, exit_node: BasicBlock, is_dominator_format: bool):
         self.buffer += "digraph G {"
         self.buffer += DOT_STYLE
 
@@ -57,7 +90,7 @@ class DotConverter(object):
             self.buffer += "\n  # basic blocks:\n"
             for node in sorted(self.g.nodes, key=lambda n: n.number):
                 self.node_ids[node] = "block_%d" % node.number
-                self.add_node(node, show_exit, is_dominator_format)
+                self.add_node(node, exit_node, is_dominator_format)
 
             self.buffer += """
   # Edges should be ordered from innermost block edges to outmost.
@@ -77,12 +110,12 @@ class DotConverter(object):
                 key=lambda n: (n.source.number, -n.dest.number),
             ):
                 edge_pair = (edge.source.number, edge.dest.number)
-                self.add_edge(edge, show_exit, edge_pair in seen_edge)
+                self.add_edge(edge, exit_node, edge_pair in seen_edge)
                 seen_edge.add(edge_pair)
 
         self.buffer += "}\n"
 
-    def add_edge(self, edge, show_exit, edge_seen):
+    def add_edge(self, edge, exit_node: BasicBlock, edge_seen):
         # labels = ''
         # if edge.flags is not None:
         #   bb = '' if edge.bb is None else str(edge.bb)
@@ -90,7 +123,7 @@ class DotConverter(object):
 
         # color="black:invis:black"]
 
-        if not show_exit and BB_EXIT in edge.dest.bb.flags:
+        if exit_node is not None and BB_EXIT in edge.dest.bb.flags:
             return
 
         color = '[color="blue"]' if edge.is_conditional_jump() else ""
@@ -99,6 +132,11 @@ class DotConverter(object):
         source_port = ""
         dest_port = ""
         weight = 1
+
+        if edge.is_join:
+            arrow_color = ":brown;0.01"
+        else:
+            arrow_color = ""
 
         if edge.kind in (
             "fallthrough",
@@ -214,8 +252,7 @@ class DotConverter(object):
             edge_port,
         )
 
-    @staticmethod
-    def node_repr(node, align, is_exit, is_dominator_format: bool):
+    def node_repr(self, node, align, is_exit, is_dominator_format: bool):
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
@@ -229,7 +266,9 @@ class DotConverter(object):
                     align,
                     flags_prefix,
                     format_flags_with_width(
-                        node.flags, NODE_TEXT_WIDTH - FEL, align + (" " * (len("flags=")))
+                        node.flags,
+                        NODE_TEXT_WIDTH - FEL,
+                        align + (" " * (len("flags="))),
                     ),
                 )
             else:
@@ -238,6 +277,8 @@ class DotConverter(object):
 
             if hasattr(node, "reach_offset"):
                 reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
+                pass
+            pass
 
         if is_exit:
             return "flags=exit"
@@ -249,9 +290,11 @@ class DotConverter(object):
 
         return f"{offset_text}{flag_text}{jump_text}{reach_offset_text}"
 
-    def add_node(self, node, show_exit: bool, is_dominator_format: bool):
+    def add_node(
+        self, node, exit_node: Optional[BasicBlock], is_dominator_format: bool
+    ):
 
-        if not show_exit and BB_EXIT in node.bb.flags:
+        if exit_node is not None and BB_EXIT in node.bb.flags:
             return
 
         label = ""
@@ -259,7 +302,10 @@ class DotConverter(object):
         align = "\\l"
 
         is_exit = False
-        if BB_ENTRY in node.bb.flags or len(node.bb.dom_set) > 0:
+        dom_set_len = len(node.bb.dom_set)
+        if exit_node in {node.bb for node in node.bb.dom_set}:
+            dom_set_len -= 1
+        if BB_ENTRY in node.bb.flags or dom_set_len > 0:
             style = '[shape = "box3d"]'
         elif BB_EXIT in node.bb.flags:
             style = '[shape = "diamond"]'
@@ -268,11 +314,19 @@ class DotConverter(object):
         elif not node.bb.predecessors:
             style = '[style = "dashed"]'
             pass
-        label = '[label="Basic Block %d%s%s%s"]' % (
+
+        if is_dominator_format:
+            fillcolor, fontcolor = self.get_node_colors(node.bb.nesting_depth)
+            # print("XXX", node.bb, node.bb.nesting_depth, fillcolor, fontcolor)
+            style += f'[fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
+
+        level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""
+
+        label = '[label="Basic Block %d%s%s%s%s"]' % (
             node.number,
+            level,
             align,
             self.node_repr(node.bb, align, is_exit, is_dominator_format),
             align,
-
         )
         self.buffer += "  block_%d %s%s;\n" % (node.number, style, label)

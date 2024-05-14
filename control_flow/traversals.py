@@ -3,9 +3,9 @@
   equip.analysis.graph.traversals
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  DFS/BFS and some other utils
+  DFS and some other utils
 
-  :copyright: (c) 2018 by Rocky Bernstein
+  :copyright: (c) 2018, 2024 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
   :license: Apache 2, see LICENSE for more details.
 """
@@ -13,7 +13,7 @@
 from control_flow.graph import Edge
 
 
-class EdgeVisitor(object):
+class EdgeVisitor:
     def __init__(self):
         pass
 
@@ -21,7 +21,7 @@ class EdgeVisitor(object):
         pass
 
 
-class Walker(object):
+class Walker:
     """
     Traverses edges in the graph in DFS.
     """
@@ -29,7 +29,7 @@ class Walker(object):
     def __init__(self, graph, visitor):
         self._graph = graph
         self._visitor = visitor
-        self.worklist = None
+        self.worklist: list = []
 
     @property
     def graph(self):
@@ -49,7 +49,7 @@ class Walker(object):
         return
 
     def traverse(self, root):
-        self.worklist = []
+        self.worklist: list = []
         self.__run(root)
         return
 
@@ -80,9 +80,10 @@ class Walker(object):
 # Recursive version of the post-order DFS, should only be used
 # when computing dominators on smallish CFGs
 
+
 # FIXME: This assumes the graph is strongly connected.
 # handle if it is a not.
-def dfs_postorder_nodes(graph, root, post_dom):
+def dfs_postorder_nodes(root):
     import sys
 
     sys.setrecursionlimit(5000)
@@ -90,7 +91,7 @@ def dfs_postorder_nodes(graph, root, post_dom):
 
     def _dfs(node, _visited):
         _visited.add(node)
-        successors = node.predecessors if post_dom else node.successors
+        successors = node.successors
         for dest_node in successors:
             if dest_node not in _visited:
                 for child in _dfs(dest_node, _visited):

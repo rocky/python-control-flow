@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.__main__ import control_flow
+from control_flow.__main__ import build_and_analyze_control_flow
 from glob import glob
 
 
@@ -30,7 +30,7 @@ for filename in files:
 
     short = osp.basename(filename)[0:-3]
 
-    control_flow(testing, graph_options="", func_or_code_name=short)  # NOQA
+    build_and_analyze_control_flow(testing, graph_options="all", func_or_code_name=short)  # NOQA
     # cs.strip()
     # got = cs.strip()
     # want = expect().strip()  # NOQA

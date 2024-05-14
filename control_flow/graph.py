@@ -172,7 +172,7 @@ class Node(object):
         )
 
 
-class Edge(object):
+class Edge:
     GLOBAL_COUNTER = 0
 
     def __init__(self, source, dest, kind, data):
@@ -183,6 +183,12 @@ class Edge(object):
         self.kind = kind
         self.flags = set()
         self.data = data
+
+        # True edge is a "join" edge. Note that a "join" edge
+        # can be an implicit fallthrough edge.
+        # Join edges are a non-loop edges where the source
+        # node's nesting depth jumps to a target of lesser depth.
+        self.is_join = False
 
     @classmethod
     def reset(self):
@@ -216,7 +222,7 @@ class Edge(object):
         )
 
 
-class DiGraph(object):
+class DiGraph:
     """
     A simple directed-graph structure.
     """
@@ -226,6 +232,10 @@ class DiGraph(object):
         Edge.reset()
         self.nodes = set()
         self.edges = set()
+
+        # Maximum nesting of graph. -1 means this hasn't been
+        # computed.
+        self.max_nesting: int = -1
 
     def add_edge(self, edge):
         if edge in self.edges:
@@ -239,12 +249,10 @@ class DiGraph(object):
     def add_node(self, node):
         self.nodes.add(node)
 
-    def to_dot(self, show_exit=False, is_dominator_format: bool=False):
+    def to_dot(self, exit_node, is_dominator_format: bool = False):
         from control_flow.dotio import DotConverter
 
-        return DotConverter.process(
-            self, show_exit, is_dominator_format
-        )
+        return DotConverter.process(self, exit_node, is_dominator_format)
 
     @staticmethod
     def make_node(bb):
@@ -272,11 +280,16 @@ class TreeGraph(DiGraph):
     """
 
     def __init__(self, root):
-        Node.reset()
         Edge.reset()
-        self.root = root
-        self.nodes = []
+        Node.reset()
         self.edges = set()
+        self.nodes = []
+        self.root = root
+        self.root_node = None
+
+        # Maximum nesting of graph. -1 means this hasn't been
+        # computed.
+        self.max_nesting: int = -1
 
     def add_edge(self, edge):
         if edge in self.edges:
@@ -315,19 +328,21 @@ def write_dot(
     graph: Optional[DiGraph],
     write_png: bool = False,
     debug=True,
-    is_dominator_format: bool=False,
+    is_dominator_format: bool = False,
+    exit_node=None,
 ):
-    """Produce and write dot and png files for control-flow graph `cfg`;
-    `func_or_code_name` is the func_or_code_name of the code and `prefix` indicates the
-    file prefix to use.
-
-      dot is converted to PNG and dumped if `write_bool` is True.
+    """Produce and write dot and png files for control-flow graph
+    `cfg`; `func_or_code_name` is the func_or_code_name of the
+    code and `prefix` indicates the file prefix to use.
+    dot is converted to PNG and dumped if `write_bool` is True.
     """
+
     if graph is None:
         return
+
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
     dot_path = f"{prefix}{path_safe}.dot"
-    open(dot_path, "w").write(graph.to_dot(False, is_dominator_format))
+    open(dot_path, "w").write(graph.to_dot(exit_node, is_dominator_format))
     if debug:
         print(f"{dot_path} written")
     if write_png:

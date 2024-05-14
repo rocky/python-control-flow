@@ -119,6 +119,12 @@ class BasicBlock(object):
         # dominators, i.e.  dominators of *other* blocks.
         self.dom_set = set()
 
+        # How deeply is this block nested inside other dominator
+        # regions?  -1 indicates the value has not been computed. The
+        # dominator region of the entry node is at nesting_depth 0.
+        # blocks directly nested inside this are at nesting depth 1.
+        self.nesting_depth: int = -1
+
         # Set True if this is dead code, or unreachable.
         self.unreachable = False
         self.number = end_bb
@@ -144,7 +150,7 @@ class BasicBlock(object):
             exception_text = ""
         if len(self.flags) > 0:
             flag_str = ",".join(FLAG2NAME[flag] for flag in sorted(self.flags))
-            flag_text = ", flags={%s}"% flag_str
+            flag_text = ", flags={%s}" % flag_str
         else:
             flag_text = ""
         return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)" % (
