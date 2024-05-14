@@ -17,6 +17,13 @@ def or1(a, b):
 
 def if_else(a):
     if a:
+        a += 1
+    else:
+        a += 2
+    return a
+
+def if_else_return(a):
+    if a:
         return 5
     else:
         return 6
@@ -185,18 +192,19 @@ def ifelif():
 # build_and_analyze_control_flow(err)
 # build_and_analyze_control_flow(or1)
 # build_and_analyze_control_flow(if_then0)
-build_and_analyze_control_flow(if_then1, graph_options="all")
+# build_and_analyze_control_flow(if_then1, graph_options="all")
 # build_and_analyze_control_flow(if_then2)
 # build_and_analyze_control_flow(if_then3)
 # build_and_analyze_control_flow(if_then4, graph_options="all")
 # build_and_analyze_control_flow(five)
 # build_and_analyze_control_flow(for_break, graph_options="all")
-# build_and_analyze_control_flow(if_else)
+build_and_analyze_control_flow(if_else, graph_options="all")
+# build_and_analyze_control_flow(if_else_return, graph_options="all")
 # build_and_analyze_control_flow(if_vs_and, graph_options="all")
 # build_and_analyze_control_flow(foo)
 # build_and_analyze_control_flow(foo1)
 # build_and_analyze_control_flow(foo2)
-# build_and_analyze_control_flow(while_if_continue)
+# build_and_analyze_control_flow(while_if_continue, graph_options="all")
 # build_and_analyze_control_flow(while_true_if_else)
 # build_and_analyze_control_flow(while_else)
 # build_and_analyze_control_flow(while_if)

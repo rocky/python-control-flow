@@ -166,7 +166,7 @@ class ControlFlowGraph:
                         else:
                             edge_type = "forward"
                     else:
-                        edge_type = "backward"
+                        edge_type = "looping"
                         pass
 
                     if self.block_nodes[target_block] == self.block_nodes[block]:

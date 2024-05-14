@@ -58,7 +58,6 @@ class DotConverter(object):
         self.g = graph
         self.exit_node = graph
         self.buffer = ""
-        # from trepan.api import debug; debug()
         self.node_ids = {}
 
     def get_node_colors(self, nesting_depth: int) -> Tuple[str, str]:
@@ -149,7 +148,7 @@ class DotConverter(object):
             if edge.kind == "follow":
                 style = '[style="invis"]'
             elif edge.kind == "fallthrough":
-                color = '[color="red"]'
+                color = f'[color="red{arrow_color}"]'
                 pass
             if edge.kind != "exit edge":
                 weight = 10
@@ -181,14 +180,14 @@ class DotConverter(object):
             elif edge.kind == "self-loop":
                 edge_port = "[headport=ne, tailport=se, color='#006400']"
                 pass
-            elif edge.kind == "backward":
+            elif edge.kind == "looping":
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
                     # For a loop to the immediate predecessor we use
                     # a somewhat straight centered backward arrow.
                     source_port = ":c"
                     dest_port = ":c"
                 else:
-                    color = '[color="#006400"]'
+                    color = f'[color="#006400{arrow_color}"]'
                     source_port = ":nw"
                     dest_port = ":sw"
                     pass
@@ -217,6 +216,8 @@ class DotConverter(object):
                 pass
         elif BB_NOFOLLOW in edge.source.flags:
             style = '[style="dashed"] [arrowhead="none"]'
+            if edge.is_join:
+                style += ' [color="brown"]'
             weight = 10
 
         if style == "" and edge.source.bb.unreachable:

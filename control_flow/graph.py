@@ -7,7 +7,7 @@
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from typing import Optional
+from typing import Optional, Set
 
 # First or Basic block that we entered on. Usually
 # at offset 0.
@@ -136,7 +136,7 @@ def format_flags_with_width(flags, max_width, newline):
     return result + (" " * remain)
 
 
-class Node(object):
+class Node:
     GLOBAL_COUNTER = 0
 
     def __init__(self, bb):
@@ -148,9 +148,16 @@ class Node(object):
         self.flags = bb.flags
         self.bb = bb
 
+        # After the graph is built, a later pass
+        # fills out the in edges and the out edges,
+        # and whether the Node is a join Node.
+        self.in_edges: Optional[Set[Node]] = None
+        self.out_edges: Optional[Set[Node]] = None
+        self.is_join_node: Optional[bool] = None
+
     @classmethod
-    def reset(self):
-        self.GLOBAL_COUNTER = 0
+    def reset(cls):
+        cls.GLOBAL_COUNTER = 0
 
     def __eq__(self, obj) -> bool:
         return isinstance(obj, Node) and obj.number == self.number
@@ -254,6 +261,19 @@ class DiGraph:
 
         return DotConverter.process(self, exit_node, is_dominator_format)
 
+    def add_edge_info_to_nodes(self):
+        """
+        Go through the graph and fill out `self.in_edges` and `self.out_edges`.
+        """
+        for node in self.nodes:
+            node.out_edges = set()
+            node.in_edges = set()
+
+        for edge in self.edges:
+            edge.source.out_edges.add(edge)
+            edge.dest.in_edges.add(edge)
+
+
     @staticmethod
     def make_node(bb):
         return Node(bb)
@@ -315,7 +335,6 @@ class TreeGraph(DiGraph):
 
     def postorder_traverse1(self, node):
         """Traverse the tree in preorder"""
-
         for child in node.children:
             self.postorder_traverse1(child)
             yield child

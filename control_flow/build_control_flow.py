@@ -1,17 +1,19 @@
 # Copyright (c) 2021-2024 by Rocky Bernstein <rb@dustyfeet.com>
 
+import sys
 from xdis.codetype.base import iscode
 from xdis.disasm import disco
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
 from control_flow.augment_disasm import augment_instructions
-from control_flow.bb import basic_blocks
+from control_flow.bb import BB_JUMP_UNCONDITIONAL, basic_blocks
 from control_flow.cfg import ControlFlowGraph
 from control_flow.dominators import DominatorTree, build_dom_set, dfs_forest
 from control_flow.graph import write_dot
 
 VARIANT = "pypy" if IS_PYPY else None
+
 
 def build_and_analyze_control_flow(
     func_or_code,
@@ -73,8 +75,7 @@ def build_and_analyze_control_flow(
         cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_tree.max_nesting
         build_dom_set(cfg.dom_tree, debug.get("dom", False))
 
-        # FIXME
-        # classify "join" nodes and edges
+        classify_join_nodes_and_edges(cfg)
 
         if graph_options in ("all", "dominators"):
             write_dot(
@@ -112,10 +113,28 @@ def build_and_analyze_control_flow(
         print("Unexpected error:", sys.exc_info()[0])
         print(f"{func_or_code_name} had an error")
 
+
 def classify_join_nodes_and_edges(cfg: ControlFlowGraph):
     """
     Classify basic blocks as whether the first instruction
     is a join instructions, also mark join edges.
     """
-    assert cfg
-    return
+    assert cfg.graph is not None, "Graph should have been previsously set"
+    cfg.graph.add_edge_info_to_nodes()
+    assert cfg.graph is not None
+    for node in cfg.graph.nodes:
+        node_nesting_depth = node.bb.nesting_depth
+        assert node.bb.nesting_depth >= 0
+        for edge in node.in_edges:
+            source_nesting_depth = edge.source.bb.nesting_depth
+            assert source_nesting_depth >= 0
+            if source_nesting_depth >= node_nesting_depth and edge.kind not in (
+                "self-loop",
+                "looping",
+            ) and BB_JUMP_UNCONDITIONAL not in edge.source.flags:
+                print(f"WOOT: join node {node}")
+                node.is_join_node = True
+                edge.is_join = True
+        if node.is_join_node is not True:
+            assert node.is_join_node is None
+            node.is_join_node = False
