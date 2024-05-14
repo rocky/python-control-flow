@@ -184,6 +184,12 @@ class Edge:
         self.flags = set()
         self.data = data
 
+        # True edge is a "join" edge. Note that a "join" edge
+        # can be an implicit fallthrough edge.
+        # Join edges are a non-loop edges where the source
+        # node's nesting depth jumps to a target of lesser depth.
+        self.is_join = False
+
     @classmethod
     def reset(self):
         self.GLOBAL_COUNTER = 0

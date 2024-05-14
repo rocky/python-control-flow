@@ -3,9 +3,9 @@
   equip.analysis.graph.traversals
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  DFS/BFS and some other utils
+  DFS and some other utils
 
-  :copyright: (c) 2018 by Rocky Bernstein
+  :copyright: (c) 2018, 2024 by Rocky Bernstein
   :copyright: (c) 2014 by Romain Gaucher (@rgaucher)
   :license: Apache 2, see LICENSE for more details.
 """
@@ -13,7 +13,7 @@
 from control_flow.graph import Edge
 
 
-class EdgeVisitor(object):
+class EdgeVisitor:
     def __init__(self):
         pass
 
@@ -21,7 +21,7 @@ class EdgeVisitor(object):
         pass
 
 
-class Walker(object):
+class Walker:
     """
     Traverses edges in the graph in DFS.
     """
@@ -29,7 +29,7 @@ class Walker(object):
     def __init__(self, graph, visitor):
         self._graph = graph
         self._visitor = visitor
-        self.worklist = None
+        self.worklist: list = []
 
     @property
     def graph(self):
@@ -49,7 +49,7 @@ class Walker(object):
         return
 
     def traverse(self, root):
-        self.worklist = []
+        self.worklist: list = []
         self.__run(root)
         return
 

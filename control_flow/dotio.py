@@ -133,6 +133,11 @@ class DotConverter(object):
         dest_port = ""
         weight = 1
 
+        if edge.is_join:
+            arrow_color = ":brown;0.01"
+        else:
+            arrow_color = ""
+
         if edge.kind in (
             "fallthrough",
             "no fallthrough",
