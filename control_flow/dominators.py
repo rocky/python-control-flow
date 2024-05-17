@@ -19,9 +19,9 @@ class DominatorSet(set):
 
 
 class DominatorTree:
-    """
-    Handles the dominator trees (dominator/post-dominator), and the
-    computation of the dominance/post-dominance frontier.
+    """Handles the dominator trees, dominator, post-dominator
+    releation, and the computation of the dominance/post-dominance
+    frontier.
     """
 
     def __init__(self, cfg, debug=False):
@@ -30,9 +30,16 @@ class DominatorTree:
         self.root = cfg.entry_node
         self.max_nesting_depth = -1
         self.build()
+        cfg.dom_tree = self.build_dom_tree()
+        dfs_forest(cfg.dom_tree)
+        cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_tree.max_nesting
+        build_dom_set(cfg.dom_tree, debug)
+
+    @classmethod
+    def compute_dominators_in_cfg(cls, cfg, debug):
+        DominatorTree(cfg, debug)
 
     def build(self):
-        graph = self.cfg.graph
         entry = self.cfg.entry_node
 
         self.doms = {}  # map of node to its dominator

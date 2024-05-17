@@ -1,5 +1,8 @@
 # Copyright (c) 2021, 2023-2024 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
+
+from typing import Optional
+
 from xdis import next_offset
 from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
 from xdis.bytecode import get_instructions_bytes

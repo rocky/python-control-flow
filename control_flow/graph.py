@@ -81,6 +81,9 @@ BB_JUMP_TO_FALLTHROUGH = 15
 # a "try" block.
 BB_RETURN = 16
 
+# Unreachable block
+BB_DEAD_CODE = 17
+
 FLAG2NAME = {
     BB_ENTRY: "entry",
     BB_EXIT: "exit",
@@ -153,6 +156,7 @@ class Node:
         # and whether the Node is a join Node.
         self.in_edges: Optional[Set[Node]] = None
         self.out_edges: Optional[Set[Node]] = None
+        self.is_dead_code: Optional[bool] = None
         self.is_join_node: Optional[bool] = None
 
     @classmethod

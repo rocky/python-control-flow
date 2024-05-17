@@ -116,7 +116,7 @@ def while_if(a):
     while a > 0:
         if a % 2:
             b += 1
-        a >> 1
+        a >>= 1
     return b
 
 
@@ -167,15 +167,15 @@ def while_true_break():
             pass
 
 
-def and_or():
+def and_or(a, b, c, d, e, f, g, h):
     return (a and b and c and d) or (e or f or g or h)
 
 
-def or_and():
+def or_and(a, b, c, d, e, f, g, h):
     return (a or b or c or d) and (e and f and g and h)
 
 
-def ifelif():
+def ifelif(a, b, c, x):
     if a:
         x = 1
     elif b:
@@ -184,12 +184,13 @@ def ifelif():
         x = 3
     else:
         x = 4
+    return x
 
+build_and_analyze_control_flow(err, graph_options="all")
 # build_and_analyze_control_flow(if_else_expr, graph_options="all")
 # build_and_analyze_control_flow(ifelif, graph_options="all")
 # build_and_analyze_control_flow(or_and)
 # build_and_analyze_control_flow(and_or)
-# build_and_analyze_control_flow(err)
 # build_and_analyze_control_flow(or1)
 # build_and_analyze_control_flow(if_then0)
 # build_and_analyze_control_flow(if_then1, graph_options="all")
@@ -200,7 +201,7 @@ def ifelif():
 # build_and_analyze_control_flow(for_break, graph_options="all")
 # build_and_analyze_control_flow(if_else, graph_options="all")
 # build_and_analyze_control_flow(if_else_return, graph_options="all")
-build_and_analyze_control_flow(if_vs_and, graph_options="all")
+# build_and_analyze_control_flow(if_vs_and, graph_options="all")
 # build_and_analyze_control_flow(foo)
 # build_and_analyze_control_flow(foo1)
 # build_and_analyze_control_flow(foo2)
