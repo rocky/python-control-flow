@@ -1,5 +1,6 @@
 *.pyc
 *~
+.idea
 .python-version
 /.hypothesis
 /.pre-commit-config.yaml
