@@ -179,7 +179,7 @@ class DotConverter(object):
                     dest_port = ":ne"
                 pass
             elif edge.kind == "self-loop":
-                edge_port = "[headport=ne, tailport=se, color='#006400']"
+                edge_port = '[headport=ne, tailport=se, color="#006400"]'
                 pass
             elif edge.kind == "looping":
                 if edge.dest.bb.number + 1 == edge.source.bb.number:

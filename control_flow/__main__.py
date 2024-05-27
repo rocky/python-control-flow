@@ -23,14 +23,13 @@ from control_flow.version import __version__
     "--graph",
     "-g",
     type=click.Choice(
-        ["all", "control-flow", "dominators", "reverse-dominators", "none"],
+        ["all", "control-flow", "dominators", "none"],
         case_sensitive=False,
     ),
     default="none",
     help="Produce graphviz graph of program",
 )
 def main(import_name, member, filename, graph):
-    debug = {}
     try:
         if import_name is not None:
             import_module = importlib.__import__(import_name)
@@ -95,7 +94,6 @@ def main(import_name, member, filename, graph):
         code_version_tuple=version_tuple,
         func_or_code_timestamp=timestamp,
         func_or_code_name=name,
-        debug=debug,
     )
 
 

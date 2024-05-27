@@ -22,13 +22,16 @@ def build_and_analyze_control_flow(
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
     func_or_code_name: str = "",
-    debug_dict: dict = {},
 ):
     """
     Compute control-flow graph, dominator information, and
     assembly instructions augmented with control flow for
     function "func".
     """
+
+    debug_dict: dict = {}
+    if graph_options in {"all", "dom"}:
+        debug_dict["dom"] = True
 
     if iscode(func_or_code):
         code = func_or_code

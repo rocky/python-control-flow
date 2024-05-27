@@ -11,7 +11,7 @@ def five():
     return 5
 
 
-def or1(a, b):
+def trivial_or(a, b):
     return a or b
 
 
@@ -186,12 +186,12 @@ def ifelif(a, b, c, x):
         x = 4
     return x
 
-build_and_analyze_control_flow(err, graph_options="all")
+# build_and_analyze_control_flow(err, graph_options="all")
+build_and_analyze_control_flow(trivial_or, graph_options="all")
 # build_and_analyze_control_flow(if_else_expr, graph_options="all")
 # build_and_analyze_control_flow(ifelif, graph_options="all")
 # build_and_analyze_control_flow(or_and)
 # build_and_analyze_control_flow(and_or)
-# build_and_analyze_control_flow(or1)
 # build_and_analyze_control_flow(if_then0)
 # build_and_analyze_control_flow(if_then1, graph_options="all")
 # build_and_analyze_control_flow(if_then2)

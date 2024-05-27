@@ -146,12 +146,12 @@ class DominatorTree:
                     else:
                         do_update = True
                     if do_update:
-                        if self.debug:
-                            name = "reverse dominator" if post_dom else "dominator"
-                            print(
-                                f"{name}[{b.number}] is "
-                                "{None if new_idom is None else new_idom.number}"
-                            )
+                        # if self.debug:
+                        #     name = "dominator"
+                        #     print(
+                        #         f"debug: {name}[{b.number}] is "
+                        #         "{None if new_idom is None else new_idom.number}"
+                        #     )
 
                         doms[b] = new_idom
                         changed = True
