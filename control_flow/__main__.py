@@ -7,6 +7,7 @@ import os
 import sys
 
 from xdis.load import check_object_path, load_module
+from xdis.version_info import PYTHON_VERSION_TRIPLE
 
 from control_flow.build_control_flow import build_and_analyze_control_flow
 from control_flow.version import __version__

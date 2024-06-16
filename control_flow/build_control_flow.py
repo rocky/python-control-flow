@@ -72,9 +72,6 @@ def build_and_analyze_control_flow(
         cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_tree.max_nesting
         build_dom_set(cfg.dom_tree, debug.get("dom", False))
 
-        # FIXME
-        # compue "join" edges
-
         if graph_options in ("all", "dominators"):
             write_dot(
                 func_or_code_name,
@@ -95,6 +92,9 @@ def build_and_analyze_control_flow(
             )
 
         assert cfg.graph
+
+        # FIXME
+        # compute "join" edges
 
         print("=" * 30)
         augmented_instrs = augment_instructions(
