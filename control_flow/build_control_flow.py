@@ -1,5 +1,6 @@
 # Copyright (c) 2021-2024 by Rocky Bernstein <rb@dustyfeet.com>
 
+import sys
 from xdis.codetype.base import iscode
 from xdis.disasm import disco
 from xdis.op_imports import get_opcode_module
@@ -21,6 +22,7 @@ def build_and_analyze_control_flow(
     func_or_code_timestamp=None,
     func_or_code_name: str = "",
     debug: dict = {},
+    file_part: str = "",
 ):
     """
     Compute control-flow graph, dominator information, and
@@ -57,33 +59,36 @@ def build_and_analyze_control_flow(
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
         write_dot(
-            func_or_code_name,
+            f"{file_part}{func_or_code_name}",
             f"/tmp/flow-{version}-",
             cfg.graph,
             write_png=True,
             exit_node=cfg.exit_node,
         )
 
+    assert cfg.graph is not None
     try:
-        dt = DominatorTree(cfg, debug.get("dom", False))
-
-        cfg.dom_tree = dt.build_dom_tree()
-        dfs_forest(cfg.dom_tree)
-        cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_tree.max_nesting
-        build_dom_set(cfg.dom_tree, debug.get("dom", False))
+        # FIXME: organize cfg.dom_tree cfg.dom_forest better.
+        cfg.dom_tree = DominatorTree(cfg, debug.get("dom", False))
+        assert cfg.dom_tree is not None
+        cfg.dom_forest = cfg.dom_tree.build_dom_tree()
+        dfs_forest(cfg.dom_forest)
+        cfg.graph.max_nesting = cfg.max_nesting_depth = cfg.dom_forest.max_nesting
+        build_dom_set(cfg.dom_forest, debug.get("dom", False))
 
         if graph_options in ("all", "dominators"):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow-dom-{version}-",
-                cfg.dom_tree,
+                cfg.dom_forest,
                 write_png=True,
                 exit_node=cfg.exit_node,
             )
 
+        cfg.classify_edges()
         if graph_options in ("all",):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow+dom-{version}-",
                 cfg.graph,
                 write_png=True,
@@ -92,9 +97,6 @@ def build_and_analyze_control_flow(
             )
 
         assert cfg.graph
-
-        # FIXME
-        # compute "join" edges
 
         print("=" * 30)
         augmented_instrs = augment_instructions(

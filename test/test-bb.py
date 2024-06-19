@@ -11,8 +11,23 @@ def five():
     return 5
 
 
-def or1(a, b):
+def and2(a, b):
     return a or b
+
+
+def and3(a, b, c):
+    return a and b and c
+
+
+def and4(a, b, c, d):
+    return a and b and c and d
+
+
+def for_simple(a):
+    x = 0
+    for i in a:
+        x += i
+    return x
 
 
 def if_else(a):
@@ -77,6 +92,18 @@ def foo2(a):
     if a:
         a = 10
     return a
+
+
+def or2(a, b):
+    return a or b
+
+
+def or3(a, b, c):
+    return a or b or c
+
+
+def or4(a, b, c, d):
+    return a or b or c or d
 
 
 def while_if_continue(a):
@@ -178,14 +205,17 @@ def ifelif():
     else:
         x = 4
 
-# build_and_analyze_control_flow(if_else_expr, graph_options="all")
-# build_and_analyze_control_flow(ifelif, graph_options="all")
-# build_and_analyze_control_flow(or_and)
+# build_and_analyze_control_flow(and2, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(and3, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(and4, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(and_or)
 # build_and_analyze_control_flow(err)
-# build_and_analyze_control_flow(or1)
+build_and_analyze_control_flow(for_simple, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(if_else_expr, graph_options="all")
 # build_and_analyze_control_flow(if_then0)
-build_and_analyze_control_flow(if_then1, graph_options="all")
+# build_and_analyze_control_flow(if_then1, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(ifelif, graph_options="all")
+# build_and_analyze_control_flow(or_and)
 # build_and_analyze_control_flow(if_then2)
 # build_and_analyze_control_flow(if_then3)
 # build_and_analyze_control_flow(if_then4, graph_options="all")
@@ -196,6 +226,9 @@ build_and_analyze_control_flow(if_then1, graph_options="all")
 # build_and_analyze_control_flow(foo)
 # build_and_analyze_control_flow(foo1)
 # build_and_analyze_control_flow(foo2)
+# build_and_analyze_control_flow(or2, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(or3, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(or4, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(while_if_continue)
 # build_and_analyze_control_flow(while_true_if_else)
 # build_and_analyze_control_flow(while_else)

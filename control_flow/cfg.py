@@ -5,8 +5,10 @@ from typing import Dict, Optional, Tuple
 from control_flow.graph import (
     DiGraph,
     Node,
+    ScopeEdgeKind,
     TreeGraph,
     jump_flags,
+    BB_JOIN_NODE,
     BB_JUMP_CONDITIONAL,
     BB_LOOP,
     BB_NOFOLLOW,
@@ -35,10 +37,15 @@ class ControlFlowGraph:
         self.exit_node = bb_mgr.exit_block
 
         #
-        self.dom_tree: Optional[TreeGraph] = None
-        # Maximum nesting in control flow grapy. -1 means this hasn't been
+        self.dom_tree = None
+        # Maximum nesting in control flow graph. -1 means this hasn't been
         # computed. It is computed when self.dom_tree is computed and also is
         # stored in there.
+
+        # Result from running dfs_forest.
+        # FIXME: organize this better.
+        self.dom_forest: Optional[TreeGraph] = None
+
         self.max_nesting_depth: int = -1
 
         self.analyze(self.blocks, bb_mgr.exit_block)
@@ -55,6 +62,10 @@ class ControlFlowGraph:
         self.build_flowgraph(blocks, exit_block)
 
     def build_flowgraph(self, blocks, exit_block):
+        """
+        Build a control-flow graph from basic blocks `blocks`.
+        The exit block is `exit_block`.
+        """
         g = DiGraph()
 
         self.block_nodes = {}
@@ -190,6 +201,54 @@ class ControlFlowGraph:
             pass
 
         self.graph = g
+        return
+
+    def classify_edges(self):
+        """
+        Classify edges into alternate edges, looping edges, or join edges.
+        There is a lower-level classification going on in edge.kind.
+        """
+
+        # FIXME: some of the classifications may be overkill.
+
+        for edge in self.graph.edges:
+            # If the immediate dominator of the source and destination
+            # node is the same, then we have an alternate edge.
+            # If the the edge is a backwards jump, then it is a looping edge
+            # If the edge is not looping and the immediate dominator is
+            # not the same, then we have a join edge.
+
+            # Looping edges have already been classified, so use those when
+            # we can.
+            if edge.kind in ("backward", "self-loop"):
+                edge.scoping_kind = ScopeEdgeKind.Looping
+                continue
+            source_block = edge.source.bb
+            target_block = edge.dest.bb
+
+            # print(f"Block #{source_block.number} -> Block #{target_block.number}")
+            # if (source_block.number, target_block.number) == (2, 4):
+            #     from trepan.api import debug; debug()
+
+            if source_block.number == self.dom_tree.doms[target_block].number:
+                # Jump to target starts a new scope.
+                # Example:
+                #   if <jump-to-then> then <jump-is-here> ... end
+                edge.scoping_kind = ScopeEdgeKind.Alternate
+            elif self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]:
+                # if both source and target have the same immediate dominator, then
+                # they are in the same scope and we have an alternation.
+                # We eliminated the looping case above.
+                edge.scoping_kind = ScopeEdgeKind.Alternate
+            elif self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]:
+                # The source block is jumping or falling out of a scope: its
+                # `dom` or `scope number` is more nested than the target scope.
+                # Examples:
+                #   if ... <jump to end> else ... end
+                #   while ... break <jump to end> ... end
+                edge.scoping_kind = ScopeEdgeKind.InnerJoin
+                target_block.flags.add(BB_JOIN_NODE)
+            pass
         return
 
     def get_node(self, offset: int) -> Node:
