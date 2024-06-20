@@ -205,12 +205,12 @@ def ifelif():
     else:
         x = 4
 
+build_and_analyze_control_flow(and_or, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(and2, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(and3, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(and4, graph_options="all", file_part="test-bb-")
-# build_and_analyze_control_flow(and_or)
 # build_and_analyze_control_flow(err)
-build_and_analyze_control_flow(for_simple, graph_options="all", file_part="test-bb-")
+# build_and_analyze_control_flow(for_simple, graph_options="all", file_part="test-bb-")
 # build_and_analyze_control_flow(if_else_expr, graph_options="all")
 # build_and_analyze_control_flow(if_then0)
 # build_and_analyze_control_flow(if_then1, graph_options="all", file_part="test-bb-")

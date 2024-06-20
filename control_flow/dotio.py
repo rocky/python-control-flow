@@ -307,7 +307,7 @@ class DotConverter:
         if exit_node in {node.bb for node in node.bb.dom_set}:
             dom_set_len -= 1
         if BB_ENTRY in node.bb.flags or dom_set_len > 0:
-            style = '[shape = "box3d"]'
+            style = '[shape = "box", peripheries=2]'
         elif BB_EXIT in node.bb.flags:
             style = '[shape = "diamond"]'
             align = "\n"
