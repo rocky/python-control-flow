@@ -132,7 +132,7 @@ class DotConverter:
         dest_port = ""
         weight = 1
 
-        if edge.scoping_kind == ScopeEdgeKind.InnerJoin:
+        if edge.scoping_kind == ScopeEdgeKind.Join:
             arrow_color = ":brown;0.01"
         else:
             arrow_color = ""
@@ -257,7 +257,7 @@ class DotConverter:
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
-        if not is_dominator_format:
+        if True:
             if not is_exit and len(node.jump_offsets) > 0:
                 jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
                 pass
@@ -284,10 +284,10 @@ class DotConverter:
         if is_exit:
             return "flags=exit"
 
-        offset_text = "offset: %d..%d" % (node.start_offset, node.end_offset)
-        l = len(offset_text)
-        if l < NODE_TEXT_WIDTH:
-            offset_text += " " * (NODE_TEXT_WIDTH - l)
+        offset_text = f"offset: {node.start_offset}..{node.end_offset}"
+        text_len = len(offset_text)
+        if text_len < NODE_TEXT_WIDTH:
+            offset_text += " " * (NODE_TEXT_WIDTH - text_len)
 
         return f"{offset_text}{flag_text}{jump_text}{reach_offset_text}"
 
@@ -309,7 +309,7 @@ class DotConverter:
         if BB_ENTRY in node.bb.flags or dom_set_len > 0:
             style = '[shape = "box", peripheries=2]'
         elif BB_EXIT in node.bb.flags:
-            style = '[shape = "diamond"]'
+            style = '[style = "rounded"]'
             align = "\n"
             is_exit = True
         elif not node.bb.predecessors:

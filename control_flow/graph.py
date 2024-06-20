@@ -125,8 +125,9 @@ ScopeEdgeKind = Enum(
         "Alternate",
         # Edge joins from an inner scope to an outer one, e.g.
         # "if ... <jump to end> else ... end" or
+        # "if ... <falltrough after end> end" or
         # "while ... break <jump to end> ... end
-        "InnerJoin",
+        "Join",
         # Edge jumps to a loop head
         "Looping",
     ],
