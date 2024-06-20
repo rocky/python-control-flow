@@ -244,9 +244,10 @@ class ControlFlowGraph:
                 # The source block is jumping or falling out of a scope: its
                 # `dom` or `scope number` is more nested than the target scope.
                 # Examples:
-                #   if ... <jump to end> else ... end
-                #   while ... break <jump to end> ... end
-                edge.scoping_kind = ScopeEdgeKind.InnerJoin
+                # "if ... <jump to end> else ... end" or
+                # "if ... <falltrough after end> end" or
+                # "while ... break <jump to end> ... end
+                edge.scoping_kind = ScopeEdgeKind.Join
                 target_block.flags.add(BB_JOIN_NODE)
             pass
         return
