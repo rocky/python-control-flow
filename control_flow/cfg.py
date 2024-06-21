@@ -171,31 +171,31 @@ class ControlFlowGraph:
                     target_block = self.block_offsets[jump_index]
                     if jump_index > block.start_offset:
                         if BB_LOOP in block.flags:
-                            edge_type = "forward-scope"
+                            edge_kind = "forward-scope"
                         elif BB_JUMP_CONDITIONAL in self.block_nodes[block].flags:
-                            edge_type = "forward-conditional"
+                            edge_kind = "forward-conditional"
                         else:
-                            edge_type = "forward"
+                            edge_kind = "forward"
                     else:
-                        edge_type = "looping"
+                        edge_kind = "looping"
                         pass
 
                     if self.block_nodes[target_block] == self.block_nodes[block]:
-                        edge_type = "self-loop"
+                        edge_kind = "self-loop"
 
                     g.make_add_edge(
                         self.block_nodes[block],
                         self.block_nodes[target_block],
-                        edge_type,
+                        edge_kind,
                     )
                     pass
                 pass
             for jump_index in block.exception_offsets:
                 source_block = self.block_offsets[jump_index]
                 assert jump_index <= source_block.start_offset
-                edge_type = "exception"
+                edge_kind = "exception"
                 g.make_add_edge(
-                    self.block_nodes[source_block], self.block_nodes[block], edge_type
+                    self.block_nodes[source_block], self.block_nodes[block], edge_kind
                 )
                 pass
             pass
@@ -209,9 +209,12 @@ class ControlFlowGraph:
         There is a lower-level classification going on in edge.kind.
         """
 
-        # FIXME: some of the classifications may be overkill.
-
         for edge in self.graph.edges:
+
+            if edge.kind == "no fallthrough":
+                # Edge is not to be followed.
+                continue
+
             # If the immediate dominator of the source and destination
             # node is the same, then we have an alternate edge.
             # If the the edge is a backwards jump, then it is a looping edge

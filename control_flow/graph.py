@@ -15,7 +15,9 @@ from enum import Enum
 # Does this need to be a set?
 BB_ENTRY = 0
 
-# Block is at the end and doesn't have a following instruction.
+# Block is at the end, and doesn't have a following instruction.
+# We have though an edge to the successor *instruction* for assisting displaying
+# the control-flow graph the way the program was written.
 BB_NOFOLLOW = 1
 
 # a SETUP_LOOP instruction marking the beginning of a loop.
@@ -134,7 +136,6 @@ ScopeEdgeKind = Enum(
 )
 
 jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
-nofollow_flags = set([BB_NOFOLLOW])
 
 
 def format_flags(flags):
@@ -331,7 +332,7 @@ class DiGraph:
         self.add_node(node)
         return node
 
-    def make_add_edge(self, source=None, dest=None, kind=None, data=None):
+    def make_add_edge(self, source=None, dest=None, kind=None, data=None) -> Edge:
         edge = DiGraph.make_edge(source=source, dest=dest, kind=kind, data=data)
         self.add_edge(edge)
         return edge
