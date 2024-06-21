@@ -150,6 +150,8 @@ class DotConverter:
                 style = '[style="dashed"] [arrowhead="none"]'
             elif edge.kind == "fallthrough":
                 color = f'[color="red{arrow_color}"]'
+                if BB_NOFOLLOW in edge.source.flags:
+                    style = '[style="dashed"] [arrowhead="none"]'
                 pass
             if edge.kind != "exit edge":
                 weight = 10
@@ -167,8 +169,9 @@ class DotConverter:
             # edge_port = '[headport=nw] [tailport=sw]';
             # edge_port = '[headport=_] [tailport=_]';
         else:
-            if edge.kind == "forward-scope":
+            if edge.kind == "for-finish":
                 style = '[style="dotted"]'
+                color = '[color="MediumBlue"]'
                 if edge.source.bb.number + 1 == edge.dest.bb.number:
                     weight = 10
                     source_port = ":c"
@@ -214,9 +217,6 @@ class DotConverter:
                 source_port = ":se"
                 dest_port = ":ne"
                 pass
-        elif edge.kind == "fallthrough" and BB_NOFOLLOW in edge.source.flags:
-            style = '[style="dashed"] [arrowhead="none"]'
-            weight = 10
 
         if style == "" and edge.source.bb.unreachable:
             style = '[style="dashed"] [arrowhead="empty"]'

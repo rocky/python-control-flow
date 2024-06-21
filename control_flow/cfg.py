@@ -143,7 +143,8 @@ class ControlFlowGraph:
 
             # Is this dead code? (Remove self loops in calculation)
             # Entry node, blocks[0] is never unreachable
-            if not block.predecessors - {block} and block != blocks[0]:
+            if not (block.predecessors - {block} and block != blocks[0]
+                    or BB_ENTRY in block.flags):
                 block.unreachable = True
 
             block = sorted_blocks[i]
@@ -171,7 +172,7 @@ class ControlFlowGraph:
                     target_block = self.block_offsets[jump_index]
                     if jump_index > block.start_offset:
                         if BB_LOOP in block.flags:
-                            edge_kind = "forward-scope"
+                            edge_kind = "for-finish"
                         elif BB_JUMP_CONDITIONAL in self.block_nodes[block].flags:
                             edge_kind = "forward-conditional"
                         else:
