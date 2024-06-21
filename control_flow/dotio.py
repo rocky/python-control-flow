@@ -142,13 +142,12 @@ class DotConverter:
         if edge.kind in (
             "fallthrough",
             "no fallthrough",
-            "follow",
             "exit edge",
             "dom-edge",
             "pdom-edge",
         ):
-            if edge.kind == "follow":
-                style = '[style="invis"]'
+            if edge.kind == "no fallthrough":
+                style = '[style="dashed"] [arrowhead="none"]'
             elif edge.kind == "fallthrough":
                 color = f'[color="red{arrow_color}"]'
                 pass
