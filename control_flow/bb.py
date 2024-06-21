@@ -180,7 +180,15 @@ class BBMgr(object):
 
         self.opcode = opcode = get_opcode_module(version)
 
-        self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
+
+        # FIXME: why is POP_TOP *ever* an except instruction?
+        # If it can be a start an except instruction, then we need
+        # something more to determine this.
+        if version < (3, 10):
+            self.EXCEPT_INSTRUCTIONS = set([opcode.opmap["POP_TOP"]])
+        else:
+            self.EXCEPT_INSTRUCTIONS = set()
+
         if "SETUP_FINALLY" in opcode.opmap:
             self.FINALLY_INSTRUCTIONS = set([opcode.opmap["SETUP_FINALLY"]])
         self.FOR_INSTRUCTIONS = set([opcode.opmap["FOR_ITER"]])
@@ -205,8 +213,6 @@ class BBMgr(object):
         self.LOOP_INSTRUCTIONS = set()
         self.TRY_INSTRUCTIONS = set()
         self.END_FINALLY_INSTRUCTIONS = set()
-        self.LOOP_INSTRUCTIONS = set()
-        self.TRY_INSTRUCTIONS = set()
 
         if version < (3, 10):
             if version < (3, 8):
@@ -217,7 +223,6 @@ class BBMgr(object):
                 # FIXME: add WITH_EXCEPT_START
                 self.END_FINALLY_INSTRUCTIONS = set([opcode.opmap["END_FINALLY"]])
                 pass
-
         else:
             self.EXCEPT_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
@@ -377,7 +382,6 @@ def basic_blocks(
             loop_offset = offset
         elif offset == endloop_offsets[-1]:
             endloop_offsets.pop()
-        pass
 
         if op in BB.LOOP_INSTRUCTIONS:
             flags.add(BB_LOOP)
@@ -479,7 +483,10 @@ def basic_blocks(
                 flags.add(BB_JUMP_UNCONDITIONAL)
                 if jump_offset == follow_offset:
                     flags.add(BB_JUMP_TO_FALLTHROUGH)
-                    pass
+                else:
+                    # Also note that the edge does not
+                    # fall through to the next block.
+                    flags.add(BB_NOFOLLOW)
                 block, flags, jump_offsets = BB.add_bb(
                     start_offset,
                     end_offset,
