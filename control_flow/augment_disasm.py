@@ -214,7 +214,7 @@ EXTENDED_OPMAP = {
     "BB_START": 1002,
     "BREAK_FOR": 1003,
     "BREAK_LOOP": 1004,
-    "JOIN_POINT": 1005,
+    "BLOCK_END_JOIN": 1005,
     "JUMP_FOR": 1006,
     "JUMP_LOOP": 1007,
 }
@@ -442,8 +442,8 @@ def augment_instructions(
                     if edge.scoping_kind == ScopeEdgeKind.Join:
                         from_bb_number=edge.source.bb.number
                         pseudo_inst = ExtendedInstruction(
-                            opname="JOIN_POINT",
-                            opcode=EXTENDED_OPMAP["JOIN_POINT"],
+                            opname="BLOCK_END_JOIN",
+                            opcode=EXTENDED_OPMAP["BLOCK_END_JOIN"],
                             optype="pseudo",
                             inst_size=0,
                             arg=from_bb_number,

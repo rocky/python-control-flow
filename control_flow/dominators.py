@@ -32,7 +32,6 @@ class DominatorTree:
         self.build()
 
     def build(self):
-        graph = self.cfg.graph
         entry = self.cfg.entry_node
 
         self.doms = {}  # map of node to its dominator
@@ -140,7 +139,7 @@ class DominatorTree:
                         do_update = True
                     if do_update:
                         if self.debug:
-                            name = "reverse dominator" if post_dom else "dominator"
+                            name = "dominator"
                             print(
                                 f"{name}[{b.number}] is "
                                 "{None if new_idom is None else new_idom.number}"
