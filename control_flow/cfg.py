@@ -1,9 +1,10 @@
 # Copyright (c) 2021, 2024 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from control_flow.graph import (
     DiGraph,
+    Edge,
     Node,
     ScopeEdgeKind,
     TreeGraph,
@@ -31,6 +32,7 @@ class ControlFlowGraph:
         self.blocks = bb_mgr.bb_list
         self.offset2block: Dict[int, Node] = {}
         self.offset2block_sorted: Tuple[int, Node] = tuple()
+        self.offset2edges: Dict[int, List[Edge]] = {}
         self.block_nodes = {}
         self.graph = None
         self.entry_node = None
@@ -66,7 +68,17 @@ class ControlFlowGraph:
         Build a control-flow graph from basic blocks `blocks`.
         The exit block is `exit_block`.
         """
+
         g = DiGraph()
+
+        def add_edge(source_node, dest_node, edge_kind: str) -> Edge:
+            new_edge = g.make_add_edge(source_node, dest_node, edge_kind)
+            target_offset = new_edge.dest.bb.start_offset
+            if target_offset not in self.offset2edges:
+                self.offset2edges[target_offset] = [new_edge]
+            else:
+                self.offset2edges[target_offset].append(new_edge)
+            return new_edge
 
         self.block_nodes = {}
 
@@ -109,7 +121,7 @@ class ControlFlowGraph:
                 #        >>  598 POP_TOP
                 #            600 EXTENDED_ARG           255
                 #            602 EXTENDED_ARG         65535
-                #            604 EXTENDED_ARG         16777215
+               #            604 EXTENDED_ARG         16777215
                 #            606 JUMP_FORWARD         4294967263 (to 8589935134)
                 # 359    >>  608 ...
                 #
@@ -151,18 +163,19 @@ class ControlFlowGraph:
             if block.follow_offset:
                 if BB_NOFOLLOW in block.flags:
                     kind = "no fallthrough"
-                    g.make_add_edge(
+                    add_edge(
                         self.block_nodes[block], self.exit_block, "exit edge"
                     )
                 else:
                     kind = "fallthrough"
-                g.make_add_edge(
-                    self.block_nodes[block],
-                    self.block_nodes[self.block_offsets[block.follow_offset]],
-                    kind,
-                )
+                    add_edge(
+                        self.block_nodes[block],
+                        self.block_nodes[self.block_offsets[block.follow_offset]],
+                        kind,
+                    )
+                pass
             elif BB_EXIT not in block.flags:
-                g.make_add_edge(self.block_nodes[block], self.exit_block, "exit edge")
+                add_edge(self.block_nodes[block], self.exit_block, "exit edge")
 
             # Connect the current block to its jump targets
             for jump_index in block.jump_offsets:
@@ -184,7 +197,7 @@ class ControlFlowGraph:
                     if self.block_nodes[target_block] == self.block_nodes[block]:
                         edge_kind = "self-loop"
 
-                    g.make_add_edge(
+                    add_edge(
                         self.block_nodes[block],
                         self.block_nodes[target_block],
                         edge_kind,
@@ -195,7 +208,7 @@ class ControlFlowGraph:
                 source_block = self.block_offsets[jump_index]
                 assert jump_index <= source_block.start_offset
                 edge_kind = "exception"
-                g.make_add_edge(
+                add_edge(
                     self.block_nodes[source_block], self.block_nodes[block], edge_kind
                 )
                 pass
