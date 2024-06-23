@@ -137,7 +137,7 @@ class DotConverter:
         else:
             arrow_color = ""
 
-        color = f'[color="blue:{arrow_color}"]' if edge.is_conditional_jump() else ""
+        color = f'[color="blue{arrow_color}"]' if edge.is_conditional_jump() else ""
 
         if edge.kind in (
             "fallthrough",

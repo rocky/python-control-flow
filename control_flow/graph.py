@@ -404,14 +404,14 @@ def write_dot(
         return
 
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
-    dot_path = f"{prefix}{path_safe}.dot"
+    dot_path = f"{prefix}-{path_safe}.dot"
     open(dot_path, "w").write(graph.to_dot(exit_node, is_dominator_format))
     if debug:
         print(f"{dot_path} written")
     if write_png:
         import os
 
-        png_path = f"{prefix}{path_safe}.png"
+        png_path = f"{prefix}-{path_safe}.png"
         os.system(f"dot -Tpng {dot_path} > {png_path}")
         if debug:
             print(f"{png_path} written")

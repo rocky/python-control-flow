@@ -2,27 +2,28 @@
 import sys
 
 from xdis import next_offset
-from xdis.version_info import PYTHON_VERSION_TRIPLE, IS_PYPY
 from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
+from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
+
 from control_flow.graph import (
-    BB_POP_BLOCK,
-    BB_SINGLE_POP_BLOCK,
-    BB_STARTS_POP_BLOCK,
-    BB_EXCEPT,
+    BB_BREAK,
+    BB_END_FINALLY,
     BB_ENTRY,
-    BB_TRY,
+    BB_EXCEPT,
     BB_EXIT,
     BB_FINALLY,
-    BB_END_FINALLY,
     BB_FOR,
-    BB_BREAK,
     BB_JUMP_CONDITIONAL,
-    BB_JUMP_UNCONDITIONAL,
     BB_JUMP_TO_FALLTHROUGH,
+    BB_JUMP_UNCONDITIONAL,
     BB_LOOP,
     BB_NOFOLLOW,
+    BB_POP_BLOCK,
     BB_RETURN,
+    BB_SINGLE_POP_BLOCK,
+    BB_STARTS_POP_BLOCK,
+    BB_TRY,
     FLAG2NAME,
 )
 
@@ -196,7 +197,6 @@ class BBMgr(object):
         version = tuple(version[:2])
 
         self.opcode = opcode = get_opcode_module(version)
-
 
         # FIXME: why is POP_TOP *ever* an except instruction?
         # If it can be a start an except instruction, then we need
