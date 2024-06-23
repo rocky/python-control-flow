@@ -127,7 +127,6 @@ class DotConverter:
         if exit_node is not None and BB_EXIT in edge.dest.bb.flags:
             return
 
-        color = '[color="blue"]' if edge.is_conditional_jump() else ""
         style = ""
         edge_port = ""
         source_port = ""
@@ -138,6 +137,8 @@ class DotConverter:
             arrow_color = ":brown;0.01"
         else:
             arrow_color = ""
+
+        color = f'[color="blue{arrow_color}"]' if edge.is_conditional_jump() else ""
 
         if edge.kind in (
             "fallthrough",

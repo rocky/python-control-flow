@@ -168,12 +168,11 @@ class ControlFlowGraph:
                     )
                 else:
                     kind = "fallthrough"
-                    add_edge(
-                        self.block_nodes[block],
-                        self.block_nodes[self.block_offsets[block.follow_offset]],
-                        kind,
-                    )
-                pass
+                add_edge(
+                    self.block_nodes[block],
+                    self.block_nodes[self.block_offsets[block.follow_offset]],
+                    kind,
+                )
             elif BB_EXIT not in block.flags:
                 add_edge(self.block_nodes[block], self.exit_block, "exit edge")
 
@@ -252,12 +251,8 @@ class ControlFlowGraph:
                 # Example:
                 #   if <jump-to-then> then <jump-is-here> ... end
                 edge.scoping_kind = ScopeEdgeKind.Alternate
-            elif self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]:
-                # if both source and target have the same immediate dominator, then
-                # they are in the same scope and we have an alternation.
-                # We eliminated the looping case above.
-                edge.scoping_kind = ScopeEdgeKind.Alternate
-            elif self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]:
+            elif (self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]
+                  or self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]):
                 # The source block is jumping or falling out of a scope: its
                 # `dom` or `scope number` is more nested than the target scope.
                 # Examples:
