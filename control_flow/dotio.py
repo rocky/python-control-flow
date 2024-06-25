@@ -14,7 +14,7 @@ from control_flow.graph import (
     BB_ENTRY,
     BB_EXIT,
     BB_END_FINALLY,
-    BB_JOIN_NODE,
+    BB_JOIN_POINT,
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_NOFOLLOW,
@@ -317,7 +317,7 @@ class DotConverter:
         if is_dominator_format:
             fillcolor, fontcolor = self.get_node_colors(node.bb.nesting_depth)
             # print("XXX", node.bb, node.bb.nesting_depth, fillcolor, fontcolor)
-            color = 'color=brown, ' if BB_JOIN_NODE in node.bb.flags else ""
+            color = 'color=brown, ' if BB_JOIN_POINT in node.bb.flags else ""
             style += f'[{color}fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
 
         level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""

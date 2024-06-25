@@ -9,7 +9,7 @@ from control_flow.graph import (
     ScopeEdgeKind,
     TreeGraph,
     jump_flags,
-    BB_JOIN_NODE,
+    BB_JOIN_POINT,
     BB_JUMP_CONDITIONAL,
     BB_LOOP,
     BB_NOFOLLOW,
@@ -242,6 +242,9 @@ class ControlFlowGraph:
             source_block = edge.source.bb
             target_block = edge.dest.bb
 
+            if source_block.unreachable:
+                continue
+
             # print(f"Block #{source_block.number} -> Block #{target_block.number}")
             # if (source_block.number, target_block.number) == (2, 4):
             #     from trepan.api import debug; debug()
@@ -260,7 +263,7 @@ class ControlFlowGraph:
                 # "if ... <falltrough after end> end" or
                 # "while ... break <jump to end> ... end
                 edge.scoping_kind = ScopeEdgeKind.Join
-                target_block.flags.add(BB_JOIN_NODE)
+                target_block.flags.add(BB_JOIN_POINT)
             pass
         return
 

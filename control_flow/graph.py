@@ -81,7 +81,7 @@ BB_JUMP_CONDITIONAL = 14
 BB_JUMP_TO_FALLTHROUGH = 15
 
 # The beginning of the basic block is a join.
-BB_JOIN_NODE = 16
+BB_JOIN_POINT = 16
 
 # Basic block ends in a return or an raise that is not inside
 # a "try" block.
@@ -100,7 +100,7 @@ FLAG2NAME = {
     BB_SINGLE_POP_BLOCK: "single pop block",
     BB_STARTS_POP_BLOCK: "starts with pop block",
     BB_EXCEPT: "except",
-    BB_JOIN_NODE: "join block",
+    BB_JOIN_POINT: "join block",
     BB_JUMP_UNCONDITIONAL: "unconditional",
     BB_JUMP_CONDITIONAL: "conditional jump",
     BB_JUMP_TO_FALLTHROUGH: "jump to fallthough",

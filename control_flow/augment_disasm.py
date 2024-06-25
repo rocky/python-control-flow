@@ -383,7 +383,7 @@ def augment_instructions(
     dom_tree = cfg.dom_forest
     bb2dom_node = {node.bb: node for node in dom_tree.nodes}
 
-    version_tuple = opc.version_tuple
+    # version_tuple = opc.version_tuple
     # block_stack = [current_block]
 
     starts = {current_block.start_offset: current_block}
@@ -414,6 +414,8 @@ def augment_instructions(
         # These are done for basic blocks, dominators,
         # and jump target locations.
         offset = inst.offset
+        opname = inst.opname
+        opcode = inst.opcode
 
         new_bb = starts.get(offset, None)
         if new_bb:
@@ -428,7 +430,7 @@ def augment_instructions(
             reach_ends.append(dom)
             dom_reach_ends[dom.reach_offset] = reach_ends
 
-            if inst.opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
+            if opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
                 # Use the basic block of the block loop successor,
                 # this is the main body of the loop, as the block to
                 # check for leaving the loop.
@@ -492,36 +494,37 @@ def augment_instructions(
             # FIXME: this shouldn't be needed
             bb = dom.bb
 
-        if inst.opcode in opc.JUMP_OPS:
+        if opcode in opc.JUMP_OPS:
             jump_target = inst.argval
             target_inst = instructions[offset2inst_index[jump_target]]
             target_bb = offset2bb[target_inst.offset]
             target_dom_set = target_bb.dom_set
             if inst.argval < offset:
-                # Classify backward loop jumps
-                pseudo_op_name = (
-                    "JUMP_FOR"
-                    if target_inst.opcode in bb_mgr.FOR_INSTRUCTIONS
-                    else "JUMP_LOOP"
-                )
-                pseudo_inst = ExtendedInstruction(
-                    opname=pseudo_op_name,
-                    opcode=EXTENDED_OPMAP[pseudo_op_name],
-                    optype="pseudo",
-                    inst_size=0,
-                    arg=target_dom_set,
-                    argval=target_dom_set,
-                    argrepr=f"{target_dom_set}",
-                    has_arg=True,
-                    offset=offset,
-                    starts_line=None,
-                    is_jump_target=False,
-                    has_extended_arg=False,
-                    positions=None,
-                    basic_block=bb,
-                    dominator=dom,
-                )
-                augmented_instrs.append(pseudo_inst)
+                if opcode in bb_mgr.JUMP_UNCONDITIONAL:
+                    # Classify backward loop jumps
+                    pseudo_op_name = (
+                        "JUMP_FOR"
+                        if target_inst.opcode in bb_mgr.FOR_INSTRUCTIONS
+                        else "JUMP_LOOP"
+                    )
+                    pseudo_inst = ExtendedInstruction(
+                        opname=pseudo_op_name,
+                        opcode=EXTENDED_OPMAP[pseudo_op_name],
+                        optype="pseudo",
+                        inst_size=0,
+                        arg=target_dom_set,
+                        argval=target_dom_set,
+                        argrepr=f"{target_dom_set}",
+                        has_arg=True,
+                        offset=offset,
+                        starts_line=None,
+                        is_jump_target=False,
+                        has_extended_arg=False,
+                        positions=None,
+                        basic_block=bb,
+                        dominator=dom,
+                    )
+                    augmented_instrs.append(pseudo_inst)
             else:
                 # Not backward jump, Note: if jump == offset, then we have an
                 # infinite loop. We won't check for that here though.
@@ -566,13 +569,13 @@ def augment_instructions(
                         loop_related_jump = True
                         pass
                 if not loop_related_jump:
-                    # Classify jumps that jump to the join of some
-                    # high-level Python block
-                    # We find the join offset using reverse dominators?
+                    # Mark conditional join jump instructions
+                    print("FIXME: mark conditional join jump instructions")
+
                     # FIXME: complete...
 
                     # if jump_target == follow_bb_offset:
-                    #     pseudo_inst = ExtendedInstruction(
+                    #     inst = ExtendedInstruction(
                     #         "JUMP_END_BLOCK",
                     #         1002,
                     #         "pseudo",
@@ -615,8 +618,8 @@ def augment_instructions(
             augmented_instrs.append(pseudo_inst)
 
         extended_inst = ExtendedInstruction(
-            opname=inst.opname,
-            opcode=inst.opcode,
+            opname=opname,
+            opcode=opcode,
             optype=inst.optype,
             inst_size=inst.inst_size,
             arg=inst.arg,
