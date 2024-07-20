@@ -86,8 +86,12 @@ In addition to the basic control flow, we also mark and color boxes with dominat
 .. image:: doc-example/flow+dom-3.8--count-bits.cpython-38-module.png
 
 
-Regions with the same color are at the same nesting level. Colors get darker as the region is more nested. 
+Regions with the same color are at the same nesting level. Colors get darker as the region is more nested.
 
 Here the additional border indicates that a block is part of some non-trivial dominator region. (A "trivial" dominator region is where the block just dominates itself.)
 
 In addition, if a jump or fallthough jumps out of its dominator region that is shown in brown. If any basic block is jumped to using a jump-out (or end scope) kind of edge, then the box has a brown outline.
+
+Inside the block text we now add the dominator region number of for a block in parenthesis. For example Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
+
+Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different _scopes_ under basic block 3.
