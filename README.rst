@@ -54,26 +54,26 @@ Here is what the colors on the arrows indicate:
 
 .. glossary::
 
-  red
+red
     the first alternative of a group of two alternatives
 
-   blue
+blue
     the second alternative of a group of two alternatives
 
-   green
+green
      a looping (backwards) jump
 
 Here is what the line styles on the arrows indicate:
 
 .. glossary::
 
-   solid
+solid
      an unconditional (and forward) jump
 
-   dashed
+dashed
      the fallthough path of a conditional jump
 
-   dotted
+dotted
      the jump path of a conditional jump
 
 If there is no arrow head on an arrow, then the block follows the
