@@ -1,4 +1,4 @@
-*Note: the branch `post-dominator-refactor branch README.rst <https://github.com/rocky/python-control-flow/blob/post-dominator-refactor/README.rst>`_ has the more information.*
+*Note: the branch ``post-dominator-refactor`` branch README.rst https://github.com/rocky/python-control-flow/blob/post-dominator-refactor/README.rst has the more information.*
 
 This is a Toolkit for getting control flow informaion from Python bytecode
 
