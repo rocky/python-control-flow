@@ -43,7 +43,7 @@ We can get control flow information using for this program using::
 
   python ./test/test-bb2.py doc-example/count-bits.cpython-38.pyc
 
-After running, ``/tmp`` you'll find some ``.dot`` files and some ``.png`` images generated for the main routine.
+After running, in ``/tmp`` you'll find some ``.dot`` files and some ``.png`` images generated for the main routine.
 
 ``flow-3.8--count-bits.cpython-38-module.png`` is a PNG image for the control flow.
 
