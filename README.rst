@@ -19,7 +19,7 @@ Example
 
 For now the Python in ``test/test_bb2.py`` show what's up the best.
 
-Consider this simple Python program:
+Consider this simple Python program taken from my `BlackHat Asia 2024 talk <https://www.blackhat.com/asia-24/briefings/schedule/index.html#how-to-get-the-most-out-of-the-python-decompilers-uncompyle-and-decompyle---how-to-write-and-read-a-bytecode-decompiler-37789>`_:
 
 .. code-block:: python
 
@@ -52,8 +52,6 @@ After running, ``/tmp`` you'll find some ``.dot`` files and some ``.png`` images
 
 Here is what the colors on the arrows indicate:
 
-.. glossary::
-
 red
     the first alternative of a group of two alternatives
 
@@ -64,8 +62,6 @@ green
      a looping (backwards) jump
 
 Here is what the line styles on the arrows indicate:
-
-.. glossary::
 
 solid
      an unconditional (and forward) jump
