@@ -48,7 +48,7 @@ elif filename.endswith(".pyc"):
         co,
         _,  # is_pypy,
         _,  # source_size,
-        _,  # sip_hash,
+        _  # sip_hash,
     ) = load_module(pyc_filename)
 
 func_name="<module>"

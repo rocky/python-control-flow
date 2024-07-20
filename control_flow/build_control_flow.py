@@ -103,7 +103,8 @@ def build_and_analyze_control_flow(
             func_or_code, cfg, opc, offset2inst_index, bb_mgr
         )
         for inst in augmented_instrs:
-            print(inst.disassemble(opc))
+            line_starts = dict(opc.findlinestarts(code))
+            print(inst.disassemble(opc, line_starts))
 
         # return cs_str
     except Exception:
