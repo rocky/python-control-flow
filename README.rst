@@ -96,4 +96,4 @@ In addition, if a jump or fallthough jumps out of its dominator region that is s
 
 Inside the block text we now add the dominator region number of for a block in parenthesis. For example Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
 
-Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different _scopes_ under basic block 3.
+Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different *scopes* under basic block 3.
