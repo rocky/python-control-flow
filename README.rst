@@ -11,8 +11,7 @@ Specifically:
 * Graphs via `dot <https://graphviz.org/>`_ the control-flow graph and dominator tree.
 
 
-I've used some routines from Romain Gaucher's ``equip`` as a starting point.
-``equip`` is (c) 2014 by Romain Gaucher
+I've used some routines from Romain Gaucher's `equip <https://github.com/neuroo/equip>`_ as a starting point.
 
 Example
 -------
@@ -39,7 +38,7 @@ Consider this simple Python program taken from my `BlackHat Asia 2024 talk <http
        i << 1
     # loop-end join point
 
-You can find this byte-compiled to Python 3.8 bytecode in ``doc-example/count-bits.cpython-38.pyc``.
+You can find this byte-compiled to Python 3.8 bytecode in `doc-example/count-bits.cpython-38.pyc <https://github.com/rocky/python-control-flow/blob/post-dominator-refactor/doc-example/count-bits.cpython-38.pyc>`_.
 We can get control flow information using for this program using::
 
   python ./test/test-bb2.py doc-example/count-bits.cpython-38.pyc
@@ -84,10 +83,10 @@ Control-Flow with Dominator Regions
 
 In addition to the basic control flow, we also mark and color boxes with dominator regions.
 
-Regions with the same color are at the same nesting level. Colors get darker as the region is more nested. See flow+dom-3.8--count-bits.cpython-38-module.png
-
 .. image:: doc-example/flow+dom-3.8--count-bits.cpython-38-module.png
 
+
+Regions with the same color are at the same nesting level. Colors get darker as the region is more nested. 
 
 Here the additional border indicates that a block is part of some non-trivial dominator region. (A "trivial" dominator region is where the block just dominates itself.)
 
