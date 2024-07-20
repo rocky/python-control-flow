@@ -86,7 +86,9 @@ In addition to the basic control flow, we also mark and color boxes with dominat
 .. image:: doc-example/flow+dom-3.8--count-bits.cpython-38-module.png
 
 
-Regions with the same color are at the same nesting level. Colors get darker as the region is more nested.
+Regions with the the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color. However even though Block 6 is the same color it is not at the same nesting level, although it *is* inside the same dominator region.
+
+Colors get darker as the region is more nested.
 
 Here the additional border indicates that a block is part of some non-trivial dominator region. (A "trivial" dominator region is where the block just dominates itself.)
 
