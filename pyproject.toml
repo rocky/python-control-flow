@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=61.2",
+    "setuptools>=71.04",
 ]
 
 build-backend = "setuptools.build_meta"
@@ -14,7 +14,7 @@ name = "control_flow"
 description = "Python Bytecode Control Flow Toolkit"
 dependencies = [
     "click",
-    "xdis >= 6.0.0, < 6.2.0",
+    "xdis >= 6.1.1, < 6.3.0",
     "six >= 1.10.0",
 ]
 readme = "README.rst"

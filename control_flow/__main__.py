@@ -4,6 +4,7 @@
 import click
 import importlib
 import os
+import os.path as osp
 import sys
 
 from xdis.load import check_object_path, load_module
@@ -83,6 +84,8 @@ def main(import_name, member, filename, graph):
             sys.exit(1)
 
     name = co.co_name
+    if name == "<module>":
+        name = osp.basename(co.co_filename)
     if name.startswith("<"):
         name = name[1:]
     if name.endswith(">"):

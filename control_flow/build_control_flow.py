@@ -44,9 +44,9 @@ def build_and_analyze_control_flow(
     if func_or_code_name.endswith(">"):
         func_or_code_name = func_or_code_name[:-1]
 
-    print(func_or_code_name)
+    # print(func_or_code_name)
 
-    disco(code_version_tuple, code, func_or_code_timestamp)
+    # disco(code_version_tuple, code, func_or_code_timestamp)
 
     if opc is None:
         opc = get_opcode_module(code_version_tuple, VARIANT)
@@ -102,12 +102,12 @@ def build_and_analyze_control_flow(
 
         assert cfg.graph
 
-        print("=" * 30)
+        # print("=" * 30)
         augmented_instrs = augment_instructions(
             func_or_code, cfg, opc, offset2inst_index, bb_mgr
         )
-        for inst in augmented_instrs:
-            print(inst.disassemble(opc))
+        # for inst in augmented_instrs:
+        #     print(inst.disassemble(opc))
 
         # return cs_str
     except Exception:
@@ -116,6 +116,8 @@ def build_and_analyze_control_flow(
         traceback.print_exc()
         print("Unexpected error:", sys.exc_info()[0])
         print(f"{func_or_code_name} had an error")
+        return cfg, []
+    return cfg, augmented_instrs
 
 
 def classify_join_nodes_and_edges(cfg: ControlFlowGraph):
@@ -147,7 +149,6 @@ def classify_join_nodes_and_edges(cfg: ControlFlowGraph):
                 )
                 and not (edge.source.flags & {BB_NOFOLLOW, BB_JUMP_UNCONDITIONAL})
             ):
-                print(f"WOOT: join {edge}")
                 node.is_join_node = True
                 edge.is_join = True
         if node.is_join_node is not True:
