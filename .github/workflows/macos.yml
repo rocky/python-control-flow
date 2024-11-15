@@ -1,4 +1,4 @@
-name: uncompyle6 (osx)
+name: control_flow (macos)
 
 on:
   push:
