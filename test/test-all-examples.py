@@ -9,7 +9,7 @@ def testing():
     assert (
         False
     ), (
-     "This should have been replaced via read-in python script with a function called"
+     "This should have been replaced via a read-in Python script with a function called"
      " testing"
      )
 

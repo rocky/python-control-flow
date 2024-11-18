@@ -2,7 +2,6 @@
 
 import sys
 from xdis.codetype.base import iscode
-from xdis.disasm import disco
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
@@ -22,6 +21,8 @@ def build_and_analyze_control_flow(
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
     func_or_code_name: str = "",
+    debug: dict = {},
+    file_part: str = "",
 ):
     """
     Compute control-flow graph, dominator information, and
@@ -52,7 +53,8 @@ def build_and_analyze_control_flow(
         opc = get_opcode_module(code_version_tuple, VARIANT)
 
     offset2inst_index = {}
-    bb_mgr = basic_blocks(code, offset2inst_index, code_version_tuple)
+    linestarts = dict(opc.findlinestarts(code, dup_lines=True))
+    bb_mgr = basic_blocks(code, linestarts, offset2inst_index, code_version_tuple)
 
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
@@ -63,15 +65,16 @@ def build_and_analyze_control_flow(
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
         write_dot(
-            func_or_code_name,
+            f"{file_part}{func_or_code_name}",
             f"/tmp/flow-{version}-",
             cfg.graph,
             write_png=True,
             exit_node=cfg.exit_node,
         )
 
+    assert cfg.graph is not None
     try:
-        DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
+        cfg.dom_tree = DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
         for node in cfg.graph.nodes:
             if node.bb.nesting_depth < 0:
                 node.is_dead_code = True
@@ -83,16 +86,17 @@ def build_and_analyze_control_flow(
 
         if graph_options in ("all", "dominators"):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow-dom-{version}-",
-                cfg.dom_tree,
+                cfg.dom_forest,
                 write_png=True,
                 exit_node=cfg.exit_node,
             )
 
+        cfg.classify_edges()
         if graph_options in ("all",):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow+dom-{version}-",
                 cfg.graph,
                 write_png=True,
@@ -102,12 +106,14 @@ def build_and_analyze_control_flow(
 
         assert cfg.graph
 
-        # print("=" * 30)
         augmented_instrs = augment_instructions(
             func_or_code, cfg, opc, offset2inst_index, bb_mgr
         )
-        # for inst in augmented_instrs:
-        #     print(inst.disassemble(opc))
+        if graph_options in ("all", "augmented-instructions"):
+            print("=" * 30)
+            print("Augmented Instructions:")
+            for inst in augmented_instrs:
+                print(inst.disassemble(opc))
 
         # return cs_str
     except Exception:

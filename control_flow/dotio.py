@@ -14,24 +14,16 @@ from control_flow.graph import (
     BB_ENTRY,
     BB_EXIT,
     BB_END_FINALLY,
+    BB_JOIN_POINT,
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_NOFOLLOW,
-    Node,
+    ScopeEdgeKind,
     format_flags_with_width,
 )
 
-DOT_STYLE: Final = """
-  graph[fontsize=10 fontname="DejaVu Sans Mono"];
-
-  mclimit=1.5;
-  rankdir=TD; ordering=out;
-  color="#efefef";
-
-  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
-       fillcolor="#efefef", width=2];
-  edge[fontsize=10 fontname="Verdana"];
-"""
+DARK_GREEN = "#006400"
+GRAY92 = "#ededed"
 
 BB_LEVEL_BACKGROUNDS = (
     {"name": "DodgerBlue4", "hex": "#104e8b", "bg": "white"},
@@ -46,15 +38,27 @@ BB_LEVEL_BACKGROUNDS = (
     {"name": "LightSteelBlue1", "hex": "#cae1ff", "bg": "black"},
 )
 
+DOT_STYLE: Final = f"""
+  graph[fontsize=10 fontname="DejaVu Sans Mono"];
+
+  mclimit=1.5;
+  rankdir=TD; ordering=out;
+  color="{GRAY92}";
+
+  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
+       fillcolor="{GRAY92}", width=2];
+  edge[fontsize=10 fontname="Verdana"];
+"""
+
+
 MAX_COLOR_LEVELS: Final = len(BB_LEVEL_BACKGROUNDS) - 1
 
 flags_prefix: Final = "flags="
 FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
 
-
-class DotConverter(object):
-    def __init__(self, graph, exit_node: Optional[Node] = None):
+class DotConverter:
+    def __init__(self, graph):
         self.g = graph
         self.exit_node = graph
         self.buffer = ""
@@ -74,8 +78,8 @@ class DotConverter(object):
         return color_info["hex"], color_info["bg"]
 
     @staticmethod
-    def process(graph, exit_node: Optional[BasicBlock], is_dominator_format: bool):
-        converter = DotConverter(graph, exit_node)
+    def process(graph, exit_node: BasicBlock, is_dominator_format: bool):
+        converter = DotConverter(graph)
         converter.run(exit_node, is_dominator_format)
         return converter.buffer
 
@@ -131,30 +135,31 @@ class DotConverter(object):
         dest_port = ""
         weight = 1
 
-        if edge.is_join:
+        if edge.scoping_kind == ScopeEdgeKind.Join:
             arrow_color = ":brown;0.01"
         else:
             arrow_color = ""
 
-        color = f'[color="blue:{arrow_color}"]' if edge.is_conditional_jump() else ""
+        color = f'[color="blue{arrow_color}"]' if edge.is_conditional_jump() else ""
 
         if edge.kind in (
             "fallthrough",
             "no fallthrough",
-            "follow",
             "exit edge",
             "dom-edge",
             "pdom-edge",
         ):
-            if edge.kind == "follow":
-                style = '[style="invis"]'
+            if edge.kind == "no fallthrough":
+                style = '[style="dashed"] [arrowhead="none"]'
             elif edge.kind == "fallthrough":
                 color = f'[color="red{arrow_color}"]'
+                if BB_NOFOLLOW in edge.source.flags:
+                    style = '[style="dashed"] [arrowhead="none"]'
                 pass
             if edge.kind != "exit edge":
                 weight = 10
         elif edge.kind == "exception":
-            style = '[color="red"]'
+            style = f'[color="red{arrow_color}"]'
             if edge.source.bb.number + 1 == edge.dest.bb.number:
                 weight = 10
             else:
@@ -167,8 +172,9 @@ class DotConverter(object):
             # edge_port = '[headport=nw] [tailport=sw]';
             # edge_port = '[headport=_] [tailport=_]';
         else:
-            if edge.kind == "forward-scope":
+            if edge.kind == "for-finish":
                 style = '[style="dotted"]'
+                color = '[color="MediumBlue"]'
                 if edge.source.bb.number + 1 == edge.dest.bb.number:
                     weight = 10
                     source_port = ":c"
@@ -179,16 +185,16 @@ class DotConverter(object):
                     dest_port = ":ne"
                 pass
             elif edge.kind == "self-loop":
-                edge_port = '[headport=ne, tailport=se, color="#006400"]'
+                edge_port = f"[headport=ne, tailport=se, color='{DARK_GREEN}{arrow_color}']"
                 pass
             elif edge.kind == "looping":
+                color = f'[color="{DARK_GREEN}{arrow_color}"]'
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
                     # For a loop to the immediate predecessor we use
                     # a somewhat straight centered backward arrow.
                     source_port = ":c"
                     dest_port = ":c"
                 else:
-                    color = f'[color="#006400{arrow_color}"]'
                     source_port = ":nw"
                     dest_port = ":sw"
                     pass
@@ -215,9 +221,6 @@ class DotConverter(object):
                 source_port = ":se"
                 dest_port = ":ne"
                 pass
-        elif BB_NOFOLLOW in edge.source.flags:
-            style = '[style="dashed"] [arrowhead="none"]'
-            weight = 10
 
         if style == "" and edge.source.bb.unreachable:
             style = '[style="dashed"] [arrowhead="empty"]'
@@ -256,37 +259,36 @@ class DotConverter(object):
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
-        if not is_dominator_format:
-            if not is_exit and len(node.jump_offsets) > 0:
-                jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
-                pass
-
-            if node.flags:
-                flag_text = "%s%s%s" % (
-                    align,
-                    flags_prefix,
-                    format_flags_with_width(
-                        node.flags,
-                        NODE_TEXT_WIDTH - FEL,
-                        align + (" " * (len("flags="))),
-                    ),
-                )
-            else:
-                flag_text = ""
-                pass
-
-            if hasattr(node, "reach_offset"):
-                reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
-                pass
+        if not is_exit and len(node.jump_offsets) > 0:
+            jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
             pass
+
+        if node.flags:
+            flag_text = "%s%s%s" % (
+                align,
+                flags_prefix,
+                format_flags_with_width(
+                    node.flags,
+                    NODE_TEXT_WIDTH - FEL,
+                    align + (" " * (len("flags="))),
+                ),
+            )
+        else:
+            flag_text = ""
+            pass
+
+        if hasattr(node, "reach_offset"):
+            reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
+            pass
+        pass
 
         if is_exit:
             return "flags=exit"
 
-        offset_text = "offset: %d..%d" % (node.start_offset, node.end_offset)
-        l = len(offset_text)
-        if l < NODE_TEXT_WIDTH:
-            offset_text += " " * (NODE_TEXT_WIDTH - l)
+        offset_text = f"offset: {node.start_offset}..{node.end_offset}"
+        text_len = len(offset_text)
+        if text_len < NODE_TEXT_WIDTH:
+            offset_text += " " * (NODE_TEXT_WIDTH - text_len)
 
         return f"{offset_text}{flag_text}{jump_text}{reach_offset_text}"
 
@@ -306,9 +308,9 @@ class DotConverter(object):
         if exit_node in {node.bb for node in node.bb.dom_set}:
             dom_set_len -= 1
         if BB_ENTRY in node.bb.flags or dom_set_len > 0:
-            style = '[shape = "box3d"]'
+            style = '[shape = "box", peripheries=2]'
         elif BB_EXIT in node.bb.flags:
-            style = '[shape = "diamond"]'
+            style = '[style = "rounded"]'
             align = "\n"
             is_exit = True
         elif not node.bb.predecessors:
@@ -318,9 +320,13 @@ class DotConverter(object):
         if is_dominator_format:
             fillcolor, fontcolor = self.get_node_colors(node.bb.nesting_depth)
             # print("XXX", node.bb, node.bb.nesting_depth, fillcolor, fontcolor)
-            style += f'[fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
+            color = 'color=brown, ' if BB_JOIN_POINT in node.bb.flags else ""
+            style += f'[{color}fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
 
         level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""
+
+        if node.bb.starts_line is not None:
+            level += f", Line {node.bb.starts_line} "
 
         label = '[label="Basic Block %d%s%s%s%s"]' % (
             node.number,

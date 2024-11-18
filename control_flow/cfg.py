@@ -1,12 +1,15 @@
 # Copyright (c) 2021, 2024 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from control_flow.graph import (
     DiGraph,
+    Edge,
     Node,
+    ScopeEdgeKind,
     TreeGraph,
     jump_flags,
+    BB_JOIN_POINT,
     BB_JUMP_CONDITIONAL,
     BB_LOOP,
     BB_NOFOLLOW,
@@ -29,16 +32,21 @@ class ControlFlowGraph:
         self.blocks = bb_mgr.bb_list
         self.offset2block: Dict[int, Node] = {}
         self.offset2block_sorted: Tuple[int, Node] = tuple()
+        self.offset2edges: Dict[int, List[Edge]] = {}
         self.block_nodes = {}
         self.graph = None
         self.entry_node = None
         self.exit_node = bb_mgr.exit_block
 
         #
-        self.dom_tree: Optional[TreeGraph] = None
-        # Maximum nesting in control flow grapy. -1 means this hasn't been
+        # Maximum nesting in control flow graph. -1 means this hasn't been
         # computed. It is computed when self.dom_tree is computed and also is
         # stored in there.
+
+        # Result from running dfs_forest.
+        # FIXME: organize this better.
+        self.dom_forest: Optional[TreeGraph] = None
+
         self.max_nesting_depth: int = -1
 
         self.analyze(self.blocks, bb_mgr.exit_block)
@@ -55,7 +63,21 @@ class ControlFlowGraph:
         self.build_flowgraph(blocks, exit_block)
 
     def build_flowgraph(self, blocks, exit_block):
+        """
+        Build a control-flow graph from basic blocks `blocks`.
+        The exit block is `exit_block`.
+        """
+
         g = DiGraph()
+
+        def add_edge(source_node, dest_node, edge_kind: str) -> Edge:
+            new_edge = g.make_add_edge(source_node, dest_node, edge_kind)
+            target_offset = new_edge.dest.bb.start_offset
+            if target_offset not in self.offset2edges:
+                self.offset2edges[target_offset] = [new_edge]
+            else:
+                self.offset2edges[target_offset].append(new_edge)
+            return new_edge
 
         self.block_nodes = {}
 
@@ -132,25 +154,26 @@ class ControlFlowGraph:
 
             # Is this dead code? (Remove self loops in calculation)
             # Entry node, blocks[0] is never unreachable
-            if not block.predecessors - {block} and block != blocks[0]:
+            if not (block.predecessors - {block} and block != blocks[0]
+                    or BB_ENTRY in block.flags):
                 block.unreachable = True
 
             block = sorted_blocks[i]
             if block.follow_offset:
                 if BB_NOFOLLOW in block.flags:
                     kind = "no fallthrough"
-                    g.make_add_edge(
+                    add_edge(
                         self.block_nodes[block], self.exit_block, "exit edge"
                     )
                 else:
                     kind = "fallthrough"
-                g.make_add_edge(
+                add_edge(
                     self.block_nodes[block],
                     self.block_nodes[self.block_offsets[block.follow_offset]],
                     kind,
                 )
             elif BB_EXIT not in block.flags:
-                g.make_add_edge(self.block_nodes[block], self.exit_block, "exit edge")
+                add_edge(self.block_nodes[block], self.exit_block, "exit edge")
 
             # Connect the current block to its jump targets
             for jump_index in block.jump_offsets:
@@ -160,36 +183,87 @@ class ControlFlowGraph:
                     target_block = self.block_offsets[jump_index]
                     if jump_index > block.start_offset:
                         if BB_LOOP in block.flags:
-                            edge_type = "forward-scope"
+                            edge_kind = "for-finish"
                         elif BB_JUMP_CONDITIONAL in self.block_nodes[block].flags:
-                            edge_type = "forward-conditional"
+                            edge_kind = "forward-conditional"
                         else:
-                            edge_type = "forward"
+                            edge_kind = "forward"
                     else:
-                        edge_type = "looping"
+                        edge_kind = "looping"
                         pass
 
                     if self.block_nodes[target_block] == self.block_nodes[block]:
-                        edge_type = "self-loop"
+                        edge_kind = "self-loop"
 
-                    g.make_add_edge(
+                    add_edge(
                         self.block_nodes[block],
                         self.block_nodes[target_block],
-                        edge_type,
+                        edge_kind,
                     )
                     pass
                 pass
             for jump_index in block.exception_offsets:
                 source_block = self.block_offsets[jump_index]
                 assert jump_index <= source_block.start_offset
-                edge_type = "exception"
-                g.make_add_edge(
-                    self.block_nodes[source_block], self.block_nodes[block], edge_type
+                edge_kind = "exception"
+                add_edge(
+                    self.block_nodes[source_block], self.block_nodes[block], edge_kind
                 )
                 pass
             pass
 
         self.graph = g
+        return
+
+    def classify_edges(self):
+        """
+        Classify edges into alternate edges, looping edges, or join edges.
+        There is a lower-level classification going on in edge.kind.
+        """
+
+        for edge in self.graph.edges:
+
+            if edge.kind == "no fallthrough":
+                # Edge is not to be followed.
+                continue
+
+            # If the immediate dominator of the source and destination
+            # node is the same, then we have an alternate edge.
+            # If the the edge is a backwards jump, then it is a looping edge
+            # If the edge is not looping and the immediate dominator is
+            # not the same, then we have a join edge.
+
+            # Looping edges have already been classified, so use those when
+            # we can.
+            if edge.kind in ("looping", "self-loop"):
+                edge.scoping_kind = ScopeEdgeKind.Looping
+                continue
+            source_block = edge.source.bb
+            target_block = edge.dest.bb
+
+            if source_block.unreachable:
+                continue
+
+            # print(f"Block #{source_block.number} -> Block #{target_block.number}")
+            # if (source_block.number, target_block.number) == (2, 4):
+            #     from trepan.api import debug; debug()
+
+            if source_block.number == self.dom_tree.doms[target_block].number:
+                # Jump to target starts a new scope.
+                # Example:
+                #   if <jump-to-then> then <jump-is-here> ... end
+                edge.scoping_kind = ScopeEdgeKind.Alternate
+            elif (self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]
+                  or self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]):
+                # The source block is jumping or falling out of a scope: its
+                # `dom` or `scope number` is more nested than the target scope.
+                # Examples:
+                # "if ... <jump to end> else ... end" or
+                # "if ... <falltrough after end> end" or
+                # "while ... break <jump to end> ... end
+                edge.scoping_kind = ScopeEdgeKind.Join
+                target_block.flags.add(BB_JOIN_POINT)
+            pass
         return
 
     def get_node(self, offset: int) -> Node:

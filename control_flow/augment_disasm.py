@@ -19,7 +19,14 @@ from xdis.codetype.base import CodeBase
 
 from control_flow.bb import BBMgr, BasicBlock
 from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import Node, BB_FOR, BB_LOOP, BB_NOFOLLOW
+from control_flow.graph import (
+    Node,
+    BB_FOR,
+    BB_JOIN_POINT,
+    BB_LOOP,
+    BB_NOFOLLOW,
+    ScopeEdgeKind,
+)
 
 
 class JumpTarget(IntEnum):
@@ -210,6 +217,18 @@ class _ExtendedInstruction(NamedTuple):
     dominator: Optional[Node] = None
 
 
+EXTENDED_OPMAP = {
+    "BB_END": 1001,
+    "BB_START": 1002,
+    "BREAK_FOR": 1003,
+    "BREAK_LOOP": 1004,
+    "BLOCK_END_FALLTHROUGH_JOIN": 1005,
+    "BLOCK_END_JUMP_JOIN": 1006,
+    "JUMP_FOR": 1007,
+    "JUMP_LOOP": 1008,
+}
+
+
 class ExtendedInstruction(_ExtendedInstruction, Instruction):
     """Details for an extended bytecode operation
 
@@ -372,10 +391,11 @@ def augment_instructions(
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
 
-    dom_tree = cfg.dom_tree
-    bb2dom_node = {node.bb: node for node in dom_tree.nodes}
-    version_tuple = opc.version_tuple
-    # block_stack = [current_block]
+    # Create a mapping from a basic block, which has dominator information, to a graph node.
+    # Note: unreachable basic blocks do not have a "doms" field.
+    bb2dom_node = {
+        bb: next(iter(bb.doms - bb.dom_set)) for bb in cfg.blocks if hasattr(bb, "doms")
+    }
 
     starts = {current_block.start_offset: current_block}
     dom_reach_ends = {}
@@ -405,6 +425,8 @@ def augment_instructions(
         # These are done for basic blocks, dominators,
         # and jump target locations.
         offset = inst.offset
+        opname = inst.opname
+        opcode = inst.opcode
 
         new_bb = starts.get(offset, None)
         if new_bb:
@@ -414,21 +436,47 @@ def augment_instructions(
             new_dom = bb2dom_node.get(bb, dom)
             if new_dom is not None:
                 dom = new_dom
-            dom_number = dom.bb.number
+            # dom_number = dom.bb.number
             reach_ends = dom_reach_ends.get(dom.reach_offset, [])
             reach_ends.append(dom)
             dom_reach_ends[dom.reach_offset] = reach_ends
 
-            if inst.opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
+            if opcode in bb_mgr.FOR_INSTRUCTIONS or BB_LOOP in bb.flags:
                 # Use the basic block of the block loop successor,
                 # this is the main body of the loop, as the block to
                 # check for leaving the loop.
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
 
+            # For now we will assume that edges are sorted so in outermost-to-innermost nesting order.
+            # Add any psuedo-token join markers
+            if offset in cfg.offset2edges:
+                for edge in reversed(cfg.offset2edges[offset]):
+                    if edge.scoping_kind == ScopeEdgeKind.Join:
+                        from_bb_number = edge.source.bb.number
+                        op_name = "BLOCK_END_FALLTHROUGH_JOIN" if edge.kind == "fallthrough" else "BLOCK_END_JUMP_JOIN"
+                        pseudo_inst = ExtendedInstruction(
+                            opname=op_name,
+                            opcode=EXTENDED_OPMAP[op_name],
+                            optype="pseudo",
+                            inst_size=0,
+                            arg=from_bb_number,
+                            argval=edge,
+                            argrepr=f"from basic block #{from_bb_number}",
+                            has_arg=True,
+                            offset=offset,
+                            starts_line=None,
+                            is_jump_target=False,
+                            has_extended_arg=False,
+                            positions=None,
+                            basic_block=bb,
+                            dominator=dom,
+                        )
+                        augmented_instrs.append(pseudo_inst)
+
             pseudo_inst = ExtendedInstruction(
                 opname="BB_START",
-                opcode=1001,
+                opcode=EXTENDED_OPMAP["BB_START"],
                 optype="pseudo",
                 inst_size=0,
                 arg=bb.number,
@@ -457,41 +505,41 @@ def augment_instructions(
             # FIXME: this shouldn't be needed
             bb = dom.bb
 
-        if inst.opcode in opc.JUMP_OPS:
+        if opcode in opc.JUMP_OPS:
             jump_target = inst.argval
             target_inst = instructions[offset2inst_index[jump_target]]
             target_bb = offset2bb[target_inst.offset]
             target_dom_set = target_bb.dom_set
             if inst.argval < offset:
-                # Classify backward loop jumps
-                pseudo_op_name = (
-                    "JUMP_FOR"
-                    if target_inst.opcode in bb_mgr.FOR_INSTRUCTIONS
-                    else "JUMP_LOOP"
-                )
-                pseudo_inst = ExtendedInstruction(
-                    opname=pseudo_op_name,
-                    opcode=1001,
-                    optype="pseudo",
-                    inst_size=0,
-                    arg=target_dom_set,
-                    argval=target_dom_set,
-                    argrepr=f"{target_dom_set}",
-                    has_arg=True,
-                    offset=offset,
-                    starts_line=None,
-                    is_jump_target=False,
-                    has_extended_arg=False,
-                    positions=None,
-                    basic_block=bb,
-                    dominator=dom,
-                )
-                augmented_instrs.append(pseudo_inst)
+                if opcode in bb_mgr.JUMP_UNCONDITIONAL:
+                    # Classify backward loop jumps
+                    pseudo_op_name = (
+                        "JUMP_FOR"
+                        if target_inst.opcode in bb_mgr.FOR_INSTRUCTIONS
+                        else "JUMP_LOOP"
+                    )
+                    pseudo_inst = ExtendedInstruction(
+                        opname=pseudo_op_name,
+                        opcode=EXTENDED_OPMAP[pseudo_op_name],
+                        optype="pseudo",
+                        inst_size=0,
+                        arg=target_dom_set,
+                        argval=target_dom_set,
+                        argrepr=f"{target_dom_set}",
+                        has_arg=True,
+                        offset=offset,
+                        starts_line=None,
+                        is_jump_target=False,
+                        has_extended_arg=False,
+                        positions=None,
+                        basic_block=bb,
+                        dominator=dom,
+                    )
+                    augmented_instrs.append(pseudo_inst)
             else:
                 # Not backward jump, Note: if jump == offset, then we have an
                 # infinite loop. We won't check for that here though.
                 # Check for jump break out of a loop
-                loop_related_jump = False
                 if len(loop_stack) > 0:
                     # Check for loop-related jumps such as those that
                     # can occur from break, continue.  Note: we also
@@ -511,7 +559,7 @@ def augment_instructions(
                             pseudo_op_name = "BREAK_LOOP"
                         pseudo_inst = ExtendedInstruction(
                             opname=pseudo_op_name,
-                            opcode=1002,
+                            opcode=EXTENDED_OPMAP[pseudo_op_name],
                             optype="pseudo",
                             inst_size=0,
                             arg=target_dom_set,
@@ -528,33 +576,7 @@ def augment_instructions(
                             dominator=dom,
                         )
                         augmented_instrs.append(pseudo_inst)
-                        loop_related_jump = True
                         pass
-                if not loop_related_jump:
-                    # Classify jumps that jump to the join of some
-                    # high-level Python block
-                    # We find the join offset using reverse dominators?
-                    # FIXME: complete...
-
-                    # if jump_target == follow_bb_offset:
-                    #     pseudo_inst = ExtendedInstruction(
-                    #         "JUMP_END_BLOCK",
-                    #         1002,
-                    #         "pseudo",
-                    #         0,
-                    #         target_dom_set,
-                    #         target_dom_set,
-                    #         f"{target_dom_set}",
-                    #         True,
-                    #         offset,
-                    #         None,
-                    #         False,
-                    #         False,
-                    #         bb,
-                    #         dom,
-                    #     )
-                    #     augmented_instrs.append(pseudo_inst)
-                    pass
 
         block_kind = jump_target_kind.get(offset)
         if block_kind is not None:
@@ -580,8 +602,8 @@ def augment_instructions(
             augmented_instrs.append(pseudo_inst)
 
         extended_inst = ExtendedInstruction(
-            opname=inst.opname,
-            opcode=inst.opcode,
+            opname=opname,
+            opcode=opcode,
             optype=inst.optype,
             inst_size=inst.inst_size,
             arg=inst.arg,
@@ -604,7 +626,7 @@ def augment_instructions(
         if bb:
             pseudo_inst = ExtendedInstruction(
                 opname="BB_END",
-                opcode=1002,
+                opcode=EXTENDED_OPMAP["BB_END"],
                 optype="pseudo",
                 inst_size=0,
                 arg=bb.number,
@@ -624,72 +646,45 @@ def augment_instructions(
             if bb.flags in [BB_FOR, BB_LOOP]:
                 loop_stack.pop()
 
-        dom_list = dom_reach_ends.get(offset, None)
-        if dom_list is not None:
-            for dom in reversed(dom_list):
-                dom_number = dom.bb.number
-                post_end_set = post_ends(dom.bb)
-                if post_end_set:
-                    pseudo_inst = ExtendedInstruction(
-                        opname="BLOCK_END_JOIN",
-                        opcode=1003,
-                        optype="pseudo",
-                        inst_size=0,
-                        arg=dom_number,
-                        argval=dom_number,
-                        argrepr=f"Basic Block {post_end_set}",
-                        has_arg=True,
-                        offset=offset,
-                        starts_line=None,
-                        is_jump_target=False,
-                        has_extended_arg=False,
-                        positions=None,
-                        start_offset=None,
-                        basic_block=dom.bb,
-                        dominator=dom,
-                    )
-                    augmented_instrs.append(pseudo_inst)
-            pass
-        pass
-
-    # We have a dummy bb at the end+1.
-    # Add the end dominator info for that which should exist
-    if version_tuple >= (3, 6):
-        offset += 2
-    else:
-        offset += 1
-    # FIXME: DRY with above
-    dom_list = dom_reach_ends.get(offset, None)
-    if dom_list is not None:
-        block_end_join_added = False
-        for dom in reversed(dom_list):
-            dom_number = dom.bb.number
-            post_end_set = post_ends(dom.bb)
-            if post_end_set and not block_end_join_added:
-                pseudo_inst = ExtendedInstruction(
-                    opname="BLOCK_END_JOIN_NO_ARG",
-                    opcode=1003,
-                    optype="pseudo",
-                    inst_size=0,
-                    arg=dom_number,
-                    argval=dom_number,
-                    argrepr=f"Basic Block {post_end_set}",
-                    has_arg=False,
-                    offset=offset,
-                    starts_line=None,
-                    is_jump_target=False,
-                    has_extended_arg=False,
-                    positions=None,
-                    basic_block=dom.bb,
-                    dominator=dom,
-                    start_offset=None,
-                )
-                augmented_instrs.append(pseudo_inst)
-                block_end_join_added = True
-        pass
+    # # We have a dummy bb at the end+1.
+    # # Add the end dominator info for that which should exist
+    # if version_tuple >= (3, 6):
+    #     offset += 2
+    # else:
+    #     offset += 1
+    # # FIXME: DRY with above
+    # dom_list = dom_reach_ends.get(offset, None)
+    # if dom_list is not None:
+    #     block_end_join_added = False
+    #     for dom in reversed(dom_list):
+    #         dom_number = dom.bb.number
+    #         post_end_set = post_ends(dom.bb)
+    #         if post_end_set and not block_end_join_added:
+    #             pseudo_inst = ExtendedInstruction(
+    #                 opname="BLOCK_END_JOIN_NO_ARG",
+    #                 opcode=1003,
+    #                 optype="pseudo",
+    #                 inst_size=0,
+    #                 arg=dom_number,
+    #                 argval=dom_number,
+    #                 argrepr=f"Basic Block {post_end_set}",
+    #                 has_arg=False,
+    #                 offset=offset,
+    #                 starts_line=None,
+    #                 is_jump_target=False,
+    #                 has_extended_arg=False,
+    #                 positions=None,
+    #                 basic_block=dom.bb,
+    #                 dominator=dom,
+    #                 start_offset=None,
+    #             )
+    #             augmented_instrs.append(pseudo_inst)
+    #             block_end_join_added = True
+    #     pass
 
     # for inst in augmented_instrs:
     #     print(inst)
+
     return augmented_instrs
 
 

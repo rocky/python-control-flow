@@ -45,7 +45,8 @@ def test_basic():
             print(f"{fn_name}: ")
             dis.dis(fn)
             print()
-        bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
+        # FIXME: add linestarts instead of None below
+        bb_mgr = basic_blocks(fn.__code__, None, offset2inst_index)
         check_blocks(bb_mgr.bb_list, fn_name)
 
 

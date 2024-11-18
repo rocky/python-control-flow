@@ -8,13 +8,16 @@
 """
 
 from typing import Optional, Set
+from enum import Enum
 
 # First or Basic block that we entered on. Usually
 # at offset 0.
 # Does this need to be a set?
 BB_ENTRY = 0
 
-# Block is at the end and doesn't have a following instruction.
+# Block is at the end, and doesn't have a following instruction.
+# We have though an edge to the successor *instruction* for assisting displaying
+# the control-flow graph the way the program was written.
 BB_NOFOLLOW = 1
 
 # a SETUP_LOOP instruction marking the beginning of a loop.
@@ -77,9 +80,12 @@ BB_JUMP_CONDITIONAL = 14
 # sure the jump arrow points straight down.
 BB_JUMP_TO_FALLTHROUGH = 15
 
+# The beginning of the basic block is a join.
+BB_JOIN_POINT = 16
+
 # Basic block ends in a return or an raise that is not inside
 # a "try" block.
-BB_RETURN = 16
+BB_RETURN = 17
 
 # Unreachable block
 BB_DEAD_CODE = 17
@@ -94,6 +100,7 @@ FLAG2NAME = {
     BB_SINGLE_POP_BLOCK: "single pop block",
     BB_STARTS_POP_BLOCK: "starts with pop block",
     BB_EXCEPT: "except",
+    BB_JOIN_POINT: "join block",
     BB_JUMP_UNCONDITIONAL: "unconditional",
     BB_JUMP_CONDITIONAL: "conditional jump",
     BB_JUMP_TO_FALLTHROUGH: "jump to fallthough",
@@ -104,9 +111,31 @@ FLAG2NAME = {
     BB_RETURN: "return",
 }
 
+# FIXME: some of the classifications may be overkill.
+ScopeEdgeKind = Enum(
+    "ScopeEdgeKind",
+    [
+        # Edge hasn't been computed yet:
+        "Unknown",
+        # Edge starts a new scope.
+        # Example:
+        #   if <jump-to-then> then <jump-is-here> ... end
+        "NewScope",
+        # Edge jumps from one alternate to the next one
+        # Example:
+        #   if <jump to elif test when condition not true> ... elif ... end
+        "Alternate",
+        # Edge joins from an inner scope to an outer one, e.g.
+        # "if ... <jump to end> else ... end" or
+        # "if ... <falltrough after end> end" or
+        # "while ... break <jump to end> ... end
+        "Join",
+        # Edge jumps to a loop head
+        "Looping",
+    ],
+)
 
 jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
-nofollow_flags = set([BB_NOFOLLOW])
 
 
 def format_flags(flags):
@@ -200,14 +229,9 @@ class Edge:
         self.source = source
         self.dest = dest
         self.kind = kind
+        self.scoping_kind = ScopeEdgeKind.Unknown
         self.flags = set()
         self.data = data
-
-        # True edge is a "join" edge. Note that a "join" edge
-        # can be an implicit fallthrough edge.
-        # Join edges are a non-loop edges where the source
-        # node's nesting depth jumps to a target of lesser depth.
-        self.is_join = False
 
     @classmethod
     def reset(self):
@@ -308,7 +332,7 @@ class DiGraph:
         self.add_node(node)
         return node
 
-    def make_add_edge(self, source=None, dest=None, kind=None, data=None):
+    def make_add_edge(self, source=None, dest=None, kind=None, data=None) -> Edge:
         edge = DiGraph.make_edge(source=source, dest=dest, kind=kind, data=data)
         self.add_edge(edge)
         return edge
@@ -380,14 +404,14 @@ def write_dot(
         return
 
     path_safe = name.translate(name.maketrans(" <>", "_[]"))
-    dot_path = f"{prefix}{path_safe}.dot"
+    dot_path = f"{prefix}-{path_safe}.dot"
     open(dot_path, "w").write(graph.to_dot(exit_node, is_dominator_format))
     if debug:
         print(f"{dot_path} written")
     if write_png:
         import os
 
-        png_path = f"{prefix}{path_safe}.png"
+        png_path = f"{prefix}-{path_safe}.png"
         os.system(f"dot -Tpng {dot_path} > {png_path}")
         if debug:
             print(f"{png_path} written")
