@@ -22,6 +22,8 @@ def build_and_analyze_control_flow(
     code_version_tuple=PYTHON_VERSION_TRIPLE[:2],
     func_or_code_timestamp=None,
     func_or_code_name: str = "",
+    debug: dict = {},
+    file_part: str = "",
 ):
     """
     Compute control-flow graph, dominator information, and
@@ -63,13 +65,14 @@ def build_and_analyze_control_flow(
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
         write_dot(
-            func_or_code_name,
+            f"{file_part}{func_or_code_name}",
             f"/tmp/flow-{version}-",
             cfg.graph,
             write_png=True,
             exit_node=cfg.exit_node,
         )
 
+    assert cfg.graph is not None
     try:
         DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
         for node in cfg.graph.nodes:
@@ -83,16 +86,17 @@ def build_and_analyze_control_flow(
 
         if graph_options in ("all", "dominators"):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow-dom-{version}-",
-                cfg.dom_tree,
+                cfg.dom_forest,
                 write_png=True,
                 exit_node=cfg.exit_node,
             )
 
+        cfg.classify_edges()
         if graph_options in ("all",):
             write_dot(
-                func_or_code_name,
+                f"{file_part}{func_or_code_name}",
                 f"/tmp/flow+dom-{version}-",
                 cfg.graph,
                 write_png=True,

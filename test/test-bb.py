@@ -15,6 +15,21 @@ def trivial_or(a, b):
     return a or b
 
 
+def and3(a, b, c):
+    return a and b and c
+
+
+def and4(a, b, c, d):
+    return a and b and c and d
+
+
+def for_simple(a):
+    x = 0
+    for i in a:
+        x += i
+    return x
+
+
 def if_else(a):
     if a:
         a += 1
@@ -84,6 +99,18 @@ def foo2(a):
     if a:
         a = 10
     return a
+
+
+def or2(a, b):
+    return a or b
+
+
+def or3(a, b, c):
+    return a or b or c
+
+
+def or4(a, b, c, d):
+    return a or b or c or d
 
 
 def while_if_continue(a):

@@ -77,9 +77,12 @@ BB_JUMP_CONDITIONAL = 14
 # sure the jump arrow points straight down.
 BB_JUMP_TO_FALLTHROUGH = 15
 
+# The beginning of the basic block is a join.
+BB_JOIN_NODE = 16
+
 # Basic block ends in a return or an raise that is not inside
 # a "try" block.
-BB_RETURN = 16
+BB_RETURN = 17
 
 # Unreachable block
 BB_DEAD_CODE = 17
@@ -94,6 +97,7 @@ FLAG2NAME = {
     BB_SINGLE_POP_BLOCK: "single pop block",
     BB_STARTS_POP_BLOCK: "starts with pop block",
     BB_EXCEPT: "except",
+    BB_JOIN_NODE: "join block",
     BB_JUMP_UNCONDITIONAL: "unconditional",
     BB_JUMP_CONDITIONAL: "conditional jump",
     BB_JUMP_TO_FALLTHROUGH: "jump to fallthough",
@@ -104,6 +108,28 @@ FLAG2NAME = {
     BB_RETURN: "return",
 }
 
+# FIXME: some of the classifications may be overkill.
+ScopeEdgeKind = Enum(
+    "ScopeEdgeKind",
+    [
+        # Edge hasn't been computed yet:
+        "Unknown",
+        # Edge starts a new scope.
+        # Example:
+        #   if <jump-to-then> then <jump-is-here> ... end
+        "NewScope",
+        # Edge jumps from one alternate to the next one
+        # Example:
+        #   if <jump to elif test when condition not true> ... elif ... end
+        "Alternate",
+        # Edge joins from an inner scope to an outer one, e.g.
+        # "if ... <jump to end> else ... end" or
+        # "while ... break <jump to end> ... end
+        "InnerJoin",
+        # Edge jumps to a loop head
+        "Looping",
+    ],
+)
 
 jump_flags = set([BB_JUMP_UNCONDITIONAL, BB_BREAK])
 nofollow_flags = set([BB_NOFOLLOW])
@@ -200,14 +226,9 @@ class Edge:
         self.source = source
         self.dest = dest
         self.kind = kind
+        self.scoping_kind = ScopeEdgeKind.Unknown
         self.flags = set()
         self.data = data
-
-        # True edge is a "join" edge. Note that a "join" edge
-        # can be an implicit fallthrough edge.
-        # Join edges are a non-loop edges where the source
-        # node's nesting depth jumps to a target of lesser depth.
-        self.is_join = False
 
     @classmethod
     def reset(self):

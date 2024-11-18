@@ -372,8 +372,9 @@ def augment_instructions(
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
 
-    dom_tree = cfg.dom_tree
+    dom_tree = cfg.dom_forest
     bb2dom_node = {node.bb: node for node in dom_tree.nodes}
+
     version_tuple = opc.version_tuple
     # block_stack = [current_block]
 

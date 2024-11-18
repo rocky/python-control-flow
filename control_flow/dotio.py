@@ -14,10 +14,11 @@ from control_flow.graph import (
     BB_ENTRY,
     BB_EXIT,
     BB_END_FINALLY,
+    BB_JOIN_NODE,
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_NOFOLLOW,
-    Node,
+    ScopeEdgeKind,
     format_flags_with_width,
 )
 
@@ -53,8 +54,8 @@ FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
 
 
-class DotConverter(object):
-    def __init__(self, graph, exit_node: Optional[Node] = None):
+class DotConverter:
+    def __init__(self, graph):
         self.g = graph
         self.exit_node = graph
         self.buffer = ""
@@ -74,8 +75,8 @@ class DotConverter(object):
         return color_info["hex"], color_info["bg"]
 
     @staticmethod
-    def process(graph, exit_node: Optional[BasicBlock], is_dominator_format: bool):
-        converter = DotConverter(graph, exit_node)
+    def process(graph, exit_node: BasicBlock, is_dominator_format: bool):
+        converter = DotConverter(graph)
         converter.run(exit_node, is_dominator_format)
         return converter.buffer
 
@@ -131,7 +132,7 @@ class DotConverter(object):
         dest_port = ""
         weight = 1
 
-        if edge.is_join:
+        if edge.scoping_kind == ScopeEdgeKind.InnerJoin:
             arrow_color = ":brown;0.01"
         else:
             arrow_color = ""
@@ -154,7 +155,7 @@ class DotConverter(object):
             if edge.kind != "exit edge":
                 weight = 10
         elif edge.kind == "exception":
-            style = '[color="red"]'
+            style = f'[color="red{arrow_color}"]'
             if edge.source.bb.number + 1 == edge.dest.bb.number:
                 weight = 10
             else:
@@ -179,7 +180,7 @@ class DotConverter(object):
                     dest_port = ":ne"
                 pass
             elif edge.kind == "self-loop":
-                edge_port = '[headport=ne, tailport=se, color="#006400"]'
+                edge_port = f"[headport=ne, tailport=se, color='#006400'{arrow_color}]"
                 pass
             elif edge.kind == "looping":
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
@@ -318,7 +319,8 @@ class DotConverter(object):
         if is_dominator_format:
             fillcolor, fontcolor = self.get_node_colors(node.bb.nesting_depth)
             # print("XXX", node.bb, node.bb.nesting_depth, fillcolor, fontcolor)
-            style += f'[fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
+            color = 'color=brown, ' if BB_JOIN_NODE in node.bb.flags else ""
+            style += f'[{color}fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
 
         level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""
 
