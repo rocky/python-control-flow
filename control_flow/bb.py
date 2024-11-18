@@ -1,5 +1,6 @@
 # Copyright (c) 2021, 2023-2024 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
+from typing import Optional
 
 from xdis import next_offset
 from xdis.bytecode import get_instructions_bytes
@@ -50,7 +51,7 @@ def get_jump_val(jump_arg: int, version: tuple) -> int:
     return jump_arg * 2 if version[:2] >= (3, 10) else jump_arg
 
 
-class BasicBlock(object):
+class BasicBlock:
     """Extended Basic block from the bytecode.
 
     An extended basic block has a single entry. It can have multiple exits though,
@@ -72,12 +73,13 @@ class BasicBlock(object):
 
     def __init__(
         self,
-        start_offset,
-        end_offset,
-        follow_offset,
-        loop_offset,
+        start_offset: int,
+        end_offset: int,
+        follow_offset: int,
+        loop_offset: int,
         flags=set(),
         jump_offsets=set(),
+        starts_line=None,
     ):
 
         global end_bb
@@ -109,6 +111,8 @@ class BasicBlock(object):
         # "Flags" is a set of interesting bits about the basic block.
         # Elements of the bits are BB_... constants
         self.flags = flags
+
+        self.starts_line = starts_line
         self.index = (start_offset, end_offset)
 
         # Lists of predecessor and successor basic blocks.
@@ -155,7 +159,8 @@ class BasicBlock(object):
             flag_text = ", flags={%s}" % flag_str
         else:
             flag_text = ""
-        return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s)" % (
+        line_text = "" if self.starts_line is None else f", line {self.starts_line}"
+        return "BasicBlock(#%d range: %s%s, follow_offset=%s, edge_count=%d%s%s%s)" % (
             self.number,
             self.index,
             flag_text,
@@ -163,6 +168,7 @@ class BasicBlock(object):
             self.edge_count,
             jump_text,
             exception_text,
+            line_text,
         )
 
     def __str__(self):
@@ -174,11 +180,13 @@ class BasicBlock(object):
             exception_text = f", exceptions={sorted(self.exception_offsets)}"
         else:
             exception_text = ""
-        return "BasicBlock(#%d range: %s, %s%s)" % (
+        line_text = "" if self.starts_line is None else f", line {self.starts_line}"
+        return "BasicBlock(#%d range: %s%s%s%s)" % (
             self.number,
             self.index,
             jump_text,
             exception_text,
+            line_text,
         )
 
     # Define "<" so we can compare and sort basic blocks.
@@ -213,7 +221,10 @@ class BBMgr(object):
         self.JREL_INSTRUCTIONS = set(opcode.hasjrel)
         self.JUMP_INSTRUCTIONS = self.JABS_INSTRUCTIONS | self.JREL_INSTRUCTIONS
         if "JUMP_ABSOLUTE" in opcode.opmap:
-            self.JUMP_UNCONDITIONAL = {opcode.opmap["JUMP_ABSOLUTE"], opcode.opmap["JUMP_FORWARD"]}
+            self.JUMP_UNCONDITIONAL = {
+                opcode.opmap["JUMP_ABSOLUTE"],
+                opcode.opmap["JUMP_FORWARD"],
+            }
 
         self.POP_BLOCK_INSTRUCTIONS = set()
         if "POP_BLOCK" in opcode.opmap:
@@ -251,8 +262,11 @@ class BBMgr(object):
             if opname in opcode.opmap:
                 self.JUMP_CONDITIONAL.add(opcode.opmap[opname])
 
-        self.NOFOLLOW_INSTRUCTIONS = {opcode.opmap["RETURN_VALUE"], opcode.opmap["YIELD_VALUE"],
-                                      opcode.opmap["RAISE_VARARGS"]}
+        self.NOFOLLOW_INSTRUCTIONS = {
+            opcode.opmap["RETURN_VALUE"],
+            opcode.opmap["YIELD_VALUE"],
+            opcode.opmap["RAISE_VARARGS"],
+        }
         if "RERAISE" in opcode.opmap:
             self.NOFOLLOW_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
@@ -269,7 +283,14 @@ class BBMgr(object):
                 self.JUMP_UNCONDITIONAL.add(opcode.opmap[opname])
 
     def add_bb(
-        self, start_offset, end_offset, loop_offset, follow_offset, flags, jump_offsets
+        self,
+        start_offset: int,
+        end_offset: int,
+        loop_offset: int,
+        follow_offset: int,
+        flags: int,
+        jump_offsets: set,
+        starts_line: Optional[int] = None,
     ):
 
         if BB_STARTS_POP_BLOCK in flags and start_offset == end_offset:
@@ -283,6 +304,7 @@ class BBMgr(object):
             flags=flags,
             jump_offsets=jump_offsets,
             loop_offset=loop_offset,
+            starts_line=starts_line,
         )
         self.bb_list.append(block)
 
@@ -298,6 +320,7 @@ class BBMgr(object):
 
 def basic_blocks(
     code,
+    linestarts: dict,
     offset2inst_index,
     version_tuple=PYTHON_VERSION_TRIPLE,
     is_pypy=IS_PYPY,
@@ -317,12 +340,13 @@ def basic_blocks(
     loop_targets = set()
     instructions = list(
         get_instructions_bytes(
-            code.co_code,
-            bb.opcode,
-            code.co_varnames,
-            code.co_names,
-            code.co_consts,
-            code.co_cellvars,
+            bytecode=code.co_code,
+            opc=bb.opcode,
+            varnames=code.co_varnames,
+            names=code.co_names,
+            constants=code.co_consts,
+            cells=code.co_cellvars,
+            linestarts=linestarts
         )
     )
     for i, inst in enumerate(instructions):
@@ -354,9 +378,7 @@ def basic_blocks(
     else:
         end_bb_offset = end_offset + 1
 
-    end_block, _, _ = bb.add_bb(
-        end_bb_offset, end_bb_offset, None, None, {BB_EXIT}, []
-    )
+    end_block, _, _ = bb.add_bb(end_bb_offset, end_bb_offset, None, None, {BB_EXIT}, [])
 
     start_offset = 0
     end_offset = -1
@@ -405,6 +427,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
+                inst.starts_line,
             )
             loop_offset = None
             if BB_TRY in block.flags:
@@ -423,6 +446,7 @@ def basic_blocks(
                     end_offset,
                     flags,
                     jump_offsets,
+                    inst.starts_line,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -475,6 +499,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
+                inst.starts_line,
             )
             loop_offset = None
             start_offset = follow_offset
@@ -504,6 +529,7 @@ def basic_blocks(
                     follow_offset,
                     flags,
                     jump_offsets,
+                    inst.starts_line,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -522,6 +548,7 @@ def basic_blocks(
                     follow_offset,
                     flags,
                     jump_offsets,
+                    inst.starts_line,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -540,6 +567,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
+                inst.starts_line,
             )
             loop_offset = None
             start_offset = follow_offset

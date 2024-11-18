@@ -60,7 +60,8 @@ def test_basic():
             print(name)
             dis.dis(fn)
             print()
-        bb_mgr = basic_blocks(fn.__code__, offset2inst_index)
+        # FIXME: add linestarts instead of None below
+        bb_mgr = basic_blocks(fn.__code__, None, offset2inst_index)
         cfg = ControlFlowGraph(bb_mgr)
         if DEBUG:
             write_dot(name, f"/tmp/test_dom-{version}-", cfg.graph, write_png=True)

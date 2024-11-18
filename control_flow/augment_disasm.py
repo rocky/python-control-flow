@@ -209,6 +209,7 @@ class _ExtendedInstruction(NamedTuple):
     basic_block: BasicBlock = None
     dominator: Optional[Node] = None
 
+
 EXTENDED_OPMAP = {
     "BB_END": 1001,
     "BB_START": 1002,
@@ -217,7 +218,10 @@ EXTENDED_OPMAP = {
     "BLOCK_END_JOIN": 1005,
     "JUMP_FOR": 1006,
     "JUMP_LOOP": 1007,
+    "JUMP_END_BLOCK": 10087,
 }
+
+
 class ExtendedInstruction(_ExtendedInstruction, Instruction):
     """Details for an extended bytecode operation
 
@@ -409,6 +413,18 @@ def augment_instructions(
         opc, instructions, offset2inst_index, jump_instructions, bb_mgr
     )
 
+    # Note where we have a conditional JUMP_END_BLOCK.  We will detect
+    # this at the source of the jump, but need to add it at before the
+    # instruction a the conditional jump target.  We make use of the
+    # fact that this kind of jump is forward.  We process instructions
+    # from from low offset to high offset, so we will detect these
+    # before we need to add the instruction.  However, the target
+    # offset is not guaraneteed, we may encounter an instruction that
+    # jumps to a high offset before a subsequent instruciotn that
+    # jumps to a lower offset.  So we need to sort by offset on
+    # insertion.
+
+    pending_join_target_offsets = []
     for inst in instructions:
         # Go through instructions inserting pseudo ops.
         # These are done for basic blocks, dominators,
@@ -437,12 +453,40 @@ def augment_instructions(
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
 
+            # If the next instruction is the target of a jump that ends a block,
+            # note that.
+            if (
+                len(pending_join_target_offsets) > 0
+                and offset == pending_join_target_offsets[0][0]
+            ):
+                source_bb = pending_join_target_offsets[0][1]
+                pseudo_inst = ExtendedInstruction(
+                    opname="JUMP_END_BLOCK",
+                    opcode=EXTENDED_OPMAP["JUMP_END_BLOCK"],
+                    optype="pseudo",
+                    inst_size=0,
+                    arg=source_bb.number,
+                    argval=source_bb,
+                    argrepr=f"End Block {source_bb.number}",
+                    has_arg=False,
+                    offset=offset,
+                    starts_line=None,
+                    is_jump_target=False,
+                    has_extended_arg=False,
+                    positions=None,
+                    start_offset=None,
+                    basic_block=bb,
+                    dominator=dom,
+                )
+                augmented_instrs.append(pseudo_inst)
+                pending_join_target_offsets = pending_join_target_offsets[1:]
+
             # For now we will assume that edges are sorted so in outermost-to-innermost nesting order.
             # Add any psuedo-token join markers
             if offset in cfg.offset2edges:
                 for edge in reversed(cfg.offset2edges[offset]):
                     if edge.scoping_kind == ScopeEdgeKind.Join:
-                        from_bb_number=edge.source.bb.number
+                        from_bb_number = edge.source.bb.number
                         pseudo_inst = ExtendedInstruction(
                             opname="BLOCK_END_JOIN",
                             opcode=EXTENDED_OPMAP["BLOCK_END_JOIN"],
@@ -461,7 +505,6 @@ def augment_instructions(
                             dominator=dom,
                         )
                         augmented_instrs.append(pseudo_inst)
-
 
             pseudo_inst = ExtendedInstruction(
                 opname="BB_START",
@@ -569,29 +612,10 @@ def augment_instructions(
                         loop_related_jump = True
                         pass
                 if not loop_related_jump:
-                    # Mark conditional join jump instructions
-                    print("FIXME: mark conditional join jump instructions")
-
-                    # FIXME: complete...
-
-                    # if jump_target == follow_bb_offset:
-                    #     inst = ExtendedInstruction(
-                    #         "JUMP_END_BLOCK",
-                    #         1002,
-                    #         "pseudo",
-                    #         0,
-                    #         target_dom_set,
-                    #         target_dom_set,
-                    #         f"{target_dom_set}",
-                    #         True,
-                    #         offset,
-                    #         None,
-                    #         False,
-                    #         False,
-                    #         bb,
-                    #         dom,
-                    #     )
-                    #     augmented_instrs.append(pseudo_inst)
+                    # Mark conditional join jump instructions, for inclusion later
+                    # when we get to the instruction for that offset.
+                    pending_join_target_offsets.append((inst.argval, bb))
+                    pending_join_target_offsets.sort()
                     pass
 
         block_kind = jump_target_kind.get(offset)
@@ -662,33 +686,6 @@ def augment_instructions(
             if bb.flags in [BB_FOR, BB_LOOP]:
                 loop_stack.pop()
 
-        # dom_list = dom_reach_ends.get(offset, None)
-        # if dom_list is not None:
-        #     for dom in reversed(dom_list):
-        #         dom_number = dom.bb.number
-        #         post_end_set = post_ends(dom.bb)
-        #         if post_end_set:
-        #             pseudo_inst = ExtendedInstruction(
-        #                 opname="BLOCK_END_JOIN",
-        #                 opcode=1003,
-        #                 optype="pseudo",
-        #                 inst_size=0,
-        #                 arg=dom_number,
-        #                 argval=dom_number,
-        #                 argrepr=f"Basic Block {post_end_set}",
-        #                 has_arg=True,
-        #                 offset=offset,
-        #                 starts_line=None,
-        #                 is_jump_target=False,
-        #                 has_extended_arg=False,
-        #                 positions=None,
-        #                 start_offset=None,
-        #                 basic_block=dom.bb,
-        #                 dominator=dom,
-        #             )
-        #             augmented_instrs.append(pseudo_inst)
-        #     pass
-        # pass
 
     # # We have a dummy bb at the end+1.
     # # Add the end dominator info for that which should exist
@@ -728,6 +725,9 @@ def augment_instructions(
 
     # for inst in augmented_instrs:
     #     print(inst)
+    assert (
+        pending_join_target_offsets == []
+    ), "Should have processed all pending-join instructions"
     return augmented_instrs
 
 

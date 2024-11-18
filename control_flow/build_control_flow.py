@@ -2,7 +2,6 @@
 
 import sys
 from xdis.codetype.base import iscode
-from xdis.disasm import disco
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
@@ -54,7 +53,8 @@ def build_and_analyze_control_flow(
         opc = get_opcode_module(code_version_tuple, VARIANT)
 
     offset2inst_index = {}
-    bb_mgr = basic_blocks(code, offset2inst_index, code_version_tuple)
+    linestarts = dict(opc.findlinestarts(code, dup_lines=True))
+    bb_mgr = basic_blocks(code, linestarts, offset2inst_index, code_version_tuple)
 
     # for bb in bb_mgr.bb_list:
     #     print("\t", bb)
@@ -106,12 +106,14 @@ def build_and_analyze_control_flow(
 
         assert cfg.graph
 
-        # print("=" * 30)
         augmented_instrs = augment_instructions(
             func_or_code, cfg, opc, offset2inst_index, bb_mgr
         )
-        # for inst in augmented_instrs:
-        #     print(inst.disassemble(opc))
+        if graph_options in ("all", "augmented-instructions"):
+            print("=" * 30)
+            print("Augmented Instructions:")
+            for inst in augmented_instrs:
+                print(inst.disassemble(opc))
 
         # return cs_str
     except Exception:

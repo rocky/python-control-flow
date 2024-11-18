@@ -256,29 +256,28 @@ class DotConverter:
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
-        if True:
-            if not is_exit and len(node.jump_offsets) > 0:
-                jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
-                pass
-
-            if node.flags:
-                flag_text = "%s%s%s" % (
-                    align,
-                    flags_prefix,
-                    format_flags_with_width(
-                        node.flags,
-                        NODE_TEXT_WIDTH - FEL,
-                        align + (" " * (len("flags="))),
-                    ),
-                )
-            else:
-                flag_text = ""
-                pass
-
-            if hasattr(node, "reach_offset"):
-                reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
-                pass
+        if not is_exit and len(node.jump_offsets) > 0:
+            jump_text = f"\\ljumps={sorted(node.jump_offsets)}"
             pass
+
+        if node.flags:
+            flag_text = "%s%s%s" % (
+                align,
+                flags_prefix,
+                format_flags_with_width(
+                    node.flags,
+                    NODE_TEXT_WIDTH - FEL,
+                    align + (" " * (len("flags="))),
+                ),
+            )
+        else:
+            flag_text = ""
+            pass
+
+        if hasattr(node, "reach_offset"):
+            reach_offset_text = "\\lreach_offset=%d" % node.reach_offset
+            pass
+        pass
 
         if is_exit:
             return "flags=exit"
@@ -322,6 +321,9 @@ class DotConverter:
             style += f'[{color}fontcolor = "{fontcolor}", fillcolor = "{fillcolor}"]'
 
         level = " (%d)" % (node.bb.nesting_depth) if node.bb.nesting_depth >= 0 else ""
+
+        if node.bb.starts_line is not None:
+            level += f", Line {node.bb.starts_line} "
 
         label = '[label="Basic Block %d%s%s%s%s"]' % (
             node.number,
