@@ -158,7 +158,7 @@ def for_break():
 def try_except():
     try:
         a = 1
-    except:
+    except Exception:
         a = 2
     return a
 
@@ -167,7 +167,7 @@ def try_finally():
         x = 1
     except RuntimeError:
         x = 2
-    except:
+    except Exception:
         x = 3
     finally:
         x = 4

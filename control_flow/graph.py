@@ -8,6 +8,7 @@
 """
 
 from typing import Optional, Set
+from enum import Enum
 
 # First or Basic block that we entered on. Usually
 # at offset 0.

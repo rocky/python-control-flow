@@ -189,7 +189,7 @@ class DotConverter:
                     source_port = ":c"
                     dest_port = ":c"
                 else:
-                    color = f'[color="#006400{arrow_color}"]'
+                    color = f'[color="#006400"{arrow_color}]'
                     source_port = ":nw"
                     dest_port = ":sw"
                     pass
