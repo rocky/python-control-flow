@@ -235,7 +235,7 @@ class ControlFlowGraph:
 
             # Looping edges have already been classified, so use those when
             # we can.
-            if edge.kind in ("backward", "self-loop"):
+            if edge.kind in ("looping", "self-loop"):
                 edge.scoping_kind = ScopeEdgeKind.Looping
                 continue
             source_block = edge.source.bb

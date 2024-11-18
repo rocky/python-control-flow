@@ -185,6 +185,7 @@ class DotConverter:
                 edge_port = f"[headport=ne, tailport=se, color='#006400{arrow_color}']"
                 pass
             elif edge.kind == "looping":
+                color = f'[color="#006400{arrow_color}"]'
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
                     # For a loop to the immediate predecessor we use
                     # a somewhat straight centered backward arrow.
