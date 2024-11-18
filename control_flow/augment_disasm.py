@@ -116,12 +116,6 @@ class _ExtendedInstruction(NamedTuple):
       arg:     Optional numeric argument to operation (if any). Otherwise, None.
 
       argval:  resolved arg value (if known). Otherwise, the same as ``arg``.
-      argrepr: human-readable description of operation argument.
-
-      tos_str:      If not None, a string representation of the top of the stack (TOS).
-                    This is obtained by scanning previous instructions and
-                    using information there and in their ``tos_str`` fields.
-
       positions: Optional dis.Positions object holding the start and end locations that
                  are covered by this instruction. This not implemented yet.
 
@@ -140,6 +134,12 @@ class _ExtendedInstruction(NamedTuple):
 
       start_offset: if not None the instruction with the lowest offset that
                     pushes a stack entry that is consume by this opcode
+
+      argrepr: human-readable description of operation argument.
+
+      tos_str:      If not None, a string representation of the top of the stack (TOS).
+                    This is obtained by scanning previous instructions and
+                    using information there and in their ``tos_str`` fields.
     """
 
     # Numeric code for operation
@@ -160,7 +160,7 @@ class _ExtendedInstruction(NamedTuple):
     argval: Any
 
     # String representation of argval if argval is not None.
-    argrepr: str
+    argrepr: Optional[str]
 
     # Offset of the instruction
     offset: int
@@ -204,17 +204,21 @@ class _ExtendedInstruction(NamedTuple):
     # returns, raise, and unconditional jumps are not.
     fallthrough: Optional[bool] = None
 
+    basic_block: BasicBlock = None
+    dominator: Optional[Node] = None
+
+    # NOTE: the following end fields have to match the corresponding end
+    # fields of an instruction. Disassembly create new instructions
+    # and assume the last fields are as the are in Instruction.
+
     # If not None, a string representation of the top of the stack (TOS)
     tos_str: Optional[str] = None
 
     # Python expressions can be straight-line, operator like-basic block code that take
     # items off a stack and push a value onto the stack. In this case, in a linear scan
     # we can basically build up an expression tree.
-    # Note this has to be the last field. Code to set this assumes this.
     start_offset: Optional[int] = None
 
-    basic_block: BasicBlock = None
-    dominator: Optional[Node] = None
 
 
 EXTENDED_OPMAP = {

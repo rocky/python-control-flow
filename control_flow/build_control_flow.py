@@ -74,7 +74,9 @@ def build_and_analyze_control_flow(
 
     assert cfg.graph is not None
     try:
-        cfg.dom_tree = DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
+        cfg.dom_tree = DominatorTree.compute_dominators_in_cfg(
+            cfg, debug_dict.get("dom", False)
+        )
         for node in cfg.graph.nodes:
             if node.bb.nesting_depth < 0:
                 node.is_dead_code = True
@@ -113,7 +115,14 @@ def build_and_analyze_control_flow(
             print("=" * 30)
             print("Augmented Instructions:")
             for inst in augmented_instrs:
-                print(inst.disassemble(opc))
+                print(
+                    inst.disassemble(
+                        opc,
+                        line_starts=linestarts,
+                        asm_format="extended",
+                        instructions=augmented_instrs,
+                    )
+                )
 
         # return cs_str
     except Exception:
