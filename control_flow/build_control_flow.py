@@ -74,7 +74,7 @@ def build_and_analyze_control_flow(
 
     assert cfg.graph is not None
     try:
-        DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
+        cfg.dom_tree = DominatorTree.compute_dominators_in_cfg(cfg, debug_dict.get("dom", False))
         for node in cfg.graph.nodes:
             if node.bb.nesting_depth < 0:
                 node.is_dead_code = True

@@ -380,8 +380,8 @@ def augment_instructions(
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
 
-    dom_tree = cfg.dom_forest
-    bb2dom_node = {node.bb: node for node in dom_tree.nodes}
+    # Map Block which has dominator information, to a graph node.
+    bb2dom_node = {bb: next(iter(bb.doms - bb.dom_set)) for bb in cfg.blocks}
 
     # version_tuple = opc.version_tuple
     # block_stack = [current_block]

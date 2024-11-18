@@ -20,7 +20,7 @@ class DominatorSet(set):
 
 class DominatorTree:
     """Handles the dominator trees, dominator, post-dominator
-    releation, and the computation of the dominance/post-dominance
+    relation, and the computation of the dominance/post-dominance
     frontier.
     """
 
@@ -37,7 +37,7 @@ class DominatorTree:
 
     @classmethod
     def compute_dominators_in_cfg(cls, cfg, debug):
-        DominatorTree(cfg, debug)
+        return DominatorTree(cfg, debug)
 
     def build(self):
         entry = self.cfg.entry_node

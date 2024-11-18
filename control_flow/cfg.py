@@ -39,7 +39,6 @@ class ControlFlowGraph:
         self.exit_node = bb_mgr.exit_block
 
         #
-        self.dom_tree = None
         # Maximum nesting in control flow graph. -1 means this hasn't been
         # computed. It is computed when self.dom_tree is computed and also is
         # stored in there.
@@ -121,7 +120,7 @@ class ControlFlowGraph:
                 #        >>  598 POP_TOP
                 #            600 EXTENDED_ARG           255
                 #            602 EXTENDED_ARG         65535
-               #            604 EXTENDED_ARG         16777215
+                #            604 EXTENDED_ARG         16777215
                 #            606 JUMP_FORWARD         4294967263 (to 8589935134)
                 # 359    >>  608 ...
                 #

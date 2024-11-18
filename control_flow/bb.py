@@ -497,7 +497,7 @@ def basic_blocks(
                     # Also note that the edge does not
                     # fall through to the next block.
                     flags.add(BB_NOFOLLOW)
-                block, flags, jump_offsets = BB.add_bb(
+                block, flags, jump_offsets = bb.add_bb(
                     start_offset,
                     end_offset,
                     loop_offset,
