@@ -391,6 +391,7 @@ def basic_blocks(
     end_try_offset = None
     loop_offset = None
     return_blocks = []
+    last_line_number = code.co_firstlineno
 
     for i, inst in enumerate(instructions):
         if print_instructions:
@@ -427,7 +428,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
-                inst.starts_line,
+                last_line_number,
             )
             loop_offset = None
             if BB_TRY in block.flags:
@@ -446,7 +447,7 @@ def basic_blocks(
                     end_offset,
                     flags,
                     jump_offsets,
-                    inst.starts_line,
+                    last_line_number,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -457,6 +458,11 @@ def basic_blocks(
                 pass
             if offset in loop_targets:
                 flags.add(BB_LOOP)
+
+        # This should be done after closing off the
+        # basic block above.
+        if inst.starts_line is not None:
+            last_line_number = inst.starts_line
 
         # Add block flags for certain classes of instructions
         if op in bb.JUMP_CONDITIONAL:
@@ -499,7 +505,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
-                inst.starts_line,
+                last_line_number,
             )
             loop_offset = None
             start_offset = follow_offset
@@ -529,7 +535,7 @@ def basic_blocks(
                     follow_offset,
                     flags,
                     jump_offsets,
-                    inst.starts_line,
+                    last_line_number,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -548,7 +554,7 @@ def basic_blocks(
                     follow_offset,
                     flags,
                     jump_offsets,
-                    inst.starts_line,
+                    last_line_number,
                 )
                 loop_offset = None
                 if BB_TRY in block.flags:
@@ -567,7 +573,7 @@ def basic_blocks(
                 follow_offset,
                 flags,
                 jump_offsets,
-                inst.starts_line,
+                last_line_number,
             )
             loop_offset = None
             start_offset = follow_offset
