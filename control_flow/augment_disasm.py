@@ -19,7 +19,14 @@ from xdis.codetype.base import CodeBase
 
 from control_flow.bb import BBMgr, BasicBlock
 from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import Node, BB_FOR, BB_LOOP, BB_NOFOLLOW, ScopeEdgeKind
+from control_flow.graph import (
+    Node,
+    BB_FOR,
+    BB_JOIN_POINT,
+    BB_LOOP,
+    BB_NOFOLLOW,
+    ScopeEdgeKind,
+)
 
 
 class JumpTarget(IntEnum):
@@ -215,10 +222,10 @@ EXTENDED_OPMAP = {
     "BB_START": 1002,
     "BREAK_FOR": 1003,
     "BREAK_LOOP": 1004,
-    "BLOCK_END_JOIN": 1005,
-    "JUMP_FOR": 1006,
-    "JUMP_LOOP": 1007,
-    "JUMP_END_BLOCK": 10087,
+    "BLOCK_END_FALLTHROUGH_JOIN": 1005,
+    "BLOCK_END_JUMP_JOIN": 1006,
+    "JUMP_FOR": 1007,
+    "JUMP_LOOP": 1008,
 }
 
 
@@ -384,11 +391,11 @@ def augment_instructions(
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
 
-    # Map Block which has dominator information, to a graph node.
-    bb2dom_node = {bb: next(iter(bb.doms - bb.dom_set)) for bb in cfg.blocks}
-
-    # version_tuple = opc.version_tuple
-    # block_stack = [current_block]
+    # Create a mapping from a basic block, which has dominator information, to a graph node.
+    # Note: unreachable basic blocks do not have a "doms" field.
+    bb2dom_node = {
+        bb: next(iter(bb.doms - bb.dom_set)) for bb in cfg.blocks if hasattr(bb, "doms")
+    }
 
     starts = {current_block.start_offset: current_block}
     dom_reach_ends = {}
@@ -413,18 +420,6 @@ def augment_instructions(
         opc, instructions, offset2inst_index, jump_instructions, bb_mgr
     )
 
-    # Note where we have a conditional JUMP_END_BLOCK.  We will detect
-    # this at the source of the jump, but need to add it at before the
-    # instruction a the conditional jump target.  We make use of the
-    # fact that this kind of jump is forward.  We process instructions
-    # from from low offset to high offset, so we will detect these
-    # before we need to add the instruction.  However, the target
-    # offset is not guaraneteed, we may encounter an instruction that
-    # jumps to a high offset before a subsequent instruciotn that
-    # jumps to a lower offset.  So we need to sort by offset on
-    # insertion.
-
-    pending_join_target_offsets = []
     for inst in instructions:
         # Go through instructions inserting pseudo ops.
         # These are done for basic blocks, dominators,
@@ -453,43 +448,16 @@ def augment_instructions(
                 loop_block_dom_set = tuple(dom.bb.successors)[0].doms
                 loop_stack.append((dom, loop_block_dom_set, inst))
 
-            # If the next instruction is the target of a jump that ends a block,
-            # note that.
-            if (
-                len(pending_join_target_offsets) > 0
-                and offset == pending_join_target_offsets[0][0]
-            ):
-                source_bb = pending_join_target_offsets[0][1]
-                pseudo_inst = ExtendedInstruction(
-                    opname="JUMP_END_BLOCK",
-                    opcode=EXTENDED_OPMAP["JUMP_END_BLOCK"],
-                    optype="pseudo",
-                    inst_size=0,
-                    arg=source_bb.number,
-                    argval=source_bb,
-                    argrepr=f"End Block {source_bb.number}",
-                    has_arg=False,
-                    offset=offset,
-                    starts_line=None,
-                    is_jump_target=False,
-                    has_extended_arg=False,
-                    positions=None,
-                    start_offset=None,
-                    basic_block=bb,
-                    dominator=dom,
-                )
-                augmented_instrs.append(pseudo_inst)
-                pending_join_target_offsets = pending_join_target_offsets[1:]
-
             # For now we will assume that edges are sorted so in outermost-to-innermost nesting order.
             # Add any psuedo-token join markers
             if offset in cfg.offset2edges:
                 for edge in reversed(cfg.offset2edges[offset]):
                     if edge.scoping_kind == ScopeEdgeKind.Join:
                         from_bb_number = edge.source.bb.number
+                        op_name = "BLOCK_END_FALLTHROUGH_JOIN" if edge.kind == "fallthrough" else "BLOCK_END_JUMP_JOIN"
                         pseudo_inst = ExtendedInstruction(
-                            opname="BLOCK_END_JOIN",
-                            opcode=EXTENDED_OPMAP["BLOCK_END_JOIN"],
+                            opname=op_name,
+                            opcode=EXTENDED_OPMAP[op_name],
                             optype="pseudo",
                             inst_size=0,
                             arg=from_bb_number,
@@ -572,7 +540,6 @@ def augment_instructions(
                 # Not backward jump, Note: if jump == offset, then we have an
                 # infinite loop. We won't check for that here though.
                 # Check for jump break out of a loop
-                loop_related_jump = False
                 if len(loop_stack) > 0:
                     # Check for loop-related jumps such as those that
                     # can occur from break, continue.  Note: we also
@@ -609,14 +576,7 @@ def augment_instructions(
                             dominator=dom,
                         )
                         augmented_instrs.append(pseudo_inst)
-                        loop_related_jump = True
                         pass
-                if not loop_related_jump:
-                    # Mark conditional join jump instructions, for inclusion later
-                    # when we get to the instruction for that offset.
-                    pending_join_target_offsets.append((inst.argval, bb))
-                    pending_join_target_offsets.sort()
-                    pass
 
         block_kind = jump_target_kind.get(offset)
         if block_kind is not None:
@@ -686,7 +646,6 @@ def augment_instructions(
             if bb.flags in [BB_FOR, BB_LOOP]:
                 loop_stack.pop()
 
-
     # # We have a dummy bb at the end+1.
     # # Add the end dominator info for that which should exist
     # if version_tuple >= (3, 6):
@@ -725,9 +684,7 @@ def augment_instructions(
 
     # for inst in augmented_instrs:
     #     print(inst)
-    assert (
-        pending_join_target_offsets == []
-    ), "Should have processed all pending-join instructions"
+
     return augmented_instrs
 
 

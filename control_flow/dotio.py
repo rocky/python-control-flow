@@ -22,17 +22,8 @@ from control_flow.graph import (
     format_flags_with_width,
 )
 
-DOT_STYLE: Final = """
-  graph[fontsize=10 fontname="DejaVu Sans Mono"];
-
-  mclimit=1.5;
-  rankdir=TD; ordering=out;
-  color="#efefef";
-
-  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
-       fillcolor="#efefef", width=2];
-  edge[fontsize=10 fontname="Verdana"];
-"""
+DARK_GREEN = "#006400"
+GRAY92 = "#ededed"
 
 BB_LEVEL_BACKGROUNDS = (
     {"name": "DodgerBlue4", "hex": "#104e8b", "bg": "white"},
@@ -47,12 +38,24 @@ BB_LEVEL_BACKGROUNDS = (
     {"name": "LightSteelBlue1", "hex": "#cae1ff", "bg": "black"},
 )
 
+DOT_STYLE: Final = f"""
+  graph[fontsize=10 fontname="DejaVu Sans Mono"];
+
+  mclimit=1.5;
+  rankdir=TD; ordering=out;
+  color="{GRAY92}";
+
+  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
+       fillcolor="{GRAY92}", width=2];
+  edge[fontsize=10 fontname="Verdana"];
+"""
+
+
 MAX_COLOR_LEVELS: Final = len(BB_LEVEL_BACKGROUNDS) - 1
 
 flags_prefix: Final = "flags="
 FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
-
 
 class DotConverter:
     def __init__(self, graph):
@@ -182,10 +185,10 @@ class DotConverter:
                     dest_port = ":ne"
                 pass
             elif edge.kind == "self-loop":
-                edge_port = f"[headport=ne, tailport=se, color='#006400{arrow_color}']"
+                edge_port = f"[headport=ne, tailport=se, color='{DARK_GREEN}{arrow_color}']"
                 pass
             elif edge.kind == "looping":
-                color = f'[color="#006400{arrow_color}"]'
+                color = f'[color="{DARK_GREEN}{arrow_color}"]'
                 if edge.dest.bb.number + 1 == edge.source.bb.number:
                     # For a loop to the immediate predecessor we use
                     # a somewhat straight centered backward arrow.
