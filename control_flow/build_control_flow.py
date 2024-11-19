@@ -114,13 +114,13 @@ def build_and_analyze_control_flow(
         if graph_options in ("all", "augmented-instructions"):
             print("=" * 30)
             print("Augmented Instructions:")
-            for inst in augmented_instrs:
+            for i, inst in enumerate(augmented_instrs):
                 print(
                     inst.disassemble(
                         opc,
                         line_starts=linestarts,
                         asm_format="extended",
-                        instructions=augmented_instrs,
+                        instructions=augmented_instrs[:i+1],
                     )
                 )
 

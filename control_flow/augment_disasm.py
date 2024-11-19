@@ -9,7 +9,7 @@ from copy import copy
 from enum import IntEnum
 from sys import maxsize
 from types import CodeType
-from typing import Any, Callable, Dict, NamedTuple, Optional, Union
+from typing import Any, Callable, Dict, NamedTuple, Optional, Tuple, Union
 
 from collections import defaultdict
 
@@ -22,7 +22,6 @@ from control_flow.cfg import ControlFlowGraph
 from control_flow.graph import (
     Node,
     BB_FOR,
-    BB_JOIN_POINT,
     BB_LOOP,
     BB_NOFOLLOW,
     ScopeEdgeKind,
@@ -83,7 +82,7 @@ class JumpTarget(IntEnum):
     SIBLING = 2003
 
 
-block_kind2pseudo_op_name = {
+block_kind2pseudo_op_name: Dict[int, str] = {
     JumpTarget.LOOP: "LOOP",
     JumpTarget.NOT_FALLEN_INTO: "NOT_FALLEN_INTO_BLOCK",
     JumpTarget.SIBLING: "SIBLING_BLOCK",
@@ -204,7 +203,7 @@ class _ExtendedInstruction(NamedTuple):
     # returns, raise, and unconditional jumps are not.
     fallthrough: Optional[bool] = None
 
-    basic_block: BasicBlock = None
+    basic_block: Optional[BasicBlock] = None
     dominator: Optional[Node] = None
 
     # NOTE: the following end fields have to match the corresponding end
@@ -394,6 +393,7 @@ def augment_instructions(
 ):
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
+    assert current_block is not None
 
     # Create a mapping from a basic block, which has dominator information, to a graph node.
     # Note: unreachable basic blocks do not have a "doms" field.
@@ -420,7 +420,7 @@ def augment_instructions(
     # are tested below when needed.)
     jump_instructions = bb_mgr.JUMP_INSTRUCTIONS | bb_mgr.JUMP_UNCONDITIONAL
 
-    jump_target2offsets, jump_target_kind = find_jump_targets(
+    _, jump_target_kind = find_jump_targets(
         opc, instructions, offset2inst_index, jump_instructions, bb_mgr
     )
 
@@ -431,6 +431,29 @@ def augment_instructions(
         offset = inst.offset
         opname = inst.opname
         opcode = inst.opcode
+
+        block_kind = jump_target_kind.get(offset)
+        if block_kind is not None:
+            pseudo_op_name = block_kind2pseudo_op_name[block_kind]
+            pseudo_inst = ExtendedInstruction(
+                opname=pseudo_op_name,
+                opcode=int(block_kind),
+                optype="pseudo",
+                inst_size=0,
+                arg=None,
+                argval=None,
+                argrepr="",
+                has_arg=False,
+                offset=offset,
+                starts_line=None,
+                is_jump_target=False,
+                has_extended_arg=False,
+                positions=None,
+                start_offset=None,
+                basic_block=bb,
+                dominator=dom,
+            )
+            augmented_instrs.append(pseudo_inst)
 
         new_bb = starts.get(offset, None)
         if new_bb:
@@ -582,29 +605,6 @@ def augment_instructions(
                         augmented_instrs.append(pseudo_inst)
                         pass
 
-        block_kind = jump_target_kind.get(offset)
-        if block_kind is not None:
-            pseudo_op_name = block_kind2pseudo_op_name[block_kind]
-            pseudo_inst = ExtendedInstruction(
-                opname=pseudo_op_name,
-                opcode=int(block_kind),
-                optype="pseudo",
-                inst_size=0,
-                arg=None,
-                argval=None,
-                argrepr="",
-                has_arg=False,
-                offset=offset,
-                starts_line=None,
-                is_jump_target=False,
-                has_extended_arg=False,
-                positions=None,
-                start_offset=None,
-                basic_block=bb,
-                dominator=dom,
-            )
-            augmented_instrs.append(pseudo_inst)
-
         extended_inst = ExtendedInstruction(
             opname=opname,
             opcode=opcode,
@@ -699,7 +699,7 @@ def find_jump_targets(
     jump_instructions,
     bb_mgr,
     debug=False,
-) -> Dict[int, list]:
+) -> Tuple[Dict[int, list], Dict[int, int]]:
     """
     Return a dictionary mapping jump-target offsets instruction offsets that
     jump to that target or precede it. We include fallthrough instructions
@@ -713,8 +713,8 @@ def find_jump_targets(
             jump_target_offset = inst.argval
             jump_target2offsets[jump_target_offset].append(offset)
 
-    jump_target_kind: Dict[int, bool] = {}
-    # populate jump_target_kind based on the instruction and
+    jump_target_kind: Dict[int, int] = {}
+    # Populate jump_target_kind based on the instruction and
     # possibly the previous instruction - the instruction whose offset comes just
     # before the instruction.
     for jump_target_offset, sources in jump_target2offsets.items():
@@ -749,7 +749,7 @@ def find_jump_targets(
     return jump_target2offsets, jump_target_kind
 
 
-def next_offset(offset: int, instructions: tuple, offset2inst_index: list):
+def next_offset(offset: int, instructions: tuple, offset2inst_index: list) -> int:
     """
     Given an offset, a list of instructions, the basic block it is in,
     and a mapping of offsets to instructions,
