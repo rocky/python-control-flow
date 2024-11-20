@@ -84,6 +84,9 @@ the offset ranges listed inside the block. The entry block is
 marked with an additional border. We also show the basic block number
 and block flags.
 
+Any block that is ghost-like or has a white-background box in an
+dashed border is dead code.
+
 Control-Flow with Dominator Regions
 +++++++++++++++++++++++++++++++++++
 
