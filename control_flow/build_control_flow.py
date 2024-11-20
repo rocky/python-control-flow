@@ -65,8 +65,8 @@ def build_and_analyze_control_flow(
     version = ".".join((str(n) for n in code_version_tuple[:2]))
     if graph_options in ("all", "control-flow"):
         write_dot(
-            f"{file_part}{func_or_code_name}",
-            f"/tmp/flow-{version}-",
+            f"{file_part}-{func_or_code_name}",
+            f"/tmp/flow-{version}",
             cfg.graph,
             write_png=True,
             exit_node=cfg.exit_node,
@@ -88,8 +88,8 @@ def build_and_analyze_control_flow(
 
         if graph_options in ("all", "dominators"):
             write_dot(
-                f"{file_part}{func_or_code_name}",
-                f"/tmp/flow-dom-{version}-",
+                f"{file_part}-{func_or_code_name}",
+                f"/tmp/flow-dom-{version}",
                 cfg.dom_forest,
                 write_png=True,
                 exit_node=cfg.exit_node,
@@ -98,8 +98,8 @@ def build_and_analyze_control_flow(
         cfg.classify_edges()
         if graph_options in ("all",):
             write_dot(
-                f"{file_part}{func_or_code_name}",
-                f"/tmp/flow+dom-{version}-",
+                f"{file_part}-{func_or_code_name}",
+                f"/tmp/flow+dom-{version}",
                 cfg.graph,
                 write_png=True,
                 is_dominator_format=True,
