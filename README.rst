@@ -39,7 +39,7 @@ Consider this simple Python program taken from my `BlackHat Asia 2024 talk <http
     # loop-end join point
 
 You can find this byte-compiled to Python 3.8 bytecode in `doc-example/count-bits.cpython-38.pyc <https://github.com/rocky/python-control-flow/blob/post-dominator-refactor/doc-example/count-bits.cpython-38.pyc>`_.
-We can get control flow information using for this program using::
+We can get control flow information for this program using::
 
   python ./test/test-bb2.py doc-example/count-bits.cpython-38.pyc
 
@@ -58,7 +58,7 @@ blue
     the second alternative of a group of two alternatives
 
 green
-     a looping (backwards) jump
+     a looping (backward) jump
 
 Here is what the line styles on the arrows indicate:
 
@@ -66,7 +66,7 @@ solid
      an unconditional (and forward) jump
 
 dashed
-     This should always as a stright line centered from one block on
+     This should always be shown as a straight line centered from one block on
      top to the next block below it. It is the block that follows in
      the bytecode sequentially. If there is an arrowhead, there is a
      fallthrough path from the upper block to the lower block. If no
@@ -76,11 +76,11 @@ dashed
 
 dotted
      the jump path of a conditional jump. This is usually curved
-     and appears on the side of abox.
+     and appears on the side of a box.
 
 
 We align blocks linearly using the offset addresses. You can find
-the offset ranges listed inside the block. The entry block has is
+the offset ranges listed inside the block. The entry block is
 marked with an additional border. We also show the basic block number
 and block flags.
 
@@ -92,7 +92,7 @@ In addition to the basic control flow, we also mark and color boxes with dominat
 .. image:: doc-example/flow+dom-3.8--count-bits.cpython-38-module.png
 
 
-Regions with the the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color. However even though Block 6 is the same color it is not at the same nesting level, although it *is* inside the same dominator region.
+Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color. However, even though Block 6 is the same color it is not at the same nesting level, although it *is* inside the same dominator region.
 
 Colors get darker as the region is more nested.
 
@@ -102,10 +102,10 @@ In addition, if a jump or fallthrough jumps out of its dominator region
 the arrowhead of the jump is shown in brown. Note that a jump arrow
 from an "if"-like statement or "for"-like to its end will not be in
 brown. Only the "fallthrough" arrow will be in brown. This is why the
-arrowhead of the jump from block to to block 7 is in blue, not brown.
+arrowhead of the jump from block to block 7 is in blue, not brown.
 
 If any basic block is jumped to using a jump-out (or end scope) kind of edge, then the box has a brown outline.
 
-Inside the block text we now add the dominator region number of for a block in parenthesis. For example Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
+Inside the block text, we now add the dominator region number for a block in parenthesis. For example, Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
 
 Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different *scopes* under basic block 3.
