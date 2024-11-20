@@ -66,14 +66,20 @@ solid
      an unconditional (and forward) jump
 
 dashed
-     the fallthough path of a conditional jump
+     This should always as a stright line centered from one block on
+     top to the next block below it. It is the block that follows in
+     the bytecode sequentially. If there is an arrowhead, there is a
+     fallthrough path from the upper block to the lower block. If no
+     arrowhead, then either the last instruction of the upper basic-block
+     is an unconditional jump or this instruction a return
+     instruction or an explicit exception-raising instruction.
 
 dotted
-     the jump path of a conditional jump
+     the jump path of a conditional jump. This is usually curved
+     and appears on the side of abox.
 
-If there is no arrow head on an arrow, then the block follows the
-previous block in the bytecode although there is not control flow to
-it. We aligng blocks linarly using the offset addresses. You can find
+
+We align blocks linearly using the offset addresses. You can find
 the offset ranges listed inside the block. The entry block has is
 marked with an additional border. We also show the basic block number
 and block flags.
@@ -92,7 +98,13 @@ Colors get darker as the region is more nested.
 
 Here the additional border indicates that a block is part of some non-trivial dominator region. (A "trivial" dominator region is where the block just dominates itself.)
 
-In addition, if a jump or fallthough jumps out of its dominator region that is shown in brown. If any basic block is jumped to using a jump-out (or end scope) kind of edge, then the box has a brown outline.
+In addition, if a jump or fallthrough jumps out of its dominator region
+the arrowhead of the jump is shown in brown. Note that a jump arrow
+from an "if"-like statement or "for"-like to its end will not be in
+brown. Only the "fallthrough" arrow will be in brown. This is why the
+arrowhead of the jump from block to to block 7 is in blue, not brown.
+
+If any basic block is jumped to using a jump-out (or end scope) kind of edge, then the box has a brown outline.
 
 Inside the block text we now add the dominator region number of for a block in parenthesis. For example Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
 
