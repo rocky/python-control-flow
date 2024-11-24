@@ -47,7 +47,7 @@ After running, in ``/tmp`` you'll find some ``.dot`` files and some ``.png`` ima
 
 ``flow-3.8--count-bits.cpython-38--module.png`` is a PNG image for the control flow.
 
-.. image:: doc-example/flow-3.8--count-bits.cpython-38--module.png
+.. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow-3.8-count-bits.cpython-38--module.png
 
 Here is what the colors on the arrows indicate:
 
@@ -92,8 +92,7 @@ Control-Flow with Dominator Regions
 
 In addition to the basic control flow, we mark and color boxes with dominator regions.
 
-.. image:: doc-example/flow+dom-3.8-count-bits.cpython--38-module.png
-
+.. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.8-count-bits.cpython-38--module.png
 
 Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and color.
 
@@ -111,7 +110,7 @@ Block 6 has two jumps into it, so it is neither "inside" nor blocks 4 or 5. Bloc
 
 The collection of blocks 4, 5, and 6 are all dominated by the block region head Block 3 which has a border around it to show it is the head of a block region.
 
-A border is put around a block _only_ if it dominates some _other_ block. So while technically block 4 dominates, itself, and block 5 dominates itself, that fact is not interesting.
+A border is put around a block *only* if it dominates some *other* block. So while technically block 4 dominates, itself, and block 5 dominates itself, that fact is not interesting.
 
 
 Colors get darker as the region is more nested.
@@ -129,13 +128,12 @@ Inside the block text, we now add the dominator region number for a block in par
 
 Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different *scopes* under basic block 3.
 
-In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing the whether the jump condition is true or false, you can see in the control flow whether the source text contains an "and" type of condition or an "or" type of condition.
+In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing whether the jump condition is true or false, you can see in the control flow whether the source text contains an "and" type of condition or an "or" type of condition.
 
-Here is the graph for ``a and b``:
-.. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
-
+Here is the graph for ``x and y``:
+.. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-and-lambda%3Ax-y.png
 
 Note the same graph would be the same as ``if a: if b: ...```.
 
-The graph for ``a or b`` is almost the same with the exception of the style of the blue dotted arrow:
-.. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
+The graph for ``a or b`` is almost the same except the style of the blue dotted arrow:
+.. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-or-lambda%3Aa-b.png
