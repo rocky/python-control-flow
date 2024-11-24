@@ -134,7 +134,7 @@ Here is the graph for ``x and y``:
 
 .. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-and-lambda%3Ax-y.png
 
-Note the same graph would be the same as ``if a: if b: ...```.
+Note the same graph would be the same as ``if x: if y: ...```.
 
 The graph for ``a or b`` is almost the same except the style of the blue dotted arrow:
 
