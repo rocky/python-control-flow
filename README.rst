@@ -131,9 +131,11 @@ Note that even though basic blocks 4 and 5 are at the same indentation level, th
 In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing whether the jump condition is true or false, you can see in the control flow whether the source text contains an "and" type of condition or an "or" type of condition.
 
 Here is the graph for ``x and y``:
+
 .. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-and-lambda%3Ax-y.png
 
 Note the same graph would be the same as ``if a: if b: ...```.
 
 The graph for ``a or b`` is almost the same except the style of the blue dotted arrow:
+
 .. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-or-lambda%3Aa-b.png
