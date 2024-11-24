@@ -10,7 +10,10 @@ from control_flow.graph import (
     TreeGraph,
     jump_flags,
     BB_JOIN_POINT,
-    BB_JUMP_CONDITIONAL,
+    BB_JUMP_BACKWARD_IF_FALSE,
+    BB_JUMP_BACKWARD_IF_TRUE,
+    BB_JUMP_FORWARD_IF_FALSE,
+    BB_JUMP_FORWARD_IF_TRUE,
     BB_LOOP,
     BB_NOFOLLOW,
     BB_ENTRY,
@@ -184,8 +187,14 @@ class ControlFlowGraph:
                     if jump_index > block.start_offset:
                         if BB_LOOP in block.flags:
                             edge_kind = "for-finish"
-                        elif BB_JUMP_CONDITIONAL in self.block_nodes[block].flags:
-                            edge_kind = "forward-conditional"
+                        elif BB_JUMP_BACKWARD_IF_FALSE in self.block_nodes[block].flags:
+                            edge_kind = "jump-backward-if-false"
+                        elif BB_JUMP_BACKWARD_IF_TRUE in self.block_nodes[block].flags:
+                            edge_kind = "jump-backward-if-true"
+                        elif BB_JUMP_FORWARD_IF_FALSE in self.block_nodes[block].flags:
+                            edge_kind = "jump-forward-if-false"
+                        elif BB_JUMP_FORWARD_IF_TRUE in self.block_nodes[block].flags:
+                            edge_kind = "jump-forward-if-true"
                         else:
                             edge_kind = "forward"
                     else:

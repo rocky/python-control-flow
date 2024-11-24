@@ -53,7 +53,7 @@ DOT_STYLE: Final = f"""
 
 MAX_COLOR_LEVELS: Final = len(BB_LEVEL_BACKGROUNDS) - 1
 
-flags_prefix: Final = "flags="
+flags_prefix: Final = "flags={"
 FEL: Final = len(flags_prefix)
 NODE_TEXT_WIDTH = 26 + FEL
 
@@ -238,7 +238,9 @@ class DotConverter:
                 style = '[style="invis"]'
             else:
                 style = '[style="dashed"]'
-        elif edge.kind == "forward-conditional":
+        elif edge.kind in ("jump-backward-if-true", "jump-forward-if-true"):
+            style = '[style="dotted,bold"]'
+        elif edge.kind in ("jump-backward-if-false", "jump-forward-if-false"):
             style = '[style="dotted"]'
 
         nid1 = self.node_ids[edge.source]
@@ -255,7 +257,7 @@ class DotConverter:
             edge_port,
         )
 
-    def node_repr(self, node, align, is_exit, is_dominator_format: bool):
+    def node_repr(self, node, align, is_exit):
         jump_text = ""
         reach_offset_text = ""
         flag_text = ""
@@ -270,7 +272,7 @@ class DotConverter:
                 format_flags_with_width(
                     node.flags,
                     NODE_TEXT_WIDTH - FEL,
-                    align + (" " * (len("flags="))),
+                    align + (" " * (len(flags_prefix))),
                 ),
             )
         else:
@@ -332,7 +334,7 @@ class DotConverter:
             node.number,
             level,
             align,
-            self.node_repr(node.bb, align, is_exit, is_dominator_format),
+            self.node_repr(node.bb, align, is_exit),
             align,
         )
         self.buffer += "  block_%d %s%s;\n" % (node.number, style, label)

@@ -15,7 +15,9 @@ from control_flow.graph import (
     BB_EXIT,
     BB_FINALLY,
     BB_FOR,
-    BB_JUMP_CONDITIONAL,
+    BB_JUMP_BACKWARD_IF_FALSE,
+    BB_JUMP_FORWARD_IF_FALSE,
+    BB_JUMP_FORWARD_IF_TRUE,
     BB_JUMP_TO_FALLTHROUGH,
     BB_JUMP_UNCONDITIONAL,
     BB_LOOP,
@@ -252,15 +254,21 @@ class BBMgr(object):
         else:
             self.EXCEPT_INSTRUCTIONS.add(opcode.opmap["RAISE_VARARGS"])
 
-        self.JUMP_CONDITIONAL = set()
+        self.JUMP_IF_FALSE = set()
         for opname in (
-            "POP_JUMP_IF_FALSE",
-            "POP_JUMP_IF_TRUE",
             "JUMP_IF_FALSE_OR_POP",
-            "JUMP_IF_TRUE_OR_POP",
+            "POP_JUMP_IF_FALSE",
         ):
             if opname in opcode.opmap:
-                self.JUMP_CONDITIONAL.add(opcode.opmap[opname])
+                self.JUMP_IF_FALSE.add(opcode.opmap[opname])
+
+        self.JUMP_IF_TRUE = set()
+        for opname in (
+            "JUMP_IF_TRUE_OR_POP",
+            "POP_JUMP_IF_TRUE",
+        ):
+            if opname in opcode.opmap:
+                self.JUMP_IF_TRUE.add(opcode.opmap[opname])
 
         self.NOFOLLOW_INSTRUCTIONS = {
             opcode.opmap["RETURN_VALUE"],
@@ -465,8 +473,13 @@ def basic_blocks(
             last_line_number = inst.starts_line
 
         # Add block flags for certain classes of instructions
-        if op in bb.JUMP_CONDITIONAL:
-            flags.add(BB_JUMP_CONDITIONAL)
+        if op in bb.JUMP_IF_FALSE:
+            jump_type = BB_JUMP_FORWARD_IF_FALSE if inst.argval > inst.offset else BB_JUMP_BACKWARD_IF_FALSE
+            flags.add(jump_type)
+
+        if op in bb.JUMP_IF_TRUE:
+            jump_type = BB_JUMP_FORWARD_IF_TRUE if inst.argval > inst.offset else BB_JUMP_BACKWARD_IF_FALSE
+            flags.add(jump_type)
 
         if op in bb.POP_BLOCK_INSTRUCTIONS:
             flags.add(BB_POP_BLOCK)

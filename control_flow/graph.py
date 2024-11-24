@@ -67,8 +67,11 @@ BB_END_FINALLY = 12
 BB_EXIT = 13
 
 # Has a conditional jump of some sort. This would be
-# found in "if", and "while" constructs.
-BB_JUMP_CONDITIONAL = 14
+# found in "if" constructs.
+BB_JUMP_FORWARD_IF_FALSE = 14
+BB_JUMP_FORWARD_IF_TRUE = 15
+BB_JUMP_BACKWARD_IF_FALSE = 16
+BB_JUMP_BACKWARD_IF_TRUE = 17
 
 # Jumps to what would be the fallthough.
 # If there were optimization, this instruction would be removed.
@@ -78,17 +81,17 @@ BB_JUMP_CONDITIONAL = 14
 
 # We mostly use it in drawing graphs to make
 # sure the jump arrow points straight down.
-BB_JUMP_TO_FALLTHROUGH = 15
+BB_JUMP_TO_FALLTHROUGH = 18
 
 # The beginning of the basic block is a join.
-BB_JOIN_POINT = 16
+BB_JOIN_POINT = 19
 
 # Basic block ends in a return or an raise that is not inside
 # a "try" block.
-BB_RETURN = 17
+BB_RETURN = 20
 
 # Unreachable block
-BB_DEAD_CODE = 17
+BB_DEAD_CODE = 21
 
 FLAG2NAME = {
     BB_ENTRY: "entry",
@@ -102,7 +105,10 @@ FLAG2NAME = {
     BB_EXCEPT: "except",
     BB_JOIN_POINT: "join block",
     BB_JUMP_UNCONDITIONAL: "unconditional",
-    BB_JUMP_CONDITIONAL: "conditional jump",
+    BB_JUMP_BACKWARD_IF_FALSE: "jump backward if false",
+    BB_JUMP_BACKWARD_IF_TRUE: "jump backward if true",
+    BB_JUMP_FORWARD_IF_FALSE: "jump forward if false",
+    BB_JUMP_FORWARD_IF_TRUE: "jump forward if true",
     BB_JUMP_TO_FALLTHROUGH: "jump to fallthough",
     BB_FOR: "for",
     BB_FINALLY: "finally",
@@ -165,7 +171,7 @@ def format_flags_with_width(flags, max_width, newline):
             pass
         pass
 
-    return result + (" " * remain)
+    return result + "}" + (" " * remain)
 
 
 class Node:
@@ -268,10 +274,14 @@ class Edge:
         """Return True is edge is attached to a conditional jump
         instruction at its source.
         """
-        return (
-            BB_JUMP_CONDITIONAL in self.source.flags
-            and self.dest.bb.start_offset in self.source.bb.jump_offsets
-        )
+        return {
+            BB_JUMP_FORWARD_IF_TRUE,
+            BB_JUMP_FORWARD_IF_FALSE,
+            BB_JUMP_BACKWARD_IF_TRUE,
+            BB_JUMP_BACKWARD_IF_FALSE,
+        }.intersection(
+            self.source.flags
+        ) and self.dest.bb.start_offset in self.source.bb.jump_offsets
 
 
 class DiGraph:
