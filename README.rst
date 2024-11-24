@@ -45,9 +45,9 @@ We can get control flow information for this program using::
 
 After running, in ``/tmp`` you'll find some ``.dot`` files and some ``.png`` images generated for the main routine.
 
-``flow-3.8--count-bits.cpython-38-module.png`` is a PNG image for the control flow.
+``flow-3.8--count-bits.cpython-38--module.png`` is a PNG image for the control flow.
 
-.. image:: doc-example/flow-3.8--count-bits.cpython-38-module.png
+.. image:: doc-example/flow-3.8--count-bits.cpython-38--module.png
 
 Here is what the colors on the arrows indicate:
 
@@ -92,14 +92,30 @@ Control-Flow with Dominator Regions
 
 In addition to the basic control flow, we also mark and color boxes with dominator regions.
 
-.. image:: doc-example/flow+dom-3.8--count-bits.cpython-38-module.png
+.. image:: doc-example/flow+dom-3.8--count-bits.cpython--38-module.png
 
 
-Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color. However, even though Block 6 is the same color it is not at the same nesting level, although it *is* inside the same dominator region.
+Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color.
+
+Block 6 has two jumps into it, so it is neither "inside" either blocks 4 or 5. Block 6 is the "join point" block after an if/else::
+
+   # block 3
+   if i % 0:
+       # block 4
+       one_bits += 1
+   else:
+       # block 5
+       zero_bits += 1
+   # join point
+   i << 1  # This is block 6
+
+The collection of blocks 4, 5, and 6 are all dominated by the block region head Block 3 which has a border around it to show it is the head of a block region.
+
+A border is put around a block _only_ if it dominates some _other_ block. So while technicaly block 4 dominates, itself, and block 5 dominates itself, that fact is not interesting.
+
 
 Colors get darker as the region is more nested.
 
-Here the additional border indicates that a block is part of some non-trivial dominator region. (A "trivial" dominator region is where the block just dominates itself.)
 
 In addition, if a jump or fallthrough jumps out of its dominator region
 the arrowhead of the jump is shown in brown. Note that a jump arrow
@@ -112,3 +128,16 @@ If any basic block is jumped to using a jump-out (or end scope) kind of edge, th
 Inside the block text, we now add the dominator region number for a block in parenthesis. For example, Basic blocks, 4 and 5 are in dominator region 3 and so are marked "(3)" after their basic block number. The dominator number for a basic block is the same as its basic block number. So Basic Block 3 is also Dominator Region 3.
 
 Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different *scopes* under basic block 3.
+
+In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing the whether the jump condition is true or false, you can see in the control flow whether the source text contains and "and" type of condition or an "or" type of condition.
+
+Here is the graph for ``a and b``::
+
+.. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
+
+
+Note the same graph would be the same as ``if a: if b: ...```.
+
+The graph for ``a or b`` is almost the same with the exception of the style of the blue dotted arrow::
+
+  .. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png

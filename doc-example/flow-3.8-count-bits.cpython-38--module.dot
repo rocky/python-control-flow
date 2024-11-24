@@ -1,0 +1,38 @@
+digraph G {
+  graph[fontsize=10 fontname="DejaVu Sans Mono"];
+
+  mclimit=1.5;
+  rankdir=TD; ordering=out;
+  color="#ededed";
+
+  node[shape=box style=filled fontsize=10 fontname="DejaVu Sans Mono"
+       fillcolor="#ededed", width=2];
+  edge[fontsize=10 fontname="Verdana"];
+
+  # basic blocks:
+  block_1 [shape = "box", peripheries=2][label="Basic Block 1, Line 3 \loffset: 0..20                    \lflags={entry}                     \l"];
+  block_2 [label="Basic Block 2, Line 4 \loffset: 22..28                   \lflags={loop,\l       jump forward if false}\ljumps=[66]\l"];
+  block_3 [label="Basic Block 3, Line 6 \loffset: 30..36                   \lflags={jump forward if false}     \ljumps=[48]\l"];
+  block_4 [label="Basic Block 4, Line 8 \loffset: 38..46                   \lflags={no fallthrough,\l       unconditional}\ljumps=[56]\l"];
+  block_5 [label="Basic Block 5, Line 11 \loffset: 48..54                   \l"];
+  block_6 [label="Basic Block 6, Line 13 \loffset: 56..64                   \lflags={no fallthrough, except,\l       unconditional}\ljumps=[22]\l"];
+  block_7 [label="Basic Block 7, Line 13 \loffset: 66..68                   \lflags={no fallthrough, return}    \l"];
+
+  # Edges should be ordered from innermost block edges to outmost.
+  # If layout gives ugly edge crossing, change the order or the edges
+  # and/or add port directions on nodes For example:
+  #  block_1:sw -> block_4:nw or
+  #  block_0 -> block_3:ne
+  # See https://stackoverflow.com/questions/53468814/how-can-i-influence-graphviz-dot-to-prefer-which-edges-can-cross/53472852#53472852
+
+  block_6:nw -> block_2:sw [weight=1][color="#006400"];
+  block_6 -> block_7 [weight=10][style="dashed"] [arrowhead="none"];
+  block_5 -> block_6 [weight=10][color="red"][style="dashed"];
+  block_4 -> block_5 [weight=10][style="dashed"] [arrowhead="none"];
+  block_4 -> block_6 [weight=1];
+  block_3 -> block_4 [weight=10][color="red"][style="dashed"];
+  block_3 -> block_5 [weight=1][color="blue"][style="dotted"];
+  block_2 -> block_3 [weight=10][color="red"][style="dashed"];
+  block_2:se -> block_7:ne [weight=1][color="MediumBlue"][style="dotted"];
+  block_1 -> block_2 [weight=10][color="red"][style="dashed"];
+}
