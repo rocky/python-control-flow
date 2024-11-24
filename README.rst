@@ -69,7 +69,7 @@ dashed
      This should always be shown as a straight line centered from one block on
      top to the next block below it. It is the block that follows in
      the bytecode sequentially. If there is an arrowhead, there is a
-     fallthrough path from the upper block to the lower block. If no
+     fallthrough path from the upper block to the lower block. If there is no
      arrowhead, then either the last instruction of the upper basic-block
      is an unconditional jump or this instruction a return
      instruction or an explicit exception-raising instruction.
@@ -84,20 +84,20 @@ the offset ranges listed inside the block. The entry block is
 marked with an additional border. We also show the basic block number
 and block flags.
 
-Any block that is ghost-like or has a white-background box in an
+Any block that is ghost-like or has a white-background box in a
 dashed border is dead code.
 
 Control-Flow with Dominator Regions
 +++++++++++++++++++++++++++++++++++
 
-In addition to the basic control flow, we also mark and color boxes with dominator regions.
+In addition to the basic control flow, we mark and color boxes with dominator regions.
 
-.. image:: doc-example/flow+dom-3.8--count-bits.cpython--38-module.png
+.. image:: doc-example/flow+dom-3.8-count-bits.cpython--38-module.png
 
 
-Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and are the same color.
+Regions with the same nesting level have the same color. So Basic blocks 3 and 7 are at the same nesting level. Blocks 4 and 5 are at the same nesting level and color.
 
-Block 6 has two jumps into it, so it is neither "inside" either blocks 4 or 5. Block 6 is the "join point" block after an if/else::
+Block 6 has two jumps into it, so it is neither "inside" nor blocks 4 or 5. Block 6 is the "join point" block after an if/else::
 
    # block 3
    if i % 0:
@@ -111,7 +111,7 @@ Block 6 has two jumps into it, so it is neither "inside" either blocks 4 or 5. B
 
 The collection of blocks 4, 5, and 6 are all dominated by the block region head Block 3 which has a border around it to show it is the head of a block region.
 
-A border is put around a block _only_ if it dominates some _other_ block. So while technicaly block 4 dominates, itself, and block 5 dominates itself, that fact is not interesting.
+A border is put around a block _only_ if it dominates some _other_ block. So while technically block 4 dominates, itself, and block 5 dominates itself, that fact is not interesting.
 
 
 Colors get darker as the region is more nested.
@@ -121,7 +121,7 @@ In addition, if a jump or fallthrough jumps out of its dominator region
 the arrowhead of the jump is shown in brown. Note that a jump arrow
 from an "if"-like statement or "for"-like to its end will not be in
 brown. Only the "fallthrough" arrow will be in brown. This is why the
-arrowhead of the jump from block to block 7 is in blue, not brown.
+arrowhead of the jump from block to block 7 is blue, not brown.
 
 If any basic block is jumped to using a jump-out (or end scope) kind of edge, then the box has a brown outline.
 
@@ -129,15 +129,13 @@ Inside the block text, we now add the dominator region number for a block in par
 
 Note that even though basic blocks 4 and 5 are at the same indentation level, they are in different *scopes* under basic block 3.
 
-In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing the whether the jump condition is true or false, you can see in the control flow whether the source text contains and "and" type of condition or an "or" type of condition.
+In this example, all conditional jumps were taken if the condition was false. When the condition is true, we bold the dotted blue arrow. By doing this and by showing the whether the jump condition is true or false, you can see in the control flow whether the source text contains an "and" type of condition or an "or" type of condition.
 
-Here is the graph for ``a and b``::
-
+Here is the graph for ``a and b``:
 .. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
 
 
 Note the same graph would be the same as ``if a: if b: ...```.
 
-The graph for ``a or b`` is almost the same with the exception of the style of the blue dotted arrow::
-
-  .. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
+The graph for ``a or b`` is almost the same with the exception of the style of the blue dotted arrow:
+.. image:: doc-example/flow+dom-3.9-and-lambda:x-y.png
