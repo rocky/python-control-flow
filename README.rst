@@ -21,7 +21,7 @@ There may be some bugs in the code. And, right now, we always produce dot graphs
 Example
 -------
 
-For now, the Python in ``test/test_bb2.py``shows what's up the best.
+For now, the Python in ``test/test_bb2.py`` shows what's up the best.
 
 Consider this simple Python program taken from my `BlackHat Asia 2024 talk <https://www.blackhat.com/asia-24/briefings/schedule/index.html#how-to-get-the-most-out-of-the-python-decompilers-uncompyle-and-decompyle---how-to-write-and-read-a-bytecode-decompiler-37789>`_:
 
