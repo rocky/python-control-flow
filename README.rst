@@ -143,5 +143,5 @@ The graph for ``a or b`` is almost the same except the style of the blue dotted 
 
 .. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-or-lambda%3Aa-b.png
 
-.. |Combined CI status| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rocky/python-control-flow/master/.github/combined-ci-status.json)](https://github.com/rocky/python-control-flow/actions
+.. |Combined CI status| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rocky/python-control-flow/master/.github/combined-ci-status.json
 .. |Supported Python Versions| image:: https://img.shields.io/pypi/pyversions/python-control-flow.svg
