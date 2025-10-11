@@ -12,5 +12,5 @@ mydir=$(dirname $bs)
 python_control_flow_fulldir=$(readlink -f $mydir)
 . $mydir/checkout_common.sh
 
-(cd $python_control_flow_fulldir/../.. && setup_version x-python master)
+(cd $python_control_flow_fulldir/../.. && setup_version x-python python-3.6)
 checkout_finish python-3.8-to-3.10
