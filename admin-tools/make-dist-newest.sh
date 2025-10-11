@@ -9,37 +9,38 @@ PACKAGE_NAME="python-control-flow"
 
 # FIXME put some of the below in a common routine
 function finish {
-  if [[ -n "$make_dist_trepanxpy_newest_owd" ]] then
-     cd $make_dist_trepan_xpy_newest_owd
+  if [[ -n "$make_dist_python_control_flow_owd" ]] then
+     cd $make_dist_python_control_flow_newest_owd
   fi
 }
 
-make_dist_python_control_flow_38_owd=$(pwd)
+make_dist_python_control_flow_newest_owd=$(pwd)
 cd $(dirname ${BASH_SOURCE[0]})
 trap finish EXIT
 
-if ! source ./pyenv-3.8-3.10-versions ; then
+if ! source ./pyenv-newest-versions ; then
     exit $?
 fi
-
-if ! source ./setup-python-3.8.sh ; then
+if ! source ./setup-master.sh ; then
     exit $?
 fi
 
 cd ..
-
 source ${PACKAGE_MODULE}/version.py
-if [[ ! -n $__version__ ]]; then
+if [[ ! $__version__ ]] ; then
     echo "Something is wrong: __version__ should have been set."
     exit 1
 fi
+echo "Making package distribution for version ${__version__}"
+
+pyenv local 3.13
 
 for pyversion in $PYVERSIONS; do
+    echo --- $pyversion ---
     if [[ ${pyversion:0:4} == "pypy" ]] ; then
 	echo "$pyversion - PyPy does not get special packaging"
 	continue
     fi
-    echo "*** Packaging ${PACKAGE_NAME} for version ${__version__} on Python ${pyversion} ***"
     if ! pyenv local $pyversion ; then
 	exit $?
     fi
@@ -49,18 +50,24 @@ for pyversion in $PYVERSIONS; do
     # Pick out first two number of version, e.g. 3.5.1 -> 35
     first_two=$(echo $pyversion | cut -d'.' -f 1-2 | sed -e 's/\.//')
     rm -fr build
-    python setup.py bdist_wheel
-    mv -v dist/${PACKAGE_MODULE}-${__version__}-{py3,py$first_two}-none-any.whl
+    pip wheel --wheel-dir=dist .
+    mv -v dist/${PACKAGE_MODULE}-$__version__-{py3,py$first_two}-none-any.whl
 done
 
-python ./setup.py sdist
+python -m build --sdist
 tarball=dist/${PACKAGE_NAME}-${__version__}.tar.gz
-
 if [[ -f $tarball ]]; then
-    version_specific_tarball=dist/${PACKAGE_NAME}_38-${__version__}.tar.gz
-    mv -v $tarball $version_specific_tarball
-    twine check $version_specific_tarball
-
+    twine check $tarball
+else
+    tarball=dist/${PACKAGE_MODULE}-${__version__}.tar.gz
+    if [[ -f $tarball ]]; then
+	twine check $tarball
+    fi
 fi
+
+if [[ ! -d dist/${__version__} ]] ; then
+    mkdir -v dist/${__version__}
+fi
+
 twine check dist/${PACKAGE_MODULE}-${__version__}-py3*.whl
 finish
