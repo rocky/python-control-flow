@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+PACKAGE_MODULE=python_control_flow
 python_control_flow_owd=$(pwd)
 bs=${BASH_SOURCE[0]}
 mydir=$(dirname $bs)
@@ -12,10 +13,16 @@ if ! source $pyenv_file ; then
     exit 1
 fi
 
+source ../${PACKAGE_MODULE}/version.py
+if [[ ! $__version__ ]] ; then
+    echo "Something is wrong: __version__ should have been set."
+    exit 1
+fi
+
 cd ../dist/
 
 install_check_command="python-cfg --version"
-install_file="python_control_flow-1.0.0.tar.gz"
+install_file="python_control_flow-${__version__}.tar.gz"
 for pyversion in $PYVERSIONS; do
     echo "*** Installing ${install_file} for Python ${pyversion} ***"
     pyenv local $pyversion
