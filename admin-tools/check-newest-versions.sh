@@ -1,6 +1,6 @@
 #!/bin/bash
 function finish {
-    if [[-n ${python_control_flow_owd} ]] && [[ -d $python_control_flow_owd ]]; then
+    if [[ -n ${python_control_flow_owd} ]] && [[ -d $python_control_flow_owd ]]; then
 	cd $python_control_flow_owd
     fi
 }
