@@ -2,16 +2,16 @@ name: python_control_flow (ubuntu)
 
 on:
   push:
-    branches: [ master ]
+    branches: [ python-3.8-to-3.10 ]
   pull_request:
-    branches: [ master ]
+    branches: [ python-3.8-to-3.10 ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: ['3.8', '3.9', '3.10']
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -22,7 +22,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         # Until the next xdis release:
-        pip install --local -e git+https://github.com/rocky/python-xdis.git#egg=xdis
+        # pip install --local -e git+https://github.com/rocky/python-xdis.git#egg=xdis
         pip install -e .
         # pip install click spark-parser xdis
         pip install -r requirements-dev.txt
