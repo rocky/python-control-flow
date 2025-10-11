@@ -10,7 +10,7 @@ authors = [
     {name = "Rocky Bernstein",	email = "rb@dustyfeet.com"},
 ]
 
-name = "python_control_flow"
+name = "python-control-flow"
 description = "Python Bytecode Control Flow Toolkit"
 dependencies = [
     "click",
