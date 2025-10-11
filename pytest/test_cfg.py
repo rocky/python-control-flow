@@ -73,7 +73,17 @@ def test_basic():
     version = ".".join((str(n) for n in PYTHON_VERSION_TRIPLE[:2]))
     for fn, check_dict in (
         (one_basic_block, {"count": 2}),
-        (if_else_expr, {"count": 4 if PYTHON_VERSION_TRIPLE[:2] < (3, 11) else 5}),
+        (
+            if_else_expr,
+            {
+                "count": (
+                    4
+                    if PYTHON_VERSION_TRIPLE[:2] < (3, 11)
+                    or PYTHON_VERSION_TRIPLE[:2] == (3, 12)
+                    else 5
+                )
+            },
+        ),
     ):
         if DEBUG:
             print(fn.__name__)

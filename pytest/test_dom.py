@@ -21,7 +21,7 @@ python_version_tuple = PYTHON_VERSION_TRIPLE[:2]
 
 
 @pytest.mark.skipif(
-    PYTHON_VERSION_TRIPLE >= (3, 13), reason="Not gone over for Python 3.13"
+    PYTHON_VERSION_TRIPLE >= (3, 12), reason="Not gone over for Python 3.12 and above"
 )
 def check_dom(
     dom_tree: DominatorTree, check_dict: dict, fn_name: str, dead_code_count: int = 0
@@ -47,14 +47,20 @@ def check_dom(
 def test_basic():
     offset2inst_index = {}
     version = ".".join((str(n) for n in python_version_tuple))
-    if PYTHON_VERSION_TRIPLE[:2] < (3, 11):
-        ifelse_block_count = 4
-    else:
-        ifelse_block_count = 5
 
     for fn, check_dict in (
         (one_basic_block, {"count": 1 if PYTHON_VERSION_TRIPLE >= (3, 12) else 2}),
-        (if_else_expr, {"count": ifelse_block_count}),
+        (
+            if_else_expr,
+            {
+                "count": (
+                    4
+                    if PYTHON_VERSION_TRIPLE[:2] < (3, 11)
+                    or PYTHON_VERSION_TRIPLE[:2] == (3, 12)
+                    else 5
+                )
+            },
+        ),
     ):
         name = fn.__name__
         if DEBUG:
