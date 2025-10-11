@@ -1,6 +1,6 @@
-"""Test control_flow.bb: basic blocks and basic-block management"""
+"""Test python_control_flow.bb: basic blocks and basic-block management"""
 
-from control_flow.bb import basic_blocks, BB_ENTRY, BB_EXIT, BB_RETURN
+from python_control_flow.bb import basic_blocks, BB_ENTRY, BB_EXIT, BB_RETURN
 from example_fns import one_basic_block, if_else_expr
 
 DEBUG = True

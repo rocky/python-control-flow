@@ -10,8 +10,8 @@ import sys
 from xdis.load import check_object_path, load_module
 from xdis.version_info import PYTHON_VERSION_TRIPLE
 
-from control_flow.build_control_flow import build_and_analyze_control_flow
-from control_flow.version import __version__
+from python_control_flow.build_control_flow import build_and_analyze_control_flow
+from python_control_flow.version import __version__
 
 @click.command()
 @click.version_option(version=__version__)

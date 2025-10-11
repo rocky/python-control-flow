@@ -7,7 +7,7 @@ from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
-from control_flow.graph import (
+from python_control_flow.graph import (
     BB_BREAK,
     BB_END_FINALLY,
     BB_ENTRY,

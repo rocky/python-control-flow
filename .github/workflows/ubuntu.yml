@@ -1,4 +1,4 @@
-name: control_flow (ubuntu)
+name: python_control_flow (ubuntu)
 
 on:
   push:

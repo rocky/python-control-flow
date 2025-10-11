@@ -5,10 +5,10 @@
 # from xdis.std import opc
 from xdis import PYTHON_VERSION_TRIPLE
 
-from control_flow.bb import basic_blocks
-from control_flow.cfg import ControlFlowGraph
-from control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
-from control_flow.graph import BB_ENTRY, write_dot
+from python_control_flow.bb import basic_blocks
+from python_control_flow.cfg import ControlFlowGraph
+from python_control_flow.dominators import DominatorTree, dfs_forest, build_dom_set
+from python_control_flow.graph import BB_ENTRY, write_dot
 from example_fns import if_else_expr, one_basic_block
 
 DEBUG = True

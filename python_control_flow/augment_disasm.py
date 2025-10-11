@@ -17,9 +17,9 @@ from xdis.bytecode import Bytecode
 from xdis.instruction import Instruction
 from xdis.codetype.base import CodeBase
 
-from control_flow.bb import BBMgr, BasicBlock
-from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import (
+from python_control_flow.bb import BBMgr, BasicBlock
+from python_control_flow.cfg import ControlFlowGraph
+from python_control_flow.graph import (
     Node,
     BB_FOR,
     BB_LOOP,

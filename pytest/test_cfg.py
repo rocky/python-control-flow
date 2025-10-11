@@ -4,9 +4,9 @@ from typing import Callable
 from xdis import PYTHON_VERSION_TRIPLE
 from xdis.bytecode import get_instructions_bytes
 from xdis.std import opc
-from control_flow.bb import basic_blocks
-from control_flow.cfg import ControlFlowGraph
-from control_flow.graph import BB_ENTRY, write_dot
+from python_control_flow.bb import basic_blocks
+from python_control_flow.cfg import ControlFlowGraph
+from python_control_flow.graph import BB_ENTRY, write_dot
 from example_fns import one_basic_block, if_else_expr
 
 DEBUG = True

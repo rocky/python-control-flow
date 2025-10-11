@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os.path as osp
-from control_flow.__main__ import build_and_analyze_control_flow
+from python_control_flow.__main__ import build_and_analyze_control_flow
 from glob import glob
 
 

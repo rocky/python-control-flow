@@ -2,7 +2,7 @@
 import sys
 import os
 import os.path as osp
-from control_flow.build_control_flow import build_and_analyze_control_flow
+from python_control_flow.build_control_flow import build_and_analyze_control_flow
 from types import CodeType
 from xdis.load import check_object_path, load_module
 from xdis.version_info import PYTHON_VERSION_TRIPLE

@@ -21,11 +21,9 @@ check-examples:
 
 
 #: Clean up temporary files and .pyc files
-clean: clean_pyc
+clean:
 	$(PYTHON) ./setup.py $@
 	find . -name __pycache__ -exec rm -fr {} \; || true
-	(cd test && $(MAKE) clean)
-	(cd test_unit && $(MAKE) clean)
 
 #: Create source (tarball) and wheel distribution
 dist: clean

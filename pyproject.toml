@@ -10,7 +10,7 @@ authors = [
     {name = "Rocky Bernstein",	email = "rb@dustyfeet.com"},
 ]
 
-name = "control_flow"
+name = "python_control_flow"
 description = "Python Bytecode Control Flow Toolkit"
 dependencies = [
     "click",
@@ -46,7 +46,7 @@ dev = [
 ]
 
 [project.scripts]
-python-cfg = "control_flow.__main__:main"
+python-cfg = "python_control_flow.__main__:main"
 
 [tool.setuptools.dynamic]
-version = {attr = "control_flow.version.__version__"}
+version = {attr = "python_control_flow.version.__version__"}

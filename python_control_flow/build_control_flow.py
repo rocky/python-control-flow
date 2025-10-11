@@ -5,11 +5,11 @@ from xdis.codetype.base import iscode
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
 
-from control_flow.augment_disasm import augment_instructions
-from control_flow.bb import BB_JUMP_UNCONDITIONAL, BB_NOFOLLOW, basic_blocks
-from control_flow.cfg import ControlFlowGraph
-from control_flow.dominators import DominatorTree
-from control_flow.graph import BB_DEAD_CODE, write_dot
+from python_control_flow.augment_disasm import augment_instructions
+from python_control_flow.bb import BB_JUMP_UNCONDITIONAL, BB_NOFOLLOW, basic_blocks
+from python_control_flow.cfg import ControlFlowGraph
+from python_control_flow.dominators import DominatorTree
+from python_control_flow.graph import BB_DEAD_CODE, write_dot
 
 VARIANT = "pypy" if IS_PYPY else None
 

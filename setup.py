@@ -1,29 +1,33 @@
 #!/usr/bin/env python
 
-"""Setup script for the 'control_flow' distribution."""
+"""Setup script for the 'python_control_flow' distribution."""
 
 import os
 from setuptools import setup, find_packages
 
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Code Generators",
 ]
 
 # The rest in alphabetic order
-entry_points = {"console_scripts": ["python-cfg=control_flow.__main__:main"]}
+entry_points = {"console_scripts": ["python-cfg=python_control_flow.__main__:main"]}
 ftp_url = None
 license = "GPL2"
 maintainer = "Rocky Bernstein"
 maintainer_email = "rb@dustyfeet.com"
-modname = "control_flow"
-name = "control_flow"
-py_modules = "control_flow"
+modname = "python_control_flow"
+name = "python_control_flow"
+py_modules = "python_control_flow"
 short_desc = "Control Flow Toolkit"
 web = "https://github.com/rocky/python-control_flow/"
 
@@ -42,14 +46,14 @@ def read(*rnames):
 
 # Get info from files; set: long_description and VERSION
 long_description = read("README.rst") + "\n"
-exec(read("control_flow/version.py"))
+exec(read("python_control_flow/version.py"))
 
 
 setup(
     classifiers=classifiers,
     description=short_desc,
     entry_points=entry_points,
-    install_requires=["click", "xdis >= 6.0.3"],
+    install_requires=["click", "xdis >= 6.1.6"],
     license=license,
     long_description=long_description,
     maintainer=maintainer,

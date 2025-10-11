@@ -2,7 +2,7 @@
 #
 from operator import attrgetter
 from typing import Dict, List, Optional, Tuple
-from control_flow.graph import (
+from python_control_flow.graph import (
     DiGraph,
     Edge,
     Node,

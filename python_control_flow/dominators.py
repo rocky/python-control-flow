@@ -7,9 +7,9 @@
   Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
-from control_flow.bb import BasicBlock
-from control_flow.graph import TreeGraph
-from control_flow.traversals import dfs_postorder_nodes
+from python_control_flow.bb import BasicBlock
+from python_control_flow.graph import TreeGraph
+from python_control_flow.traversals import dfs_postorder_nodes
 
 
 class DominatorSet(set):

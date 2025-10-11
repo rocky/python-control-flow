@@ -312,7 +312,7 @@ class DiGraph:
         self.nodes.add(node)
 
     def to_dot(self, exit_node, is_dominator_format: bool = False):
-        from control_flow.dotio import DotConverter
+        from python_control_flow.dotio import DotConverter
 
         return DotConverter.process(self, exit_node, is_dominator_format)
 

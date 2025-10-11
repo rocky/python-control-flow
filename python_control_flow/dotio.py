@@ -8,8 +8,8 @@
 """
 
 from typing import Final, Optional, Tuple
-from control_flow.bb import BasicBlock
-from control_flow.graph import (
+from python_control_flow.bb import BasicBlock
+from python_control_flow.graph import (
     DiGraph,
     BB_ENTRY,
     BB_EXIT,
