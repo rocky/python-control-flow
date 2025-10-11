@@ -13,6 +13,12 @@ Specifically:
 
 I've used some routines from Romain Gaucher's `equip <https://github.com/neuroo/equip>`_ as a starting point.
 
+*This code is alpha.* I believe there may be some bugs in the
+ dominator code. And, right now, we always produce dot graphs which
+ can be a problem on large bytecode. Inserting pseudo bytecode
+ instructions code was designed to be used with the newer
+ grammar-based Python decompiler project. That code may change a bit.
+
 Example
 -------
 
