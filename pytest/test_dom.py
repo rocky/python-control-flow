@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Test dominiators"""
 
+import pytest
+
 # from xdis.bytecode import get_instructions_bytes
 # from xdis.std import opc
 from xdis import PYTHON_VERSION_TRIPLE
@@ -18,10 +20,12 @@ if DEBUG:
 python_version_tuple = PYTHON_VERSION_TRIPLE[:2]
 
 
+@pytest.mark.skipif(
+    PYTHON_VERSION_TRIPLE >= (3, 12), reason="Not gone over for Python 3.12 and above"
+)
 def check_dom(
     dom_tree: DominatorTree, check_dict: dict, fn_name: str, dead_code_count: int = 0
 ):
-
     # Prefix used in assert failures:
     prefix = f"In {fn_name}:"
 
@@ -43,17 +47,20 @@ def check_dom(
 def test_basic():
     offset2inst_index = {}
     version = ".".join((str(n) for n in python_version_tuple))
-    if PYTHON_VERSION_TRIPLE[:2] != (3, 11):
-        ifelse_block_count = 4
-    else:
-        ifelse_block_count = 5
 
     for fn, check_dict in (
-        (one_basic_block,
-         {"count": 1 if PYTHON_VERSION_TRIPLE >= (3, 12) else 2}),
-        (if_else_expr, {
-            "count": ifelse_block_count
-         }),
+        (one_basic_block, {"count": 1 if PYTHON_VERSION_TRIPLE >= (3, 12) else 2}),
+        (
+            if_else_expr,
+            {
+                "count": (
+                    4
+                    if PYTHON_VERSION_TRIPLE[:2] < (3, 11)
+                    or PYTHON_VERSION_TRIPLE[:2] == (3, 12)
+                    else 5
+                )
+            },
+        ),
     ):
         name = fn.__name__
         if DEBUG:

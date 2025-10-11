@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2021, 2023, 2024 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023-2025 by Rocky Bernstein <rb@dustyfeet.com>
 """
-  Dominator tree
+Computes Dominators and Dominator Regions on a Control-flow Graph.
 
-  Copyright (c) 2017-2018, 2021, 2023-2024 by Rocky Bernstein
-  Copyright (c) 2014 by Romain Gaucher (@rgaucher)
+Copyright (c) 2017-2018, 2021, 2023-2025 by Rocky Bernstein
+Copyright (c) 2014 by Romain Gaucher (@rgaucher)
 """
 
 from python_control_flow.bb import BasicBlock

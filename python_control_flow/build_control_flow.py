@@ -1,6 +1,7 @@
-# Copyright (c) 2021-2024 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2025 by Rocky Bernstein <rb@dustyfeet.com>
 
 import sys
+
 from xdis.codetype.base import iscode
 from xdis.op_imports import get_opcode_module
 from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
@@ -120,7 +121,7 @@ def build_and_analyze_control_flow(
                         opc,
                         line_starts=linestarts,
                         asm_format="extended",
-                        instructions=augmented_instrs[:i+1],
+                        instructions=augmented_instrs[: i + 1],
                     )
                 )
 

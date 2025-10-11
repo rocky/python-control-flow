@@ -1,14 +1,11 @@
-# Copyright (c) 2021, 2024 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2024-2025 by Rocky Bernstein <rb@dustyfeet.com>
 #
 from operator import attrgetter
 from typing import Dict, List, Optional, Tuple
+
 from python_control_flow.graph import (
-    DiGraph,
-    Edge,
-    Node,
-    ScopeEdgeKind,
-    TreeGraph,
-    jump_flags,
+    BB_ENTRY,
+    BB_EXIT,
     BB_JOIN_POINT,
     BB_JUMP_BACKWARD_IF_FALSE,
     BB_JUMP_BACKWARD_IF_TRUE,
@@ -16,8 +13,12 @@ from python_control_flow.graph import (
     BB_JUMP_FORWARD_IF_TRUE,
     BB_LOOP,
     BB_NOFOLLOW,
-    BB_ENTRY,
-    BB_EXIT,
+    DiGraph,
+    Edge,
+    Node,
+    ScopeEdgeKind,
+    TreeGraph,
+    jump_flags,
 )
 
 
@@ -110,7 +111,6 @@ class ControlFlowGraph:
         # Compute a block's immediate predecessors and successors
 
         for block in self.blocks:
-
             for jump_offset in set(block.jump_offsets) | block.exception_offsets:
                 # We need to guard against jumps to wild offsets.
                 # This was seen in
@@ -154,20 +154,20 @@ class ControlFlowGraph:
 
         sorted_blocks = sorted(self.blocks, key=attrgetter("index"))
         for i, block in enumerate(sorted_blocks):
-
             # Is this dead code? (Remove self loops in calculation)
             # Entry node, blocks[0] is never unreachable
-            if not (block.predecessors - {block} and block != blocks[0]
-                    or BB_ENTRY in block.flags):
+            if not (
+                block.predecessors - {block}
+                and block != blocks[0]
+                or BB_ENTRY in block.flags
+            ):
                 block.unreachable = True
 
             block = sorted_blocks[i]
             if block.follow_offset:
                 if BB_NOFOLLOW in block.flags:
                     kind = "no fallthrough"
-                    add_edge(
-                        self.block_nodes[block], self.exit_block, "exit edge"
-                    )
+                    add_edge(self.block_nodes[block], self.exit_block, "exit edge")
                 else:
                     kind = "fallthrough"
                 add_edge(
@@ -231,7 +231,6 @@ class ControlFlowGraph:
         """
 
         for edge in self.graph.edges:
-
             if edge.kind == "no fallthrough":
                 # Edge is not to be followed.
                 continue
@@ -262,8 +261,10 @@ class ControlFlowGraph:
                 # Example:
                 #   if <jump-to-then> then <jump-is-here> ... end
                 edge.scoping_kind = ScopeEdgeKind.Alternate
-            elif (self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]
-                  or self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]):
+            elif (
+                self.dom_tree.doms[source_block] > self.dom_tree.doms[target_block]
+                or self.dom_tree.doms[source_block] == self.dom_tree.doms[target_block]
+            ):
                 # The source block is jumping or falling out of a scope: its
                 # `dom` or `scope number` is more nested than the target scope.
                 # Examples:

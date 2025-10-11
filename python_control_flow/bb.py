@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2023-2024 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023-2025 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from typing import Optional
 
@@ -83,7 +83,6 @@ class BasicBlock:
         jump_offsets=set(),
         starts_line=None,
     ):
-
         global end_bb
 
         # The offset of the first and last instructions in the basic block.
@@ -300,7 +299,6 @@ class BBMgr(object):
         jump_offsets: set,
         starts_line: Optional[int] = None,
     ):
-
         if BB_STARTS_POP_BLOCK in flags and start_offset == end_offset:
             flags.remove(BB_STARTS_POP_BLOCK)
             flags.add(BB_SINGLE_POP_BLOCK)
@@ -354,7 +352,7 @@ def basic_blocks(
             names=code.co_names,
             constants=code.co_consts,
             cells=code.co_cellvars,
-            linestarts=linestarts
+            linestarts=linestarts,
         )
     )
     for i, inst in enumerate(instructions):
@@ -474,11 +472,19 @@ def basic_blocks(
 
         # Add block flags for certain classes of instructions
         if op in bb.JUMP_IF_FALSE:
-            jump_type = BB_JUMP_FORWARD_IF_FALSE if inst.argval > inst.offset else BB_JUMP_BACKWARD_IF_FALSE
+            jump_type = (
+                BB_JUMP_FORWARD_IF_FALSE
+                if inst.argval > inst.offset
+                else BB_JUMP_BACKWARD_IF_FALSE
+            )
             flags.add(jump_type)
 
         if op in bb.JUMP_IF_TRUE:
-            jump_type = BB_JUMP_FORWARD_IF_TRUE if inst.argval > inst.offset else BB_JUMP_BACKWARD_IF_FALSE
+            jump_type = (
+                BB_JUMP_FORWARD_IF_TRUE
+                if inst.argval > inst.offset
+                else BB_JUMP_BACKWARD_IF_FALSE
+            )
             flags.add(jump_type)
 
         if op in bb.POP_BLOCK_INSTRUCTIONS:
