@@ -31,16 +31,13 @@ if [[ ! $__version__ ]] ; then
     echo "Something is wrong: __version__ should have been set."
     exit 1
 fi
-echo "Making package distribution for version ${__version__}"
-
-pyenv local 3.13
 
 for pyversion in $PYVERSIONS; do
-    echo --- $pyversion ---
     if [[ ${pyversion:0:4} == "pypy" ]] ; then
 	echo "$pyversion - PyPy does not get special packaging"
 	continue
     fi
+    echo "*** Packaging ${PACKAGE_NAME} for version ${__version__} on Python ${pyversion} ***"
     if ! pyenv local $pyversion ; then
 	exit $?
     fi

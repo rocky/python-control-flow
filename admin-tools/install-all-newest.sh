@@ -16,9 +16,9 @@ cd ../dist/
 
 install_check_command="python-cfg --version"
 install_file="python_control_flow-1.0.0.tar.gz"
-for version in $PYVERSIONS; do
-    echo "*** Installing ${install_file} for Python ${version} ***"
-    pyenv local $version
+for pyversion in $PYVERSIONS; do
+    echo "*** Installing ${install_file} for Python ${pyversion} ***"
+    pyenv local $pyversion
     pip install $install_file
     $install_check_command
     echo "----"
