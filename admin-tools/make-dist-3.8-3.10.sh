@@ -1,5 +1,11 @@
 #!/bin/bash
-PACKAGE="python_control_flow"
+# The name Python's import uses.
+# It is reflected in the directory structure.
+PACKAGE_MODULE="python_control_flow"
+
+# The name that PyPi sees this as.
+# It is set in setup.py's name.
+PACKAGE_NAME="python-control-flow"
 
 # FIXME put some of the below in a common routine
 function finish {
@@ -22,7 +28,7 @@ fi
 
 cd ..
 
-source ${PACKAGE}/version.py
+source ${PACKAGE_MODULE}/version.py
 if [[ ! -n $__version__ ]]; then
     echo "Something is wrong: __version__ should have been set."
     exit 1
@@ -45,13 +51,17 @@ for pyversion in $PYVERSIONS; do
     first_two=$(echo $pyversion | cut -d'.' -f 1-2 | sed -e 's/\.//')
     rm -fr build
     python setup.py bdist_wheel
-    mv -v dist/${PACKAGE}-$__version__-{py3,py$first_two}-none-any.whl
+    mv -v dist/${PACKAGE_MODULE}-${__version__}-{py3,py$first_two}-none-any.whl
 done
 
 python ./setup.py sdist
-tarball=dist/${PACKAGE}-${__version__}.tar.gz
+tarball=dist/${PACKAGE_NAME}-${__version__}.tar.gz
 
 if [[ -f $tarball ]]; then
-    mv -v $tarball dist/${PACKAGE}_38-${__version__}.tar.gz
+    version_specific_tarball=dist/${PACKAGE_NAME}_38-${__version__}.tar.gz
+    mv -v $tarball $version_specific_tarball
+    twine check $version_specific_tarball
+
 fi
+twine check dist/${PACKAGE_MODULE}-${__version__}-py3*.whl
 finish

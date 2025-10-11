@@ -22,7 +22,6 @@ classifiers = [
 # The rest in alphabetic order
 entry_points = {"console_scripts": ["python-cfg=control_flow.__main__:main"]}
 ftp_url = None
-license = "GPL2"
 maintainer = "Rocky Bernstein"
 maintainer_email = "rb@dustyfeet.com"
 modname = "python_control_flow"
@@ -67,7 +66,6 @@ setup(
     description=short_desc,
     entry_points=entry_points,
     install_requires=["click", "xdis >= 6.1.1"],
-    license=license,
     long_description=long_description,
     long_description_content_type="text/x-rst",
     maintainer=maintainer,
