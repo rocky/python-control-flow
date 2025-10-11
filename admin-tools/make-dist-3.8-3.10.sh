@@ -1,9 +1,11 @@
 #!/bin/bash
-PACKAGE=trepanxpy
+PACKAGE="python_control_flow"
 
 # FIXME put some of the below in a common routine
 function finish {
-  cd $make_dist_python_control_flow_38_owd
+  if [[ -n "$make_dist_trepanxpy_newest_owd" ]] then
+     cd $make_dist_trepan_xpy_newest_owd
+  fi
 }
 
 make_dist_python_control_flow_38_owd=$(pwd)
@@ -22,7 +24,7 @@ cd ..
 
 source ${PACKAGE}/version.py
 if [[ ! -n $__version__ ]]; then
-    echo "You need to set __version__ first"
+    echo "Something is wrong: __version__ should have been set."
     exit 1
 fi
 echo $__version__
