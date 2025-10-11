@@ -1,0 +1,169 @@
+--- ChangeLog	2025-10-11 16:24:16.301824412 -0400
++++ ChangeLog-spell-corrected	2025-10-11 16:23:21.024439648 -0400
+@@ -142,7 +142,7 @@
+ 2024-11-19  rocky <rb@dustyfeet.com>
+ 
+ 	* control_flow/augment_disasm.py,
+-	control_flow/build_control_flow.py: Put ScopeEdgeKind lables in
++	control_flow/build_control_flow.py: Put ScopeEdgeKind labels in
+ 	between BB_START/END..  Also fix problem with showing extended-format disassembly.  Some
+ 	mypy-caught type errors were corrected as well.
+ 
+@@ -206,7 +206,7 @@
+ 2024-05-27  rocky <rb@dustyfeet.com>
+ 
+ 	* control_flow/__main__.py, control_flow/build_control_flow.py,
+-	control_flow/dominators.py, control_flow/dotio.py, test/test-bb.py: 
++	control_flow/dominators.py, control_flow/dotio.py, test/test-bb.py:
+ 	Misc fixes dotio.py: colors have to be inside double quotes __main__.py: * remove "reverse-dominators" option * for now, remove debug option. graph option serves this for now Examples are always changing
+ 
+ 2024-05-18  rocky <rb@dustyfeet.com>
+@@ -290,7 +290,7 @@
+ 
+ 	* control_flow/__main__.py, control_flow/augment_disasm.py,
+ 	control_flow/bb.py: Fix some bugs....  * Set default for graph option to "none".  * SETUP_LOOP in < 3.7 can jump to a place that is not otherwise
+-	  jumped to because of POP_STACK kinds of cleanup intructions. So deal
++	  jumped to because of POP_STACK kinds of cleanup instructions. So deal
+ 	  with this pointing to a jump_offset that is not a target of a
+ 	  conditional jump.
+ 
+@@ -312,7 +312,7 @@
+ 
+ 2024-03-21  rocky <rb@dustyfeet.com>
+ 
+-	* control_flow/dotio.py, control_flow/graph.py, test/test-bb.py: 
++	* control_flow/dotio.py, control_flow/graph.py, test/test-bb.py:
+ 	Color conditional and unconditional edges
+ 
+ 2024-03-21  rocky <rb@dustyfeet.com>
+@@ -324,7 +324,7 @@
+ 
+ 	* control_flow/cfg.py, control_flow/dotio.py,
+ 	control_flow/graph.py, test/test-bb.py: CFG Dotted edges for
+-	conditional branchs
++	conditional branches.
+ 
+ 2024-03-08  rocky <rb@dustyfeet.com>
+ 
+@@ -338,7 +338,7 @@
+ 
+ 2024-01-10  rocky <rb@dustyfeet.com>
+ 
+-	* control_flow/dominators.py: Remove debug statments
++	* control_flow/dominators.py: Remove debug statements.
+ 
+ 2024-01-10  rocky <rb@dustyfeet.com>
+ 
+@@ -366,7 +366,7 @@
+ 
+ 2023-10-21  rocky <rb@dustyfeet.com>
+ 
+-	* control_flow/augment_disasm.py: pdom is not guarenteed to be set.
++	* control_flow/augment_disasm.py: pdom is not guaranteed to be set.
+ 
+ 2023-10-15  rocky <rb@dustyfeet.com>
+ 
+@@ -378,7 +378,7 @@
+ 2023-10-08  rocky <rb@dustyfeet.com>
+ 
+ 	* .gitignore, examples/for_if_break.py, examples/nested_if.py,
+-	examples/nested_if_else.py, examples/try0.py, pytest/test_dom.py: 
++	examples/nested_if_else.py, examples/try0.py, pytest/test_dom.py:
+ 	More files
+ 
+ 2023-10-08  rocky <rb@dustyfeet.com>
+@@ -394,7 +394,7 @@
+ 
+ 	* control_flow/__main__.py, control_flow/augment_disasm.py,
+ 	control_flow/bb.py, control_flow/graph.py, examples/try1.py,
+-	examples/try_else1.py, test/test-all-examples.py, test/test-bb2.py: 
++	examples/try_else1.py, test/test-all-examples.py, test/test-bb2.py:
+ 	Some linting
+ 
+ 2023-07-25  R. Bernstein <rocky@users.noreply.github.com>
+@@ -536,7 +536,7 @@
+ 2021-12-20  rocky <rb@dustyfeet.com>
+ 
+ 	* .gitignore, control_flow/cfg.py, control_flow/graph.py,
+-	test/{test-example.py => test-all-examples.py}, test/test-bb.py: 
++	test/{test-example.py => test-all-examples.py}, test/test-bb.py:
+ 	Tolerate jumps to wild locations....  We need to guard against jumps to wild offsets.  This was seen in
+ 	fontTools/ttLib/tables/ttProgram.cpython-310.pyc line 359: ``` 358        542 ...  357        550 ...             596 JUMP_FORWARD             5 (to 608)        >>  598 POP_TOP            600 EXTENDED_ARG           255            602 EXTENDED_ARG         65535            604 EXTENDED_ARG         16777215            606 JUMP_FORWARD         4294967263 (to 8589935134) 359
+ 	>>  608 ...  ``` The presumption is that some sort of optimization is munging
+@@ -564,7 +564,7 @@
+ 
+ 2021-12-08  rocky <rb@dustyfeet.com>
+ 
+-	* control_flow/__main__.py, control_flow/bb.py, test/test-bb.py: 
++	* control_flow/__main__.py, control_flow/bb.py, test/test-bb.py:
+ 	Address problems with 3.10 jump offsets
+ 
+ 2021-11-29  rocky <rb@dustyfeet.com>
+@@ -649,7 +649,7 @@
+ 
+ 	* control_flow/bb.py, control_flow/dominators.py,
+ 	control_flow/graph.py, control_flow/structured_cf.py,
+-	examples/if_then3.py, examples/try_else1.py: Start expaning
++	examples/if_then3.py, examples/try_else1.py: Start expanding
+ 	detection to more Python versions
+ 
+ 2018-12-07  R. Bernstein <rb@dustyfeet.com>
+@@ -678,7 +678,7 @@
+ 
+ 	* control_flow/main.py, control_flow/structured_cf.py,
+ 	examples/while3.py, examples/while_else3.py: Getting closer to
+-	inserting psuedo instructions
++	inserting pseudo instructions.
+ 
+ 2018-12-03  R. Bernstein <rb@dustyfeet.com>
+ 
+@@ -706,7 +706,7 @@
+ 
+ 	* control_flow/bb.py, control_flow/graph.py,
+ 	control_flow/structured_cf.py, examples/try2.py,
+-	test/test-example.py: Improve control next/seqeunce detection ...  using the dominators
++	test/test-example.py: Improve control next/sequence detection ...  using the dominators.
+ 
+ 2018-12-02  R. Bernstein <rb@dustyfeet.com>
+ 
+@@ -741,7 +741,7 @@
+ 
+ 	* control_flow/dominators.py, control_flow/graph.py,
+ 	control_flow/main.py, control_flow/traversals.py: Start
+-	accomondating handling post dominators
++	accommodating post dominators.
+ 
+ 2018-11-25  rocky <rb@dustyfeet.com>
+ 
+@@ -769,7 +769,7 @@
+ 2018-11-23  R. Bernstein <rb@dustyfeet.com>
+ 
+ 	* control_flow/bb.py, control_flow/cfg.py, control_flow/dotio.py,
+-	examples/try2.py, examples/try_else1.py, examples/try_finally1.py: 
++	examples/try2.py, examples/try_else1.py, examples/try_finally1.py:
+ 	Add exception edges between basic block
+ 
+ 2018-11-18  R. Bernstein <rb@dustyfeet.com>
+@@ -885,7 +885,7 @@
+ 2018-11-03  rocky <rocky@gnu.org>
+ 
+ 	* .gitignore, control_flow/bb.py, control_flow/dominators.py,
+-	control_flow/main.py, control_flow/test-bb.py, examples/for1.py: 
++	control_flow/main.py, control_flow/test-bb.py, examples/for1.py:
+ 	Misc things.  Support for 3.7.x Move towards getting a main
+ 
+ 2018-01-31  rocky <rb@dustyfeet.com>
+@@ -917,7 +917,7 @@
+ 
+ 	* control_flow/dominators.py, control_flow/dotio.py,
+ 	control_flow/graph.py, control_flow/test-bb.py: Bang on finding end
+-	offsets Not quite successfull, but dominator graphs seem to be okay now
++	offsets. Not quite successful, but dominator graphs seem to be okay now.
+ 
+ 2017-06-24  rocky <rb@dustyfeet.com>
+ 
+@@ -946,4 +946,3 @@
+ 2017-06-18  rocky <rb@dustyfeet.com>
+ 
+ 	* Control Flow Graph, Dominator Tree and dot ...  ... routines. First cut
+-
