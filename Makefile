@@ -25,6 +25,14 @@ clean:
 	$(PYTHON) ./setup.py $@
 	find . -name __pycache__ -exec rm -fr {} \; || true
 
+rmChangeLog:
+	rm ChangeLog || true
+
+#: Create a ChangeLog from git via git log and git2cl
+ChangeLog: rmChangeLog
+	git log --pretty --numstat --summary | $(GIT2CL) >$@
+	patch ChangeLog < ChangeLog-spell-corrected.diff
+
 #: Create source (tarball) and wheel distribution
 dist: clean
-	$(PYTHON) ./setup.py sdist bdist_egg
+	./admin-tools/make-dist-newest.sh

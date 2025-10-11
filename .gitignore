@@ -4,9 +4,11 @@
 .python-version
 /.hypothesis
 /.pre-commit-config.yaml
+/ChangeLog
+/ChangeLog-spell-corrected
 /__pycache__
 /admin-tools/
 /build
-/python_control_flow.egg-info
 /dist
+/python_control_flow.egg-info
 /tmp
