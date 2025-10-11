@@ -17,7 +17,7 @@ dependencies = [
     "xdis >= 6.1.1, < 6.3.0",
 ]
 readme = "README.rst"
-license = {text = "MIT"}
+license = "MIT"
 keywords = ["Python bytecode", "bytecode", "disassembler"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -41,11 +41,23 @@ Downloads = "https://github.com/rocky/python-control-flow/releases"
 [project.optional-dependencies]
 dev = [
     "pre-commit",
+    "black",
+    "isort",
     "pytest",
 ]
 
 [project.scripts]
 python-cfg = "python_control_flow.__main__:main"
 
+[tool.setuptools]
+packages = [
+    "python_control_flow",
+]
+
 [tool.setuptools.dynamic]
 version = {attr = "python_control_flow.version.__version__"}
+
+[tool.pyright]
+include = ["python_control_flow"]
+# exclude = []
+ignore = ["dist", "docs", "tmp", ".cache"]
