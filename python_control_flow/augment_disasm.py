@@ -703,7 +703,7 @@ def find_jump_targets(
     """
 
     jump_target2offsets: Dict[int, list] = defaultdict(list)
-    for i, inst in enumerate(instructions):
+    for _, inst in enumerate(instructions):
         offset = inst.offset
         if inst.opcode in opc.JUMP_OPS:
             jump_target_offset = inst.argval
