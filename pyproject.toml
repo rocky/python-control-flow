@@ -15,15 +15,13 @@ description = "Python Bytecode Control Flow Toolkit"
 dependencies = [
     "click",
     "xdis >= 6.1.1, < 6.3.0",
-    "six >= 1.10.0",
 ]
 readme = "README.rst"
-license = {text = "GPL"}
+license = {text = "MIT"}
 keywords = ["Python bytecode", "bytecode", "disassembler"]
 classifiers = [
-    # "Development Status :: 5 - Production/Stable",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3.8",
@@ -31,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Code Generators",
 ]
 dynamic = ["version"]

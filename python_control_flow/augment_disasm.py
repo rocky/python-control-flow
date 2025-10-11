@@ -1,31 +1,24 @@
-# Copyright (c) 2021-2024 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2025 by Rocky Bernstein <rb@dustyfeet.com>
 """
 Augment assembler instructions to include basic block and dominator information.
 
 This code is ugly.
 
 """
+from collections import defaultdict
 from copy import copy
 from enum import IntEnum
 from sys import maxsize
 from types import CodeType
 from typing import Any, Callable, Dict, NamedTuple, Optional, Tuple, Union
 
-from collections import defaultdict
-
 from xdis.bytecode import Bytecode
-from xdis.instruction import Instruction
 from xdis.codetype.base import CodeBase
+from xdis.instruction import Instruction
 
-from python_control_flow.bb import BBMgr, BasicBlock
+from python_control_flow.bb import BasicBlock, BBMgr
 from python_control_flow.cfg import ControlFlowGraph
-from python_control_flow.graph import (
-    Node,
-    BB_FOR,
-    BB_LOOP,
-    BB_NOFOLLOW,
-    ScopeEdgeKind,
-)
+from python_control_flow.graph import BB_FOR, BB_LOOP, BB_NOFOLLOW, Node, ScopeEdgeKind
 
 
 class JumpTarget(IntEnum):
@@ -217,7 +210,6 @@ class _ExtendedInstruction(NamedTuple):
     # items off a stack and push a value onto the stack. In this case, in a linear scan
     # we can basically build up an expression tree.
     start_offset: Optional[int] = None
-
 
 
 EXTENDED_OPMAP = {
@@ -481,7 +473,11 @@ def augment_instructions(
                 for edge in reversed(cfg.offset2edges[offset]):
                     if edge.scoping_kind == ScopeEdgeKind.Join:
                         from_bb_number = edge.source.bb.number
-                        op_name = "BLOCK_END_FALLTHROUGH_JOIN" if edge.kind == "fallthrough" else "BLOCK_END_JUMP_JOIN"
+                        op_name = (
+                            "BLOCK_END_FALLTHROUGH_JOIN"
+                            if edge.kind == "fallthrough"
+                            else "BLOCK_END_JUMP_JOIN"
+                        )
                         pseudo_inst = ExtendedInstruction(
                             opname=op_name,
                             opcode=EXTENDED_OPMAP[op_name],

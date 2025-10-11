@@ -22,7 +22,7 @@ classifiers = [
 # The rest in alphabetic order
 entry_points = {"console_scripts": ["python-cfg=python_control_flow.__main__:main"]}
 ftp_url = None
-license = "GPL2"
+license = "MIT"
 maintainer = "Rocky Bernstein"
 maintainer_email = "rb@dustyfeet.com"
 modname = "python_control_flow"
