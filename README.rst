@@ -1,3 +1,5 @@
+|Combined CI status| |Supported Python Versions|
+
 Introduction
 ------------
 
@@ -13,13 +15,13 @@ Specifically:
 
 I've used some routines from Romain Gaucher's `equip <https://github.com/neuroo/equip>`_ as a starting point.
 
-*This code is alpha.* 
+*This code is alpha.*
 There may be some bugs in the code. And, right now, we always produce dot graphs, which can be a problem with large bytecode. Inserting pseudo bytecode instructions was designed to be used with the newer grammar-based Python decompiler project. That code may change a bit.
 
 Example
 -------
 
-For now, the Python in ``test/test_bb2.py``shows what's up the best.
+For now, the Python in ``test/test_bb2.py`` shows what's up the best.
 
 Consider this simple Python program taken from my `BlackHat Asia 2024 talk <https://www.blackhat.com/asia-24/briefings/schedule/index.html#how-to-get-the-most-out-of-the-python-decompilers-uncompyle-and-decompyle---how-to-write-and-read-a-bytecode-decompiler-37789>`_:
 
@@ -140,3 +142,6 @@ Note the same graph would be the same as ``if x: if y: ...```.
 The graph for ``a or b`` is almost the same except the style of the blue dotted arrow:
 
 .. image:: https://github.com/rocky/python-control-flow/blob/master/doc-example/flow%2Bdom-3.9-or-lambda%3Aa-b.png
+
+.. |Combined CI status| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/rocky/python-control-flow/master/.github/combined-ci-status.json
+.. |Supported Python Versions| image:: https://img.shields.io/pypi/pyversions/python-control-flow.svg

@@ -2,6 +2,7 @@
 
 """Setup script for the 'control_flow' distribution."""
 
+import io
 import os
 from setuptools import setup, find_packages
 
@@ -39,11 +40,21 @@ def get_srcdir():
 srcdir = get_srcdir()
 
 
-def read(*rnames):
-    return open(os.path.join(srcdir, *rnames)).read()
+def read(*rnames, encoding="utf-8"):
+    """Read a file relative to the project root using a predictable encoding.
+
+    Using io.open with utf-8 guarantees consistent behavior during wheel
+    creation and on different platforms when setup.py is executed by build
+    backends.
+    """
+    with io.open(os.path.join(srcdir, *rnames), "r", encoding=encoding) as f:
+        return f.read()
 
 
 # Get info from files; set: long_description and VERSION
+# Readme text used for the long_description which will be embedded into the
+# wheel metadata. Make sure encoding is explicit so that builders don't skip
+# it due to decode errors.
 long_description = read("README.rst") + "\n"
 
 # Version is overwritten by the below exec(read())
@@ -58,6 +69,7 @@ setup(
     install_requires=["click", "xdis >= 6.1.1"],
     license=license,
     long_description=long_description,
+    long_description_content_type="text/x-rst",
     maintainer=maintainer,
     maintainer_email=maintainer_email,
     packages=find_packages(),
