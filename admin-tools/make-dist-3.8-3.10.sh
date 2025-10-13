@@ -9,8 +9,8 @@ PACKAGE_NAME="python-control-flow"
 
 # FIXME put some of the below in a common routine
 function finish {
-  if [[ -n "$make_dist_trepanxpy_newest_owd" ]] then
-     cd $make_dist_trepan_xpy_newest_owd
+  if [[ -n "$make_dist_control_flow_38_owd" ]] then
+     cd $make_dist_control_flow_38_owd
   fi
 }
 
@@ -35,10 +35,24 @@ if [[ ! -n $__version__ ]]; then
 fi
 
 for pyversion in $PYVERSIONS; do
-    if [[ ${pyversion:0:4} == "pypy" ]] ; then
-	echo "$pyversion - PyPy does not get special packaging"
-	continue
-    fi
+    case ${pyversion:0:4} in
+	"graal" )
+	    echo "$pyversion - Graal does not get special packaging"
+	    continue
+	    ;;
+	"jyth" )
+	    echo "$pyversion - Jython does not get special packaging"
+	    continue
+	    ;;
+	"pypy" )
+	    echo "$pyversion - PyPy does not get special packaging"
+	    continue
+	    ;;
+	"pyst" )
+	    echo "$pyversion - Pyston does not get special packaging"
+	    continue
+	    ;;
+    esac
     echo "*** Packaging ${PACKAGE_NAME} for version ${__version__} on Python ${pyversion} ***"
     if ! pyenv local $pyversion ; then
 	exit $?
