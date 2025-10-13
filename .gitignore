@@ -3,6 +3,7 @@
 .idea
 .python-version
 /.hypothesis
+/.jython_cache
 /.pre-commit-config.yaml
 /ChangeLog
 /ChangeLog-spell-corrected

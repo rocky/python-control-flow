@@ -9,8 +9,8 @@ PACKAGE_NAME="python-control-flow"
 
 # FIXME put some of the below in a common routine
 function finish {
-  if [[ -n "$make_dist_trepanxpy_newest_owd" ]] then
-     cd $make_dist_trepan_xpy_newest_owd
+  if [[ -n "$make_dist_control_flow_38_owd" ]] then
+     cd $make_dist_control_flow_38_owd
   fi
 }
 
