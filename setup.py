@@ -10,20 +10,20 @@ import sys
 major = sys.version_info[0]
 minor = sys.version_info[1]
 
-if major != 3 or 8 <= minor <= 10:
+if not (major == 3 and 8 <= minor <= 10):
     sys.stderr.write(
         "This installation medium is only for Python 3.8 to 3.10. You are running Python %s.%s.\n"
         % (major, minor)
     )
 
-if major == 3 and minor >= 11:
-    sys.stderr.write(
-        "Please install using python-control-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
-    )
-    sys.exit(1)
-else:
-    sys.stderr.write("Please install using an older release\n")
-    sys.exit(1)
+    if major == 3 and minor >= 11:
+        sys.stderr.write(
+            "Please install using python-control-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
+        )
+        sys.exit(1)
+    else:
+        sys.stderr.write("Please install using an older release\n")
+        sys.exit(1)
 
 classifiers = [
     "Intended Audience :: Developers",

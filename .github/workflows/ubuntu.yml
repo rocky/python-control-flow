@@ -20,9 +20,13 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        # Until the next xdis release:
-        # pip install --local -e git+https://github.com/rocky/python-xdis.git#egg=xdis
+        # Install the latest xdis release tarball from GitHub Releases (asset named xdis_36-*.tar.gz)
+        XDIS_URL=$(curl -s https://api.github.com/repos/rocky/python-xdis/releases/latest \
+          | python -c "import sys,json; j=json.load(sys.stdin); assets=j.get('assets',[]); print(next((a.get('browser_download_url') for a in assets if a.get('name','').startswith('xdis_36-') and a.get('name','').endswith('.tar.gz')), ''))")
+        if [ -z "$XDIS_URL" ]; then
+          echo "ERROR: no xdis_36-*.tar.gz asset found on the latest release"; exit 1
+        fi
+        python -m pip install "$XDIS_URL"
         pip install -e .
         # pip install click spark-parser xdis
         pip install -r requirements-dev.txt
