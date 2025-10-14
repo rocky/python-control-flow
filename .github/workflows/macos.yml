@@ -1,4 +1,4 @@
-name: python_control_flow (ubuntu)
+name: python_control_flow (MacOS)
 
 on:
   push:
@@ -8,9 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       matrix:
+        os: [macOS]
         python-version: ['3.8', '3.9', '3.10']
     steps:
     - uses: actions/checkout@v4
