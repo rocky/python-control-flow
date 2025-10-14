@@ -16,9 +16,9 @@ if not (major == 3 and 8 <= minor <= 10):
         % (major, minor)
     )
 
-    if major == 3 and minor >= 11:
+    if major == 3 and 8 <= minor <= 10:
         sys.stderr.write(
-            "Please install using python-control-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
+            "Please install using python-control-flow_38-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
         )
         sys.exit(1)
     else:
