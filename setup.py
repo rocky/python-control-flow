@@ -14,13 +14,13 @@ if major != 3 or not minor >= 11:
         % (major, minor)
     )
 
-if major == 3 and 6 <= minor <= 10:
-    sys.stderr.write(
-        "Please install using python-control-flow_38-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
-    )
-    sys.exit(1)
-else:
-    sys.stderr.write("Please install using an older release\n")
-    sys.exit(1)
+    if major == 3 and 8 <= minor <= 10:
+        sys.stderr.write(
+            "Please install using python-control-flow_38-x.y.z.tar.gz from https://github.com/rocky/python-control-flow/releases\n"
+        )
+        sys.exit(1)
+    else:
+        sys.stderr.write("Please install using an older release\n")
+        sys.exit(1)
 
 setup()
