@@ -46,6 +46,21 @@ def build_and_analyze_control_flow(
     if func_or_code_name.endswith(">"):
         func_or_code_name = func_or_code_name[:-1]
 
+    func_or_code_name = func_or_code_name.translate(
+        {
+            ord("("): "L",
+            ord(")"): "R",
+            ord(" "): "S",
+            ord(":"): "E",
+            ord("%"): "P",
+            ord("["): "B",
+            ord("]"): "b",
+            ord("'"): "Q",
+            ord('"'): "q",
+        }
+    )
+
+
     # print(func_or_code_name)
 
     # disco(code_version_tuple, code, func_or_code_timestamp)

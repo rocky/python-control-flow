@@ -223,6 +223,32 @@ EXTENDED_OPMAP = {
     "JUMP_LOOP": 1008,
 }
 
+def format_BB_START(bb) -> str:
+    """
+      Show domninator information for basic block
+    """
+    dom_nodes_str = ""
+    if hasattr(bb, "doms") and len(bb.doms) > 0:
+        node_number_list = sorted([node.number for node in bb.doms])
+        # Format as a compact string...
+        separator = ""
+        previous_number = -2
+        for node_number in node_number_list:
+            if node_number == previous_number + 1:
+                if separator != "-":
+                    dom_nodes_str += f"{separator}{previous_number}"
+                separator = "-"
+            else:
+                if separator:
+                    dom_nodes_str += f"{separator}{previous_number}"
+                    separator = ", "
+                pass
+            previous_number = node_number
+            pass
+        dom_nodes_str += f"{separator}{node_number}"
+    return f"doms: [{dom_nodes_str}]"
+
+
 
 class ExtendedInstruction(_ExtendedInstruction, Instruction):
     """Details for an extended bytecode operation
@@ -374,6 +400,9 @@ def post_ends(dom) -> set:
             return set()
     return my_dom_set
 
+def augment_opc(opc):
+    opc.opcode_arg_fmt["BB_START"] = format_BB_START
+    return
 
 # FIXME: this will be redone to use the result of cs_tree_to_str
 def augment_instructions(
@@ -386,6 +415,7 @@ def augment_instructions(
     """Augment instructions in fn_or_code with dominator information"""
     current_block = cfg.entry_node
     assert current_block is not None
+    augment_opc(opc)
 
     # Create a mapping from a basic block, which has dominator information, to a graph node.
     # Note: unreachable basic blocks do not have a "doms" field.
@@ -502,7 +532,7 @@ def augment_instructions(
                 opcode=EXTENDED_OPMAP["BB_START"],
                 optype="pseudo",
                 inst_size=0,
-                arg=bb.number,
+                arg=bb,
                 argval=bb.number,
                 argrepr=f"Basic Block {bb.number}",
                 has_arg=True,
