@@ -14,7 +14,7 @@ name = "python-control-flow"
 description = "Python Bytecode Control Flow Toolkit"
 dependencies = [
     "click",
-    "xdis >= 6.1.1, < 6.3.0",
+    "xdis > 6.2.0",
 ]
 readme = "README.rst"
 license = "MIT"
