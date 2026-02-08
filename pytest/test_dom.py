@@ -5,7 +5,7 @@ import pytest
 
 # from xdis.bytecode import get_instructions_bytes
 # from xdis.std import opc
-from xdis import PYTHON_VERSION_TRIPLE
+from xdis import IS_PYPY, PYTHON_VERSION_TRIPLE
 
 from python_control_flow.bb import basic_blocks
 from python_control_flow.cfg import ControlFlowGraph
@@ -18,6 +18,7 @@ if DEBUG:
     import dis
 
 python_version_tuple = PYTHON_VERSION_TRIPLE[:2]
+VARIANT = "pypy" if IS_PYPY else None
 
 
 @pytest.mark.skipif(

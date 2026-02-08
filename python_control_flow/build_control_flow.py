@@ -1,19 +1,16 @@
-# Copyright (c) 2021-2025 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021-2026 by Rocky Bernstein <rb@dustyfeet.com>
 
 import sys
 
 from xdis.codetype.base import iscode
 from xdis.op_imports import get_opcode_module
-from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
+from xdis.version_info import PYTHON_IMPLEMENTATION, PYTHON_VERSION_TRIPLE
 
 from python_control_flow.augment_disasm import augment_instructions
 from python_control_flow.bb import BB_JUMP_UNCONDITIONAL, BB_NOFOLLOW, basic_blocks
 from python_control_flow.cfg import ControlFlowGraph
 from python_control_flow.dominators import DominatorTree
 from python_control_flow.graph import BB_DEAD_CODE, write_dot
-
-VARIANT = "pypy" if IS_PYPY else None
-
 
 def build_and_analyze_control_flow(
     func_or_code,
@@ -66,7 +63,7 @@ def build_and_analyze_control_flow(
     # disco(code_version_tuple, code, func_or_code_timestamp)
 
     if opc is None:
-        opc = get_opcode_module(code_version_tuple, VARIANT)
+        opc = get_opcode_module(code_version_tuple, PYTHON_IMPLEMENTATION)
 
     offset2inst_index = {}
     linestarts = dict(opc.findlinestarts(code, dup_lines=True))

@@ -1,6 +1,5 @@
 """Test control_flow.cfg: control-flow graph"""
 
-import pytest
 from typing import Callable
 from xdis import PYTHON_VERSION_TRIPLE
 from xdis.bytecode import get_instructions_bytes
@@ -20,7 +19,7 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph, check_dict: dict):
     Check validity of congtrol-flow graph `cfg`. Values in `check_dict()`
     are used to assist.
     """
-    bytecode = fn.__code__.co_code
+    code = fn.__code__
 
     # Prefix used in assert failures:
     prefix = f"In {fn.__name__}:"
@@ -42,7 +41,7 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph, check_dict: dict):
     offset2block = cfg.offset2block
     cached_offsets = len(offset2block)
     cache_diff = 0
-    for inst in get_instructions_bytes(bytecode, opc):
+    for inst in get_instructions_bytes(code, opc):
         offset = inst.offset
         if need_new_block:
             current_block = offset2block[offset]
@@ -60,7 +59,7 @@ def check_cfg(fn: Callable, cfg: ControlFlowGraph, check_dict: dict):
     # for all instruction offsets in bytecode as a result of
     # asking for each offset above
     assert all(
-        (inst.offset in offset2block for inst in get_instructions_bytes(bytecode, opc))
+        (inst.offset in offset2block for inst in get_instructions_bytes(code, opc))
     ), (f"{prefix}" "all offsets should be covered by cfg.offset2block")
 
     # Assert offset originally was in offset2block or was added in cache

@@ -1,11 +1,11 @@
-# Copyright (c) 2021, 2023-2025 by Rocky Bernstein <rb@dustyfeet.com>
+# Copyright (c) 2021, 2023-2026 by Rocky Bernstein <rb@dustyfeet.com>
 import sys
 from typing import Optional
 
 from xdis import next_offset
 from xdis.bytecode import get_instructions_bytes
 from xdis.op_imports import get_opcode_module
-from xdis.version_info import IS_PYPY, PYTHON_VERSION_TRIPLE
+from xdis.version_info import IS_PYPY, PYTHON_IMPLEMENTATION, PYTHON_VERSION_TRIPLE
 
 from python_control_flow.graph import (
     BB_BREAK,
@@ -207,7 +207,7 @@ class BBMgr(object):
 
         version = tuple(version[:2])
 
-        self.opcode = opcode = get_opcode_module(version)
+        self.opcode = opcode = get_opcode_module(version, PYTHON_IMPLEMENTATION)
 
         # FIXME: why is POP_TOP *ever* an except instruction?
         # If it can be a start an except instruction, then we need
@@ -347,15 +347,7 @@ def basic_blocks(
     jump_targets = set()
     loop_targets = set()
     instructions = list(
-        get_instructions_bytes(
-            bytecode=code.co_code,
-            opc=bb.opcode,
-            varnames=code.co_varnames,
-            names=code.co_names,
-            constants=code.co_consts,
-            cells=code.co_cellvars,
-            linestarts=linestarts,
-        )
+        get_instructions_bytes(code, opc=bb.opcode)
     )
     for i, inst in enumerate(instructions):
         offset2inst_index[inst.offset] = i
@@ -641,8 +633,11 @@ def basic_blocks(
 
 
 if __name__ == "__main__":
+    from xdis.std import opc
     offset2inst_index = {}
-    bb_mgr = basic_blocks(basic_blocks.__code__, offset2inst_index)
+    code = basic_blocks.__code__
+    linestarts = dict(opc.findlinestarts(code, dup_lines=True))
+    bb_mgr = basic_blocks(code, opc, offset2inst_index)
     from pprint import pprint
 
     pprint(offset2inst_index)
